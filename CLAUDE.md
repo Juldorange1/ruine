@@ -115,6 +115,35 @@ floorC      // canvas off-screen pour le fond
 
 ---
 
+## Guide de modification rapide
+
+| Je veux changer… | Fichier à éditer |
+|-----------------|-----------------|
+| Apparence, couleurs, layout | `style.css` |
+| Durée de partie, HP des bâtiments, noms | `js/globals.js` |
+| Taille de la grille (MAP), taille des tiles | `js/canvas.js` |
+| Génération de carte, spawn des joueurs | `js/init.js` |
+| Vitesse de déplacement, collision | `js/placement.js` |
+| Dégâts, portée du lance, attaque bâtiment | `js/combat.js` |
+| Prix du shop, upgrades, téléport | `js/shop.js` |
+| Comportement des météores, des piques | `js/world.js` |
+| Comportement de l'IA (solo) | `js/ai.js` |
+| Rendu canvas, HUD, messages log | `js/render.js` |
+| Boucle de jeu, clavier/souris, menus | `js/game.js` |
+| Structure des overlays, boutons | `index.html` |
+| Textures de fond | `images/*.jpg` |
+
+---
+
 ## Workflow de test
 
 Ouvrir `index.html` directement dans un navigateur (`file://`). Pas besoin de serveur HTTP.
+
+Pour modifier du code : éditer le(s) fichier(s) concerné(s), puis recharger l'onglet (`F5`).
+
+---
+
+## Notes git
+
+- `ruine.html` (ancien monolithe) est dans le dépôt mais peut être supprimé : `git rm ruine.html`
+- Le dossier `.claude/` (settings locaux) n'est pas suivi par git — c'est voulu.
