@@ -1,0 +1,463 @@
+﻿/* MAIN LOOP */
+function loop(ts){
+  requestAnimationFrame(loop);
+  var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
+  // In record/destruction modes, timer runs from placement onward
+  var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
+  if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
+    G.time+=dt;
+  }
+  if(G&&gameRunning&&G.phase==='combat'&&!gamePaused){
+    // P1 movement
+    if(!drillingMode){
+      var dx=0,dy=0;
+      if(keys['ArrowLeft'])dx-=1;if(keys['ArrowRight'])dx+=1;
+      if(keys['ArrowUp'])dy-=1;if(keys['ArrowDown'])dy+=1;
+      if(GAMEMODE==='solo'){if(keys['q']||keys['Q'])dx-=1;if(keys['d']||keys['D'])dx+=1;if(keys['z']||keys['Z'])dy-=1;if(keys['s']||keys['S'])dy+=1;}
+      if(dx||dy){var l=Math.hypot(dx,dy);moveP(G.p1,dx/l,dy/l,dt);}else{G.p1.vx=0;G.p1.vy=0;}
+    }else{G.p1.vx=0;G.p1.vy=0;}
+    // P2 movement in pvp and coop
+    if((GAMEMODE==='pvp'||GAMEMODE==='coop')&&G.p2&&!G.p2.dead){
+      var dx2=0,dy2=0;
+      if(keys['q']||keys['Q'])dx2-=1;if(keys['d']||keys['D'])dx2+=1;
+      if(keys['z']||keys['Z'])dy2-=1;if(keys['s']||keys['S'])dy2+=1;
+      if(dx2||dy2){var l2=Math.hypot(dx2,dy2);moveP(G.p2,dx2/l2,dy2/l2,dt);}else{G.p2.vx=0;G.p2.vy=0;}
+    }
+    updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updAI(dt);aiAutoCollect();updPiques(dt);
+    // Destruction mode: end when all blocks gone
+    if(destroyMode&&!G.phase_over&&G.blocks.length===0){
+      G.phase='over';G.phase_over=true;G.winner='CLEARED';
+    }
+    if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
+      var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
+      var diaTarget=GAMEMODE==='coop'?700:700;
+      var diaGoal=diamondRace?600:99999;
+    if(diamondRace&&totalDia>=diaGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
+      else if(!diamondRace&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
+    }
+    if(G.phase==='over'){gameRunning=false;showEnd();}
+  }
+  if(G)draw();
+}
+
+function showEnd(){
+  var ov=document.getElementById('endov');
+  if(destroyMode){
+    document.getElementById('endtitle').textContent='DESTRUCTION !';
+    document.getElementById('endtitle').style.color='#e05030';
+    document.getElementById('endsub').textContent='Tous les minerais detruits en '+document.getElementById('timer').textContent;
+    document.getElementById('endmode').textContent='Mode : DESTRUCTION';
+    ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
+    return;
+  }
+  if(GAMEMODE==='solo'||GAMEMODE==='coop'){
+    var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
+    // Record score for series
+    if(seriesActive) seriesScores.push(diamondRace?Math.round(G.time):totalD);
+    var isLastGame=seriesGame>=3;
+    var title='';
+    if(diamondRace&&G.winner==='DIAMOND') title='600 ATTEINT !';
+    else title=GAMEMODE==='coop'?'COOP TERMINEE':'PARTIE TERMINEE';
+    document.getElementById('endtitle').textContent=title;
+    document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
+    var timeStr=document.getElementById('timer').textContent;
+    var sub=GAMEMODE==='coop'?
+      'Total: '+totalD+' &#9670; (P1:'+( G.p1.diamond||0)+' + P2:'+(G.p2?G.p2.diamond||0:0)+')':
+      '&#9670; '+totalD;
+    if(diamondRace&&G.winner==='DIAMOND') sub+='  —  Temps: '+timeStr;
+    else sub+='  —  '+timeStr;
+    if(seriesActive){
+      sub+='  (Partie '+seriesGame+'/3)';
+      if(isLastGame){
+        var avg=Math.round(seriesScores.reduce(function(a,b){return a+b;},0)/seriesScores.length);
+        function fmtSec(s2){return String(Math.floor(s2/60)).padStart(2,'0')+':'+String(s2%60).padStart(2,'0');}
+        if(diamondRace){
+          var scoreStrs=seriesScores.map(fmtSec).join(' / ');
+          sub='<br>Temps: '+scoreStrs+'<br>Moyenne: '+fmtSec(avg);
+        } else {
+          sub='<br>Scores: '+seriesScores.join(' / ')+'<br>Moyenne: '+avg+' &#9670;';
+        }
+        document.getElementById('btnreplay').style.display='none';
+      } else {
+        document.getElementById('btnreplay').textContent='PARTIE SUIVANTE ('+( seriesGame+1)+'/3)';
+        document.getElementById('btnreplay').style.display='';
+      }
+    }
+    document.getElementById('endsub').innerHTML=sub;
+  } else {
+    var win=G.winner==='P1';
+    document.getElementById('endtitle').textContent=G.winner==='PERSONNE'?'MATCH NUL':win?'P1 GAGNE !':'P2 GAGNE !';
+    document.getElementById('endtitle').style.color=G.winner==='PERSONNE'?'#a0a060':win?'#d4a040':'#c04040';
+    document.getElementById('endsub').textContent=G.winner==='PERSONNE'?'Carte saturee':(G.winner+' a gagne  '+document.getElementById('timer').textContent);
+  }
+  // Always show the mode at the bottom
+  var modeNames={solo:'SOLO RECORD',coop:'COOP RECORD',pvp:'AFFRONTEMENT'};
+  var modeEl=document.getElementById('endmode');
+  if(modeEl) modeEl.textContent='Mode : '+(modeNames[GAMEMODE]||GAMEMODE)+(diamondRace?' — 700 ◆':'');
+  ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
+}
+
+/* INPUT */
+document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
+  if(!G||!gameRunning)return;
+  if(e.key==='Escape'){
+    // If something is open, close it first
+    if(shopOpen||tpMode||drillingMode||piqueMode){
+      closeShop();tpMode=false;tpSrc=null;tpPlayer=null;
+      bdAtk=null;blkAtk=null;metAtk=null;
+      if(drillingMode){drillingMode=false;placePos=null;document.getElementById('pbar').style.display='none';log('Placement annule');}
+      piqueMode=false;piquePlayer=null;
+      return;
+    }
+    // Otherwise toggle pause
+    // In record/destruction modes, timer runs from placement onward
+  var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
+  if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
+    G.time+=dt;
+  }
+  if(G&&gameRunning&&G.phase==='combat'&&!gamePaused){
+      gamePaused=!gamePaused;
+      document.getElementById('pauseov').style.display=gamePaused?'flex':'none';
+    }
+  }
+  // P2 keyboard shortcuts (pvp only)
+  if((GAMEMODE==='pvp'||GAMEMODE==='coop')&&G.p2&&!G.p2.dead){
+    if(e.key==='f'||e.key==='F'){var bd3=G.buildings.filter(function(b){return Math.hypot(G.p2.x-b.x,G.p2.y-b.y)<=1.6;}).sort(function(a,b2){return Math.hypot(G.p2.x-a.x,G.p2.y-a.y)-Math.hypot(G.p2.x-b2.x,G.p2.y-b2.y);})[0];if(bd3)activateBd(bd3,G.p2);}
+    if(e.key==='r'||e.key==='R'){
+      // P2 spear: strike toward nearest enemy/block/building
+      var targets=[];
+      G.players.forEach(function(p){if(!p.dead&&p!==G.p2)targets.push({x:p.x,y:p.y});});
+      G.buildings.forEach(function(b){if(b.type!=='factory'&&b.type!=='bank')targets.push({x:b.x,y:b.y});});
+      G.blocks.forEach(function(b){targets.push({x:b.x,y:b.y});});
+      if(targets.length){
+        var near=targets.reduce(function(a,b){return Math.hypot(G.p2.x-a.x,G.p2.y-a.y)<Math.hypot(G.p2.x-b.x,G.p2.y-b.y)?a:b;});
+        spearStrike(G.p2,near.x,near.y);
+      } else spearStrike(G.p2,G.p2.x+1,G.p2.y);
+    }
+  }
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].indexOf(e.key)>=0)e.preventDefault();
+  // Right Shift = simulate left click at current mouse position
+  if(e.key==='ShiftRight'||e.code==='ShiftRight'){
+    e.preventDefault();
+    C.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:mouseX,clientY:mouseY}));
+  }
+});
+document.addEventListener('keyup',function(e){keys[e.key]=false;});
+
+function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();return{gx:Math.floor((e.clientX-r.left)/(r.width/CW)/TILE),gy:Math.floor((e.clientY-r.top)/(r.height/CH)/TILE)};}
+
+C.addEventListener('click',function(e){
+  if(!G)return;
+  var pos=getGrid(e);
+  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};document.getElementById('pbc').disabled=!ok;if(!ok)log(!drillAdjRes(pos.gx,pos.gy)?'Doit etre pres d un minerai !'  :'Case occupee !');return;}
+  if(G.phase==='placement'&&placeQueue.length){selectCell(pos.gx,pos.gy);return;}
+  if(tpMode){doTeleport(pos.gx,pos.gy);return;}
+  if(G.phase!=='combat')return;
+  if(piqueMode){placePique(pos.gx,pos.gy);return;}
+  var bd=G.buildings.filter(function(b){return b.gx===pos.gx&&b.gy===pos.gy;})[0];
+  if(!bd)return;
+  var actor=G.p1;
+  if((GAMEMODE==='pvp'||GAMEMODE==='coop')&&G.p2&&!G.p2.dead){var d1=Math.hypot(G.p1.x-bd.x,G.p1.y-bd.y),d2=Math.hypot(G.p2.x-bd.x,G.p2.y-bd.y);if(d2<d1&&d2<=1.6)actor=G.p2;}
+  if(Math.hypot(actor.x-bd.x,actor.y-bd.y)>1.6){log('Trop loin ! (1 case max)');return;}
+  activateBd(bd,actor);
+});
+
+C.addEventListener('contextmenu',function(e){
+  e.preventDefault();
+  if(!G||G.phase!=='combat')return;
+  var r=document.getElementById('cw').getBoundingClientRect();
+  var worldX=(e.clientX-r.left)/(r.width/CW)/TILE;
+  var worldY=(e.clientY-r.top)/(r.height/CH)/TILE;
+  // Determine which player strikes (closest to click in pvp/coop)
+  var actor=G.p1;
+  if((GAMEMODE==='pvp'||GAMEMODE==='coop')&&G.p2&&!G.p2.dead){
+    var d1=Math.hypot(G.p1.x-worldX,G.p1.y-worldY);
+    var d2=Math.hypot(G.p2.x-worldX,G.p2.y-worldY);
+    if(d2<d1)actor=G.p2;
+  }
+  // Toggle: second right-click on same target cancels... 
+  // but with spear there's no toggle - just strike
+  spearStrike(actor,worldX,worldY);
+});
+
+C.addEventListener('dblclick',function(e){
+  if(!G)return;var pos=getGrid(e);
+  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);if(ok){placePos={gx:pos.gx,gy:pos.gy,ok:true,locked:true};confirmDrill();}else log('Case invalide !');return;}
+  if(G.phase!=='placement'||!placeQueue.length)return;
+  selectCell(pos.gx,pos.gy);if(placePos&&placePos.ok)confirmPlace();
+});
+
+/* START GAME */
+function setMineralQty(mode,qty){
+  // Deselect all buttons for this mode, select the clicked one
+  [3,5,7].forEach(function(q){
+    var btn=document.getElementById(mode+'-mq'+q);
+    if(!btn)return;
+    var col=mode==='solo'?'rgba(128,230,255,':'rgba(128,224,128,';
+    var active=q===qty;
+    btn.style.background=active?(col+'0.2)' ):(col+'0.05)');
+    btn.style.borderColor=active?(col+'0.7)' ):(col+'0.25)');
+    btn.style.color=active?(col+'0.95)' ):(col+'0.45)');
+    btn.style.fontWeight=active?'bold':'normal';
+    if(q===3||q===7) btn.textContent=(active?'\u2611':'\u2744')+' '+q;
+  });
+  if(mode==='solo')soloMineralQty=qty;
+  else coopMineralQty=qty;
+}
+
+function toggleMineral(mode){
+  var btn=document.getElementById(mode+'-mineral');
+  if(!btn)return;
+  var on=btn.getAttribute('data-active')==='1';
+  btn.setAttribute('data-active',on?'0':'1');
+  var col=mode==='solo'?'rgba(128,230,255,':'rgba(128,224,128,';
+  if(!on){
+    btn.style.background=col+'0.18)';
+    btn.style.borderColor=col+'0.7)';
+    btn.style.color=col+'0.9)';
+    btn.textContent='\u2611 3 MINERAIS PAR TYPE';
+  } else {
+    btn.style.background=col+'0.05)';
+    btn.style.borderColor=col+'0.3)';
+    btn.style.color=col+'0.45)';
+    btn.textContent='\u2744 3 MINERAIS PAR TYPE';
+  }
+}
+
+function startGame(mode){
+  GAMEMODE=mode;placeGen++;
+  destroyMode=destroyMode||false; // set by caller
+  destructionMode=false;
+  G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
+  placeQueue=[];placePos=null;drillingMode=false;
+  shopOpen=null;shopPlayer=null;piqueMode=false;piquePlayer=null;
+  tpMode=false;tpSrc=null;tpPlayer=null;bdAtk=null;bdAtkTimer=0;bdAtkPlayer=null;
+  blkAtk=null;blkAtkTimer=0;blkAtkPlayer=null;
+  metAtk=null;metAtkTimer=0;metAtkPlayer=null;
+  document.getElementById('shop').style.display='none';
+  document.getElementById('pbar').style.display='none';
+  document.getElementById('ov').style.display='none';
+  document.getElementById('endov').style.display='none';
+  document.getElementById('endov').style.opacity='0';
+  document.getElementById('phase').textContent='PLACEMENT';
+  // Choose map texture based on mode
+  var texId;
+  if(GAMEMODE==='pvp') texId='tex-stone';
+  else if(destroyMode) texId='tex-desert2';
+  else if(GAMEMODE==='coop') texId='tex-grass2';
+  else texId='tex-desert1'; // solo default
+  (function(){
+    var fc2=floorC.getContext('2d'),img2=new Image();
+    floorReady=false;
+    img2.onload=function(){
+      fc2.clearRect(0,0,CW,CH);
+      fc2.drawImage(img2,0,0,CW,CH);
+      fc2.fillStyle='rgba(0,0,0,0.15)';fc2.fillRect(0,0,CW,CH);
+      var vg2=fc2.createRadialGradient(CW/2,CH/2,CW*.05,CW/2,CH/2,CW*.72);
+      vg2.addColorStop(0,'rgba(0,0,0,0)');vg2.addColorStop(1,'rgba(0,0,0,0.42)');
+      fc2.fillStyle=vg2;fc2.fillRect(0,0,CW,CH);
+      floorReady=true;
+    };
+    var texEl=document.getElementById(texId)||document.getElementById('tex-desert1');
+    if(texEl)img2.src=texEl.src;
+    else{floorReady=true;}
+  })();
+  // Update HUD labels
+  document.getElementById('p1role').textContent=GAMEMODE==='solo'?(destroyMode?'Destruction':'Solo'):GAMEMODE==='coop'?'Coop P1':'P1';
+  document.getElementById('p2card').style.display=GAMEMODE==='solo'?'none':'';
+  if(mode==='coop')document.getElementById('p2role').textContent='Coop P2';
+  else document.getElementById('p2role').textContent='P2';
+  // Hide HP bar and PV number in record modes (solo/coop)
+  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop');
+  ['p1','p2'].forEach(function(pfx){
+    var hf=document.getElementById(pfx+'hf');
+    if(hf)hf.parentNode.style.display=isRec?'none':'';
+    var hn=document.getElementById(pfx+'hn');
+    if(hn)hn.style.display=isRec?'none':'';
+  });
+  // Determine if this is a diamond race start or series continuation
+  var isDur700=(mode==='solo'&&soloDur===999)||(mode==='coop'&&coopDur===999);
+  diamondRace=isDur700;
+  if(mode==='solo') SOLO_DUR=isDur700?999999:soloDur*60;
+  else if(mode==='coop') SOLO_DUR=isDur700?999999:coopDur*60;
+  // Series logic: if not already in a series, start one
+  if((mode==='solo'||mode==='coop'||mode==='destruction')&&seriesGame===0){
+    seriesActive=true;seriesGame=1;seriesScores=[];
+  }
+  var durLabel=isDur700?'600 diamants':mode==='solo'?soloDur:mode==='coop'?coopDur:mode==='destruction'?'Destruction':null;
+  var modeLabel=mode==='solo'?'Solo':mode==='coop'?'Coop':mode==='destruction'?'Destruction':'Affrontement';
+  if(seriesActive&&(mode==='solo'||mode==='coop'||mode==='destruction'))
+    log(modeLabel+' — Partie '+seriesGame+'/3 — '+(isDur700?'700 diamants !':durLabel+' min !'));
+  else
+    log(mode==='pvp'?'Affrontement — bonne chance !':modeLabel+' — '+durLabel+(isDur700?' diamants':'  min')+'!');
+
+  gameNum=1+Math.floor(Math.random()*6);
+  gamePaused=false;
+  document.getElementById('pauseov').style.display='none';
+  var gn=document.getElementById('gamename');
+  if(gn){gn.textContent='#'+gameNum;gn.style.display='block';}
+  document.getElementById('btnmidmenu').style.display='block';
+  startPlacement();
+}
+
+/* WIRE BUTTONS */
+// Shop click delegation — wired at end so DOM exists
+document.getElementById('shop').addEventListener('click',function(e){
+  var el=e.target.closest('[data-action]');
+  if(!el||!shopOpen||!shopPlayer)return;
+  var a=el.getAttribute('data-action');
+  if(a==='drill')buyBd('drill');
+  else if(a==='teleporter')buyBd('teleporter');
+  else if(a==='buy-coal')buyBlock('coal');
+  else if(a==='buy-gold')buyBlock('gold');
+  else if(a==='buy-diamond')buyBlock('diamond');
+  else if(a==='dmg')buyUpg('dmg');
+  else if(a==='hp')buyUpg('hp');
+  else if(a==='spd')buyUpg('spd');
+  else if(a==='pique')buyPique();
+});
+document.getElementById('btn-record-play').addEventListener('click',function(){
+  var mode=recPlayers===2?'coop':'solo';
+  // Apply rec settings
+  mineralQty=recMq;
+  destroyMode=(recDur==='dest');
+  if(recDur==='600d'){diamondRace=true;soloDur=999;coopDur=999;}
+  else if(recDur!=='dest'){diamondRace=false;if(mode==='solo')soloDur=recDur;else coopDur=recDur;}
+  startGame(mode);
+});
+// Wire pvp jouer button
+var pvpJouerBtn=document.getElementById('pvp-jouer');
+if(pvpJouerBtn)pvpJouerBtn.addEventListener('click',function(){mineralQty=pvpMq||5;startGame('pvp');});
+// btn-pvp-play handles pvp start with mineralQty already wired above
+document.getElementById('btnreplay').addEventListener('click',function(){
+  if(seriesActive&&seriesGame<3){
+    seriesGame++;
+    startGame(GAMEMODE);
+  } else {
+    // New series
+    seriesGame=0;seriesActive=false;seriesScores=[];
+    document.getElementById('btnreplay').textContent='REJOUER';
+    document.getElementById('btnreplay').style.display='';
+    startGame(GAMEMODE);
+  }
+});
+function goToMenu(){destroyMode=false;
+  gameRunning=false;G=null;
+  seriesGame=0;seriesActive=false;seriesScores=[];
+  document.getElementById('btnreplay').textContent='REJOUER';
+  document.getElementById('btnreplay').style.display='';
+  gamePaused=false;
+  document.getElementById('pauseov').style.display='none';
+  closeShop();
+  document.getElementById('endov').style.display='none';
+  document.getElementById('endov').style.opacity='0';
+  document.getElementById('pbar').style.display='none';
+  document.getElementById('shop').style.display='none';
+  document.getElementById('btnmidmenu').style.display='none';
+  var gn2=document.getElementById('gamename');if(gn2)gn2.style.display='none';
+  document.getElementById('ov').style.display='flex';
+}
+
+document.getElementById('btnpauseresume').addEventListener('click',function(){
+  gamePaused=false;
+  document.getElementById('pauseov').style.display='none';
+});
+document.getElementById('btnpausemenu').addEventListener('click',function(){
+  goToMenu();
+});
+document.getElementById('btnmenu').addEventListener('click',function(){
+  gameRunning=false;
+  document.getElementById('endov').style.display='none';document.getElementById('endov').style.opacity='0';
+  document.getElementById('ov').style.display='flex';
+});
+document.getElementById('btnmidmenu').addEventListener('click',function(){
+  if(confirm('Abandonner la partie et revenir au menu ?')){
+    gameRunning=false;G=null;
+    document.getElementById('pbar').style.display='none';
+    document.getElementById('shop').style.display='none';
+    document.getElementById('endov').style.display='none';
+    document.getElementById('endov').style.opacity='0';
+    document.getElementById('ov').style.display='flex';
+  }
+});
+document.getElementById('pbc').addEventListener('click',function(){if(drillingMode)confirmDrill();else confirmPlace();});
+document.getElementById('sclose').addEventListener('click',closeShop);
+
+// Expose shop fns for onclick
+// ── Record menu state ──
+var recPlayers=1;   // 1 or 2
+var recDur=10;      // 7, 10, '600d', 'dest'
+var recMq=5;        // 3, 5, 7
+var pvpMq=5;        // 3, 5, 7 for pvp
+
+function recSetPlayers(n){
+  recPlayers=n;
+  var on='rgba(128,230,255,';
+  document.getElementById('rec-p1').style.background=n===1?(on+'0.2)'):(on+'0.05)');
+  document.getElementById('rec-p1').style.borderColor=n===1?(on+'0.7)'):(on+'0.25)');
+  document.getElementById('rec-p1').style.color=n===1?(on+'0.95)'):(on+'0.45)');
+  document.getElementById('rec-p1').style.fontWeight=n===1?'bold':'normal';
+  document.getElementById('rec-p1').textContent=n===1?'\u2611 1 JOUEUR':'\u2610 1 JOUEUR';
+  document.getElementById('rec-p2').style.background=n===2?(on+'0.2)'):(on+'0.05)');
+  document.getElementById('rec-p2').style.borderColor=n===2?(on+'0.7)'):(on+'0.25)');
+  document.getElementById('rec-p2').style.color=n===2?(on+'0.95)'):(on+'0.45)');
+  document.getElementById('rec-p2').style.fontWeight=n===2?'bold':'normal';
+  document.getElementById('rec-p2').textContent=n===2?'\u2611 2 JOUEURS':'\u2610 2 JOUEURS';
+  document.getElementById('record-title').textContent=n===1?'SOLO RECORD':'COOP RECORD';
+}
+
+function recSetDur(d){
+  recDur=d;
+  document.querySelectorAll('.rec-dur').forEach(function(btn){
+    var active=btn.getAttribute('data-dur')==String(d);
+    var isDest=btn.getAttribute('data-dur')==='dest';
+    var is600=btn.getAttribute('data-dur')==='600d';
+    var col=isDest?'rgba(220,80,48,':is600?'rgba(240,210,80,':'rgba(128,230,255,';
+    btn.style.background=active?(col+'0.2)'):(col+'0.05)');
+    btn.style.borderColor=active?(col+(isDest||is600?'0.7':'0.7')+')'):(col+(isDest?'0.35':is600?'0.35':'0.25')+')');
+    btn.style.color=active?(col+'0.95)'):(col+(isDest?'0.65':is600?'0.6':'0.55')+')');
+    btn.style.fontWeight=active?'bold':'normal';
+  });
+}
+
+function recSetMq(q){
+  recMq=q;
+  document.querySelectorAll('.rec-mq').forEach(function(btn){
+    var active=parseInt(btn.getAttribute('data-qty'))===q;
+    var col='rgba(128,230,255,';
+    btn.style.background=active?(col+'0.2)'):(col+'0.05)');
+    btn.style.borderColor=active?(col+'0.7)'):(col+'0.25)');
+    btn.style.color=active?'#80eeff':(col+'0.45)');
+    btn.style.fontWeight=active?'bold':'normal';
+    if(q===3||q===7) btn.textContent=(active?'\u2611':'\u2744')+' '+q;
+    else btn.textContent=active?'5 (def)':'5 (def)';
+  });
+}
+
+function pvpSetMq(q){
+  pvpMq=q;
+  [3,5,7].forEach(function(n){
+    var btn=document.getElementById('pvp-mq'+n);
+    if(!btn)return;
+    var active=n===q;
+    var col='rgba(220,128,80,';
+    btn.style.background=active?(col+'0.2)'):(col+'0.05)');
+    btn.style.borderColor=active?(col+'0.7)'):(col+'0.25)');
+    btn.style.color=active?'#e08060':(col+'0.45)');
+    btn.style.fontWeight=active?'bold':'normal';
+    btn.textContent=(n===3||n===7)?((active?'\u2611':'\u2744')+' '+n):'5 (def)';
+  });
+}
+
+window.recSetPlayers=recSetPlayers;
+window.recSetDur=recSetDur;
+window.recSetMq=recSetMq;
+window.pvpSetMq=pvpSetMq;
+
+window.buyBd=buyBd;window.buyUpg=buyUpg;window.buyPique=buyPique;window.closeShop=closeShop;
+window.toggleMineral=toggleMineral;
+window.setMineralQty=setMineralQty;
+window.toggleMineral=toggleMineral;
+window.setMineralQty=setMineralQty;
+
+requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
