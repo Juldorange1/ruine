@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"C:\\\\Users\\\\juldorange\\\\ruine\\\\ruine.html\")",
+      "Bash(Measure-Object -Line)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\juldorange\\\\ruine\\\\ruine.html\" | Measure-Object -Line\\).Lines; \\(Get-Item \"C:\\\\Users\\\\juldorange\\\\ruine\\\\ruine.html\"\\).Length / 1KB)"
+    ]
+  }
+}
