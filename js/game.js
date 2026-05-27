@@ -321,7 +321,7 @@ document.getElementById('shop').addEventListener('click',function(e){
   else if(a==='pique')buyPique();
 });
 document.getElementById('btn-record-play').addEventListener('click',function(){
-  var mode=recPlayers===2?'coop':'solo';
+  var mode='solo';
   // Apply rec settings
   mineralQty=recMq;
   destroyMode=(recDur==='dest');
@@ -389,27 +389,9 @@ document.getElementById('sclose').addEventListener('click',closeShop);
 
 // Expose shop fns for onclick
 // ── Record menu state ──
-var recPlayers=1;   // 1 or 2
 var recDur=10;      // 7, 10, '600d', 'dest'
 var recMq=5;        // 3, 5, 7
 var pvpMq=5;        // 3, 5, 7 for pvp
-
-function recSetPlayers(n){
-  recPlayers=n;
-  var on='rgba(128,230,255,';
-  document.getElementById('rec-p1').style.background=n===1?(on+'0.2)'):(on+'0.05)');
-  document.getElementById('rec-p1').style.borderColor=n===1?(on+'0.7)'):(on+'0.25)');
-  document.getElementById('rec-p1').style.color=n===1?(on+'0.95)'):(on+'0.45)');
-  document.getElementById('rec-p1').style.fontWeight=n===1?'bold':'normal';
-  document.getElementById('rec-p1').textContent=n===1?'\u2611 1 JOUEUR':'\u2610 1 JOUEUR';
-  document.getElementById('rec-p2').style.background=n===2?(on+'0.2)'):(on+'0.05)');
-  document.getElementById('rec-p2').style.borderColor=n===2?(on+'0.7)'):(on+'0.25)');
-  document.getElementById('rec-p2').style.color=n===2?(on+'0.95)'):(on+'0.45)');
-  document.getElementById('rec-p2').style.fontWeight=n===2?'bold':'normal';
-  document.getElementById('rec-p2').textContent=n===2?'\u2611 2 JOUEURS':'\u2610 2 JOUEURS';
-  document.getElementById('record-title').textContent=n===1?'SOLO RECORD':'COOP RECORD';
-}
-
 function recSetDur(d){
   recDur=d;
   document.querySelectorAll('.rec-dur').forEach(function(btn){
@@ -453,14 +435,11 @@ function pvpSetMq(q){
   });
 }
 
-window.recSetPlayers=recSetPlayers;
 window.recSetDur=recSetDur;
 window.recSetMq=recSetMq;
 window.pvpSetMq=pvpSetMq;
 
 window.buyBd=buyBd;window.buyUpg=buyUpg;window.buyPique=buyPique;window.closeShop=closeShop;
-window.toggleMineral=toggleMineral;
-window.setMineralQty=setMineralQty;
 window.toggleMineral=toggleMineral;
 window.setMineralQty=setMineralQty;
 
