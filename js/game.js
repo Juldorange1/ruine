@@ -2,7 +2,7 @@
 function loop(ts){
   requestAnimationFrame(loop);
   var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
-  // In record/destruction modes, timer runs from placement onward
+  // In record modes, timer runs from placement onward
   var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
   if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
     G.time+=dt;
@@ -25,10 +25,6 @@ function loop(ts){
     }
     updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updAI(dt);aiAutoCollect();updPiques(dt);
     G.players.forEach(function(p){if(p&&!p.dead&&p.isHuman)p.atkCharge=Math.min(1,(p.atkCharge||0)+dt);});
-    // Destruction mode: end when all blocks gone
-    if(destroyMode&&!G.phase_over&&G.blocks.length===0){
-      G.phase='over';G.phase_over=true;G.winner='CLEARED';
-    }
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
       var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
       var diaTarget=GAMEMODE==='coop'?700:700;
@@ -43,21 +39,13 @@ function loop(ts){
 
 function showEnd(){
   var ov=document.getElementById('endov');
-  if(destroyMode){
-    document.getElementById('endtitle').textContent='DESTRUCTION !';
-    document.getElementById('endtitle').style.color='#e05030';
-    document.getElementById('endsub').textContent='Tous les minerais detruits en '+document.getElementById('timer').textContent;
-    document.getElementById('endmode').textContent='Mode : DESTRUCTION';
-    ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
-    return;
-  }
   if(GAMEMODE==='solo'||GAMEMODE==='coop'){
     var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
     // Record score for series
     if(seriesActive) seriesScores.push(diamondRace?Math.round(G.time):totalD);
     var isLastGame=seriesGame>=3;
     var title='';
-    if(diamondRace&&G.winner==='DIAMOND') title='600 ATTEINT !';
+    if(diamondRace&&G.winner==='DIAMOND') title='RUÉE DES 600 !';
     else title=GAMEMODE==='coop'?'COOP TERMINEE':'PARTIE TERMINEE';
     document.getElementById('endtitle').textContent=title;
     document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
@@ -94,7 +82,8 @@ function showEnd(){
   // Always show the mode at the bottom
   var modeNames={solo:'SOLO RECORD',coop:'COOP RECORD',pvp:'AFFRONTEMENT'};
   var modeEl=document.getElementById('endmode');
-  if(modeEl) modeEl.textContent='Mode : '+(modeNames[GAMEMODE]||GAMEMODE)+(diamondRace?' — 700 ◆':'');
+  if(modeEl) modeEl.textContent='Mode : '+(modeNames[GAMEMODE]||GAMEMODE)+(diamondRace?' — RUÉE DES 600':'');
+  sfx(G&&G.winner==='TIME'?'end':'win');
   ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
 }
 
@@ -111,12 +100,7 @@ document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
       return;
     }
     // Otherwise toggle pause
-    // In record/destruction modes, timer runs from placement onward
-  var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
-  if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
-    G.time+=dt;
-  }
-  if(G&&gameRunning&&G.phase==='combat'&&!gamePaused){
+    if(G&&gameRunning&&G.phase==='combat'){
       gamePaused=!gamePaused;
       document.getElementById('pauseov').style.display=gamePaused?'flex':'none';
     }
@@ -230,8 +214,6 @@ function toggleMineral(mode){
 
 function startGame(mode){
   GAMEMODE=mode;placeGen++;
-  destroyMode=destroyMode||false; // set by caller
-  destructionMode=false;
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
   placeQueue=[];placePos=null;drillingMode=false;
   shopOpen=null;shopPlayer=null;piqueMode=false;piquePlayer=null;
@@ -247,7 +229,6 @@ function startGame(mode){
   // Choose map texture based on mode
   var texId;
   if(GAMEMODE==='pvp') texId='tex-stone';
-  else if(destroyMode) texId='tex-desert2';
   else if(GAMEMODE==='coop') texId='tex-grass2';
   else texId='tex-desert1'; // solo default
   (function(){
@@ -267,7 +248,7 @@ function startGame(mode){
     else{floorReady=true;}
   })();
   // Update HUD labels
-  document.getElementById('p1role').textContent=GAMEMODE==='solo'?(destroyMode?'Destruction':'Solo'):GAMEMODE==='coop'?'Coop P1':'P1';
+  document.getElementById('p1role').textContent=GAMEMODE==='solo'?'Solo':GAMEMODE==='coop'?'Coop P1':'P1';
   document.getElementById('p2card').style.display=GAMEMODE==='solo'?'none':'';
   if(mode==='coop')document.getElementById('p2role').textContent='Coop P2';
   else document.getElementById('p2role').textContent='P2';
@@ -285,15 +266,15 @@ function startGame(mode){
   if(mode==='solo') SOLO_DUR=isDur700?999999:soloDur*60;
   else if(mode==='coop') SOLO_DUR=isDur700?999999:coopDur*60;
   // Series logic: if not already in a series, start one
-  if((mode==='solo'||mode==='coop'||mode==='destruction')&&seriesGame===0){
+  if((mode==='solo'||mode==='coop')&&seriesGame===0){
     seriesActive=true;seriesGame=1;seriesScores=[];
   }
-  var durLabel=isDur700?'600 diamants':mode==='solo'?soloDur:mode==='coop'?coopDur:mode==='destruction'?'Destruction':null;
-  var modeLabel=mode==='solo'?'Solo':mode==='coop'?'Coop':mode==='destruction'?'Destruction':'Affrontement';
-  if(seriesActive&&(mode==='solo'||mode==='coop'||mode==='destruction'))
-    log(modeLabel+' — Partie '+seriesGame+'/3 — '+(isDur700?'700 diamants !':durLabel+' min !'));
+  var durLabel=isDur700?'Ruée des 600':mode==='solo'?soloDur:mode==='coop'?coopDur:null;
+  var modeLabel=mode==='solo'?'Solo':mode==='coop'?'Coop':'Affrontement';
+  if(seriesActive&&(mode==='solo'||mode==='coop'))
+    log(modeLabel+' — Partie '+seriesGame+'/3 — '+(isDur700?'Ruée des 600 !':durLabel+' min !'));
   else
-    log(mode==='pvp'?'Affrontement — bonne chance !':modeLabel+' — '+durLabel+(isDur700?' diamants':'  min')+'!');
+    log(mode==='pvp'?'Affrontement — bonne chance !':modeLabel+' — '+durLabel+(isDur700?' !':'  min')+'!');
 
   gameNum=1+Math.floor(Math.random()*6);
   gamePaused=false;
@@ -324,9 +305,8 @@ document.getElementById('btn-record-play').addEventListener('click',function(){
   var mode='solo';
   // Apply rec settings
   mineralQty=recMq;
-  destroyMode=(recDur==='dest');
   if(recDur==='600d'){diamondRace=true;soloDur=999;coopDur=999;}
-  else if(recDur!=='dest'){diamondRace=false;if(mode==='solo')soloDur=recDur;else coopDur=recDur;}
+  else{diamondRace=false;if(mode==='solo')soloDur=recDur;else coopDur=recDur;}
   startGame(mode);
 });
 // Wire pvp jouer button
@@ -345,7 +325,7 @@ document.getElementById('btnreplay').addEventListener('click',function(){
     startGame(GAMEMODE);
   }
 });
-function goToMenu(){destroyMode=false;
+function goToMenu(){
   gameRunning=false;G=null;
   seriesGame=0;seriesActive=false;seriesScores=[];
   document.getElementById('btnreplay').textContent='REJOUER';
@@ -396,12 +376,11 @@ function recSetDur(d){
   recDur=d;
   document.querySelectorAll('.rec-dur').forEach(function(btn){
     var active=btn.getAttribute('data-dur')==String(d);
-    var isDest=btn.getAttribute('data-dur')==='dest';
     var is600=btn.getAttribute('data-dur')==='600d';
-    var col=isDest?'rgba(220,80,48,':is600?'rgba(240,210,80,':'rgba(128,230,255,';
+    var col=is600?'rgba(240,210,80,':'rgba(128,230,255,';
     btn.style.background=active?(col+'0.2)'):(col+'0.05)');
-    btn.style.borderColor=active?(col+(isDest||is600?'0.7':'0.7')+')'):(col+(isDest?'0.35':is600?'0.35':'0.25')+')');
-    btn.style.color=active?(col+'0.95)'):(col+(isDest?'0.65':is600?'0.6':'0.55')+')');
+    btn.style.borderColor=active?(col+'0.7)'):(col+(is600?'0.35':'0.25')+')');
+    btn.style.color=active?(col+'0.95)'):(col+(is600?'0.6':'0.55')+')');
     btn.style.fontWeight=active?'bold':'normal';
   });
 }
@@ -453,38 +432,35 @@ requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
   var gx2=gc.getContext('2d');
   function animGear(){
     gx2.clearRect(0,0,GS,GS);
-    var ov=document.getElementById('ov');
-    if(ov&&ov.style.display!=='none'){
-      var ang=Date.now()/16000*Math.PI*2;
-      gx2.save();gx2.translate(GS/2,GS/2);gx2.rotate(ang);
-      var teeth=20,R=310,r=255,rh=65,step=Math.PI*2/teeth,tw=step*0.38;
-      /* dents */
-      gx2.beginPath();
-      for(var i=0;i<teeth;i++){
-        var a=i*step,a0=a-step/2+tw;
-        if(i===0)gx2.moveTo(r*Math.cos(a0),r*Math.sin(a0));
-        else gx2.lineTo(r*Math.cos(a0),r*Math.sin(a0));
-        gx2.lineTo(R*Math.cos(a-tw),R*Math.sin(a-tw));
-        gx2.lineTo(R*Math.cos(a+tw),R*Math.sin(a+tw));
-        gx2.lineTo(r*Math.cos(a+step/2-tw),r*Math.sin(a+step/2-tw));
-      }
-      gx2.closePath();
-      gx2.fillStyle='rgba(200,140,30,0.07)';gx2.fill();
-      gx2.strokeStyle='rgba(200,140,30,0.18)';gx2.lineWidth=1.5;gx2.stroke();
-      /* moyeu */
-      gx2.beginPath();gx2.arc(0,0,rh,0,Math.PI*2);
-      gx2.fillStyle='rgba(0,0,0,0.2)';gx2.fill();
-      gx2.strokeStyle='rgba(200,140,30,0.18)';gx2.lineWidth=1.5;gx2.stroke();
-      /* rayons */
-      for(var j=0;j<6;j++){
-        var sa=j/6*Math.PI*2;
-        gx2.beginPath();
-        gx2.moveTo(rh*1.2*Math.cos(sa),rh*1.2*Math.sin(sa));
-        gx2.lineTo((r-14)*Math.cos(sa),(r-14)*Math.sin(sa));
-        gx2.strokeStyle='rgba(200,140,30,0.09)';gx2.lineWidth=14;gx2.stroke();
-      }
-      gx2.restore();
+    var ang=Date.now()/16000*Math.PI*2;
+    gx2.save();gx2.translate(GS/2,GS/2);gx2.rotate(ang);
+    var teeth=20,R=310,r=255,rh=65,step=Math.PI*2/teeth,tw=step*0.38;
+    /* dents */
+    gx2.beginPath();
+    for(var i=0;i<teeth;i++){
+      var a=i*step,a0=a-step/2+tw;
+      if(i===0)gx2.moveTo(r*Math.cos(a0),r*Math.sin(a0));
+      else gx2.lineTo(r*Math.cos(a0),r*Math.sin(a0));
+      gx2.lineTo(R*Math.cos(a-tw),R*Math.sin(a-tw));
+      gx2.lineTo(R*Math.cos(a+tw),R*Math.sin(a+tw));
+      gx2.lineTo(r*Math.cos(a+step/2-tw),r*Math.sin(a+step/2-tw));
     }
+    gx2.closePath();
+    gx2.fillStyle='rgba(200,140,30,0.13)';gx2.fill();
+    gx2.strokeStyle='rgba(200,140,30,0.32)';gx2.lineWidth=2;gx2.stroke();
+    /* moyeu */
+    gx2.beginPath();gx2.arc(0,0,rh,0,Math.PI*2);
+    gx2.fillStyle='rgba(0,0,0,0.25)';gx2.fill();
+    gx2.strokeStyle='rgba(200,140,30,0.32)';gx2.lineWidth=2;gx2.stroke();
+    /* rayons */
+    for(var j=0;j<6;j++){
+      var sa=j/6*Math.PI*2;
+      gx2.beginPath();
+      gx2.moveTo(rh*1.2*Math.cos(sa),rh*1.2*Math.sin(sa));
+      gx2.lineTo((r-14)*Math.cos(sa),(r-14)*Math.sin(sa));
+      gx2.strokeStyle='rgba(200,140,30,0.15)';gx2.lineWidth=14;gx2.stroke();
+    }
+    gx2.restore();
     requestAnimationFrame(animGear);
   }
   animGear();

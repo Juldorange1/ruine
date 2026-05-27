@@ -11,9 +11,10 @@ function renderShop(){
     var ok1=p.coal>=dc,ok2=p.coal>=tc,ok3=p.coal>=pc;
     html+=sItem(ok1,'FOREUSE (x'+nd+')',dc+' charbon','Mine 1 res/5s','drill');
 
-    var d3=(p.diamond||0)>=3;
+    var bCost=4+2*(p.blocksBought||0);
+    var d3=(p.diamond||0)>=bCost;
     var bstyle='flex:1;background:rgba(220,170,80,0.06);border:1px solid rgba(220,170,80,0.2);border-radius:3px;padding:5px 4px;cursor:pointer;font-family:Courier New,monospace;font-size:11px;transition:all .2s;';
-    var bLabel='<div style=\"font-size:10px;opacity:0.5;margin-bottom:3px\">BLOCS  3 &#9670;</div><div style=\"display:flex;gap:4px\">';
+    var bLabel='<div style=\"font-size:10px;opacity:0.5;margin-bottom:3px\">BLOCS  '+bCost+' &#9670;</div><div style=\"display:flex;gap:4px\">';
     bLabel+='<button data-action=\"buy-coal\" style=\"'+bstyle+(d3?'color:#c8c4e8\"':'color:#555;cursor:not-allowed\"')+'>C</button>';
     bLabel+='<button data-action=\"buy-gold\" style=\"'+bstyle+(d3?'color:#f5c830\"':'color:#555;cursor:not-allowed\"')+'>G</button>';
     bLabel+='<button data-action=\"buy-diamond\" style=\"'+bstyle+(d3?'color:#80eeff\"':'color:#555;cursor:not-allowed\"')+'>D</button>';
@@ -51,8 +52,9 @@ function sItem(ok,name,cost,eff,action){
 
 function buyBlock(btype){
   var p=shopPlayer;if(!p||!G){log('Erreur: shop non ouvert');return;}
-  if((p.diamond||0)<3){log('Pas assez de diamants ! (3 requis)');return;}
-  p.diamond-=3;closeShop();
+  var cost=4+2*(p.blocksBought||0);
+  if((p.diamond||0)<cost){log('Pas assez de diamants ! ('+cost+' requis)');return;}
+  p.diamond-=cost;p.blocksBought=(p.blocksBought||0)+1;sfx('buy');closeShop();
   // Enter placement mode for the block
   drillingMode='block-'+btype;
   placePos=null;
@@ -85,7 +87,7 @@ function buyBd(type){
   var ok=false;
   for(var i=0;i<dirs.length;i++){var gx=fac.gx+dirs[i].dx,gy=fac.gy+dirs[i].dy;if(!cellOcc(gx,gy)){addBd(type,gx,gy,p.team);ok=true;break;}}
   if(!ok){log('Pas de place pres de l usine !');return;}
-  p.coal-=cost;sfx('buy');log(type+' construit !');renderShop();
+  p.coal-=cost;sfx('build');log(type+' construit !');renderShop();
 }
 
 function buyUpg(t){
@@ -100,6 +102,7 @@ function buyUpg(t){
     if(p.gold<costs[t]){log('Pas assez d or !');return;}
     p.gold-=costs[t];
   }
+  sfx('buy');
   if(t==='dmg'){p.dmg+=2;log('DMG +2 -> '+p.dmg);}
   else if(t==='hp'){p.maxHp+=20;p.hp=Math.min(p.hp+20,p.maxHp);log('PV +20');}
   else{p.speed+=0.2;p.spdUpg=(p.spdUpg||0)+1;log('Vitesse +0.2 -> '+p.speed.toFixed(1));}
@@ -109,7 +112,7 @@ function buyUpg(t){
 function buyPique(){
   if(!shopPlayer||!G){log('Erreur: shop non ouvert');return;}
   var p=shopPlayer;if(p.coal<3){log('Pas assez de charbon !');return;}
-  p.coal-=3;closeShop();piqueMode=true;piquePlayer=p;
+  p.coal-=3;sfx('buy');closeShop();piqueMode=true;piquePlayer=p;
   log('Clic sur une case pour poser la pique');
 }
 
@@ -128,7 +131,7 @@ function doTeleport(gx,gy){
     var occ=G.players.some(function(pl){return !pl.dead&&pl!==p&&Math.floor(pl.x)===gx&&Math.floor(pl.y)===gy;});
     if(occ){log('Case occupee !');tpMode=false;tpSrc=null;tpPlayer=null;return;}
     p.diamond=Math.max(0,(p.diamond||0)-1);
-    p.x=dest.x;p.y=dest.y;sfx('teleport');log(p.name+' teleporte ! (-1 diamant)');
+    p.x=dest.x;p.y=dest.y;sfx('tp');log(p.name+' teleporte ! (-1 diamant)');
   } else if(!cellOcc(gx,gy)){
     var anyP=G.players.some(function(pl){return !pl.dead&&Math.floor(pl.x)===gx&&Math.floor(pl.y)===gy;});
     if(anyP){log('Joueur sur cette case !');tpMode=false;tpSrc=null;tpPlayer=null;return;}

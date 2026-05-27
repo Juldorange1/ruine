@@ -13,8 +13,6 @@ var diamondRace=false;   // true = 700 diamond race mode
 var mineralQty=5; // 3, 5, or 7 minerals per type
 var soloMineralQty=5;
 var coopMineralQty=5;
-var destructionMode=false; // set by JOUER button
-var destroyMode=false;  // true = win by destroying all minerals
 var seriesActive=false;  // true = playing 3-game series
 var seriesScores=[];     // diamond scores per game in series
 var seriesGame=0;        // current game in series (1-3)

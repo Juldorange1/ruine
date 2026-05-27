@@ -28,7 +28,7 @@ function nextPlace(){
     document.getElementById('pbar').style.display='none';
     G.phase='combat';
     document.getElementById('phase').textContent='COMBAT';
-    log(GAMEMODE==='solo'?'Collecte !':GAMEMODE==='coop'?'Coop !':destroyMode?'Destruction — detruisez tout !':'Combat !');
+    log(GAMEMODE==='solo'?'Collecte !':GAMEMODE==='coop'?'Coop !':'Combat !');
     return;
   }
   var cur=placeQueue[0];

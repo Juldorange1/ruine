@@ -265,8 +265,7 @@ function updateHUD(){
     var di=document.getElementById(pfx+'di');if(di)di.textContent='D '+(p.diamond||0);
   });
   var s;
-  if(destroyMode){s=Math.floor(G.time);}
-  else if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!diamondRace){var rem=Math.max(0,SOLO_DUR-G.time);s=Math.floor(rem);}
+  if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!diamondRace){var rem=Math.max(0,SOLO_DUR-G.time);s=Math.floor(rem);}
   else if(diamondRace){s=Math.floor(G.time);}
   else s=Math.floor(G.time);
   document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
@@ -277,7 +276,116 @@ function log(msg){
   for(var i=0;i<3;i++){var el=document.getElementById('l'+i);if(logLines[i]){el.textContent=logLines[i];el.className='le s';}else el.className='le';}
 }
 
-/* SOUND disabled */
-function sfx(){}
-function resumeAudio(){}
+/* SOUND — Web Audio API synthesisé */
+var _actx=null;
+function _ac(){
+  if(!_actx)try{_actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  return _actx;
+}
+
+function sfx(name){
+  var ctx=_ac();if(!ctx)return;
+  var now=ctx.currentTime;
+
+  /* tone(type, f1, f2, vol, atk, sus, rel, del) */
+  function tone(type,f1,f2,vol,atk,sus,rel,del){
+    del=del||0;
+    var o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type=type;
+    o.frequency.setValueAtTime(f1,now+del);
+    if(f2&&f2!==f1)o.frequency.exponentialRampToValueAtTime(f2,now+del+atk+sus+rel*0.5);
+    g.gain.setValueAtTime(0.0001,now+del);
+    g.gain.linearRampToValueAtTime(vol,now+del+atk);
+    g.gain.setValueAtTime(vol,now+del+atk+sus);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+del+atk+sus+rel);
+    o.start(now+del);o.stop(now+del+atk+sus+rel+0.05);
+  }
+
+  /* bruit coloré filtré */
+  function boom(fHz,vol,atk,dec,del){
+    del=del||0;
+    var len=Math.ceil(ctx.sampleRate*(atk+dec+0.1));
+    var buf=ctx.createBuffer(1,len,ctx.sampleRate);
+    var d=buf.getChannelData(0);
+    for(var i=0;i<len;i++)d[i]=(Math.random()*2-1);
+    var src=ctx.createBufferSource(),filt=ctx.createBiquadFilter(),g=ctx.createGain();
+    src.buffer=buf;src.connect(filt);filt.connect(g);g.connect(ctx.destination);
+    filt.type='lowpass';filt.frequency.value=fHz;
+    g.gain.setValueAtTime(0.0001,now+del);
+    g.gain.linearRampToValueAtTime(vol,now+del+atk);
+    g.gain.exponentialRampToValueAtTime(0.0001,now+del+atk+dec);
+    src.start(now+del);src.stop(now+del+atk+dec+0.1);
+  }
+
+  switch(name){
+    /* Coup de lance sur bâtiment / bloc */
+    case 'strike':
+      tone('square',700,150,0.22,0.001,0,0.1);
+      boom(500,0.12,0.001,0.07);
+      break;
+    /* Ramassage de ressources */
+    case 'collect':
+      tone('sine',520,0,0.2,0.008,0.04,0.14);
+      tone('sine',780,0,0.14,0.008,0.04,0.17,0.05);
+      tone('sine',1040,0,0.1,0.008,0.04,0.2,0.12);
+      break;
+    /* Construction de bâtiment */
+    case 'build':
+    case 'place':
+      tone('sine',110,45,0.45,0.003,0,0.3);
+      tone('triangle',380,190,0.16,0.001,0,0.12);
+      break;
+    /* Achat d'amélioration */
+    case 'buy':
+      tone('sine',830,0,0.18,0.005,0.02,0.13);
+      tone('sine',1050,0,0.13,0.005,0.02,0.16,0.07);
+      break;
+    /* Apparition météore */
+    case 'meteor':
+      tone('sawtooth',60,38,0.3,0.12,0.2,0.5);
+      boom(200,0.22,0.15,0.55);
+      break;
+    /* Impact météore */
+    case 'impact':
+      boom(600,0.45,0.001,0.4);
+      tone('sine',55,22,0.4,0.001,0,0.45);
+      tone('triangle',210,55,0.18,0.001,0,0.28);
+      break;
+    /* Joueur touché */
+    case 'damage':
+      tone('sawtooth',260,75,0.28,0.001,0,0.18);
+      break;
+    /* Mort d'un joueur */
+    case 'death':
+      tone('sine',370,110,0.28,0.01,0.08,0.6);
+      tone('sine',260,75,0.18,0.02,0.08,0.7,0.1);
+      break;
+    /* Téléportation */
+    case 'tp':
+      tone('sine',160,950,0.26,0.06,0.06,0.2);
+      tone('sine',1200,280,0.16,0.001,0,0.28);
+      break;
+    /* Marcher sur une pique */
+    case 'pique':
+      tone('square',460,220,0.16,0.001,0,0.09);
+      break;
+    /* Foreuse qui mine */
+    case 'drill':
+      tone('sawtooth',170,80,0.15,0.001,0,0.1);
+      break;
+    /* Victoire */
+    case 'win':
+      tone('sine',523,0,0.28,0.01,0.1,0.18);       /* C5 */
+      tone('sine',659,0,0.28,0.01,0.1,0.18,0.2);   /* E5 */
+      tone('sine',784,0,0.32,0.01,0.16,0.3,0.4);   /* G5 */
+      break;
+    /* Fin de partie neutre */
+    case 'end':
+      tone('sine',330,190,0.22,0.01,0.1,0.55);
+      break;
+  }
+}
+
+function resumeAudio(){if(_actx&&_actx.state==='suspended')_actx.resume();}
 function startMusic(){}

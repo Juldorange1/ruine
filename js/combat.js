@@ -67,14 +67,18 @@ function spearStrike(actor, worldX, worldY){
       bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
       bestTarget.inCombat=true;bestTarget.combatTimer=0.5;
       actor.inCombat=true;actor.combatTimer=0.5;
+      sfx('damage');
       if(bestTarget.hp<=0&&!bestTarget.dead){bestTarget.dead=true;log(bestTarget.name+' elimine !');}
     } else if(bestType==='building'){
+      sfx('strike');
       bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
       if(bestTarget.hp<=0){log(bestTarget.label+' detruit !');G.buildings=G.buildings.filter(function(b){return b.id!==bestTarget.id;});}
     } else if(bestType==='block'){
+      sfx('strike');
       bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
       if(bestTarget.hp<=0){G.blocks=G.blocks.filter(function(b){return b.id!==bestTarget.id;});log('Bloc detruit !');}
     } else if(bestType==='meteor'){
+      sfx('strike');
       bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
       if(bestTarget.hp<=0){bestTarget.fallen=true;bestTarget.cleanAt=G.time+0.1;log('Meteorite detruite !');setTimeout(function(){if(G&&G.phase==='combat')spawnMeteor();},1500);}
     }

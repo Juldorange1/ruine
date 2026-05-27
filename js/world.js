@@ -70,7 +70,7 @@ function impactMeteor(m){
       if(cands.length){
         cands.sort(function(a,b){return Math.hypot(p.x-(m.gx+a.dx+.5),p.y-(m.gy+a.dy+.5))-Math.hypot(p.x-(m.gx+b.dx+.5),p.y-(m.gy+b.dy+.5));});
         p.x=m.gx+cands[0].dx+.5;p.y=m.gy+cands[0].dy+.5;
-        if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'&&GAMEMODE!=='destruction'){p.hp=Math.max(1,p.hp-40);log(p.name+' projete ! -40PV');}
+        if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'){p.hp=Math.max(1,p.hp-40);log(p.name+' projete ! -40PV');}
         else log(p.name+' projete !');
       }
     }
