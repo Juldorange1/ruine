@@ -18,6 +18,7 @@
 
 <!-- MENU -->
 <div class="ovl" id="ov">
+  <canvas id="gear-bg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:-1;"></canvas>
   <h1 class="title">RUINE</h1>
   <div class="sub">CHOISISSEZ UN MODE</div>
   <div class="mcards">
@@ -25,12 +26,6 @@
     <!-- RECORD card (solo/coop merged) -->
     <div class="mcard" style="min-width:260px">
       <h2 id="record-title" style="color:#80eeff;margin-bottom:10px">RECORD</h2>
-
-      <!-- Player toggle -->
-      <div style="display:flex;gap:5px;margin-bottom:8px">
-        <button id="rec-p1" onclick="recSetPlayers(1)" style="flex:1;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(128,230,255,0.2);border:1px solid rgba(128,230,255,0.7);color:rgba(128,230,255,0.95);font-weight:bold">&#9745; 1 JOUEUR</button>
-        <button id="rec-p2" onclick="recSetPlayers(2)" style="flex:1;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(128,230,255,0.05);border:1px solid rgba(128,230,255,0.25);color:rgba(128,230,255,0.45)">&#9744; 2 JOUEURS</button>
-      </div>
 
       <!-- Duration -->
       <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
@@ -62,7 +57,7 @@
       <button id="pvp-jouer" style="background:transparent;border:1px solid rgba(220,130,80,0.4);color:#d4b060;font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;padding:12px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
     </div>
   </div>
-  <div class="hint">SOLO/COOP : diamants · DMG pas cher · pas de piques<br>COOP : score = total diamants des 2 joueurs<br>PVP : P1=fleches, P2=ZQSD · F=activer · R=attaquer<br>Clic=activer · Clic droit=attaquer · ESC=annuler</div>
+  <div class="hint">SOLO : collecte max de diamants · DMG pas cher · pas de piques<br>PVP : 2 joueurs · P1=fleches, P2=ZQSD · F=activer · R=attaquer<br>Clic=activer · Clic droit=attaquer · ESC=annuler</div>
 </div>
 
 <!-- PAUSE -->

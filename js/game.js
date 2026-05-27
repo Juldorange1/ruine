@@ -24,6 +24,7 @@ function loop(ts){
       if(dx2||dy2){var l2=Math.hypot(dx2,dy2);moveP(G.p2,dx2/l2,dy2/l2,dt);}else{G.p2.vx=0;G.p2.vy=0;}
     }
     updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updAI(dt);aiAutoCollect();updPiques(dt);
+    G.players.forEach(function(p){if(p&&!p.dead&&p.isHuman)p.atkCharge=Math.min(1,(p.atkCharge||0)+dt);});
     // Destruction mode: end when all blocks gone
     if(destroyMode&&!G.phase_over&&G.blocks.length===0){
       G.phase='over';G.phase_over=true;G.winner='CLEARED';
@@ -124,15 +125,19 @@ document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
   if((GAMEMODE==='pvp'||GAMEMODE==='coop')&&G.p2&&!G.p2.dead){
     if(e.key==='f'||e.key==='F'){var bd3=G.buildings.filter(function(b){return Math.hypot(G.p2.x-b.x,G.p2.y-b.y)<=1.6;}).sort(function(a,b2){return Math.hypot(G.p2.x-a.x,G.p2.y-a.y)-Math.hypot(G.p2.x-b2.x,G.p2.y-b2.y);})[0];if(bd3)activateBd(bd3,G.p2);}
     if(e.key==='r'||e.key==='R'){
-      // P2 spear: strike toward nearest enemy/block/building
-      var targets=[];
-      G.players.forEach(function(p){if(!p.dead&&p!==G.p2)targets.push({x:p.x,y:p.y});});
-      G.buildings.forEach(function(b){if(b.type!=='factory'&&b.type!=='bank')targets.push({x:b.x,y:b.y});});
-      G.blocks.forEach(function(b){targets.push({x:b.x,y:b.y});});
-      if(targets.length){
-        var near=targets.reduce(function(a,b){return Math.hypot(G.p2.x-a.x,G.p2.y-a.y)<Math.hypot(G.p2.x-b.x,G.p2.y-b.y)?a:b;});
-        spearStrike(G.p2,near.x,near.y);
-      } else spearStrike(G.p2,G.p2.x+1,G.p2.y);
+      if((G.p2.atkCharge||0)>=1){
+        var targets=[];
+        G.players.forEach(function(p){if(!p.dead&&p!==G.p2)targets.push({x:p.x,y:p.y});});
+        G.buildings.forEach(function(b){if(b.type!=='factory'&&b.type!=='bank')targets.push({x:b.x,y:b.y});});
+        G.blocks.forEach(function(b){targets.push({x:b.x,y:b.y});});
+        if(targets.length){
+          var near=targets.reduce(function(a,b){return Math.hypot(G.p2.x-a.x,G.p2.y-a.y)<Math.hypot(G.p2.x-b.x,G.p2.y-b.y)?a:b;});
+          spearStrike(G.p2,near.x,near.y);
+        } else spearStrike(G.p2,G.p2.x+1,G.p2.y);
+        G.p2.atkCharge=0;
+      } else {
+        G.p2.atkCharge=0;
+      }
     }
   }
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].indexOf(e.key)>=0)e.preventDefault();
@@ -175,9 +180,8 @@ C.addEventListener('contextmenu',function(e){
     var d2=Math.hypot(G.p2.x-worldX,G.p2.y-worldY);
     if(d2<d1)actor=G.p2;
   }
-  // Toggle: second right-click on same target cancels... 
-  // but with spear there's no toggle - just strike
-  spearStrike(actor,worldX,worldY);
+  if((actor.atkCharge||0)>=1){spearStrike(actor,worldX,worldY);actor.atkCharge=0;}
+  else{actor.atkCharge=0;}
 });
 
 C.addEventListener('dblclick',function(e){
@@ -461,3 +465,48 @@ window.toggleMineral=toggleMineral;
 window.setMineralQty=setMineralQty;
 
 requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
+
+/* MENU GEAR */
+(function(){
+  var gc=document.getElementById('gear-bg');
+  if(!gc)return;
+  var GS=700;gc.width=GS;gc.height=GS;
+  var gx2=gc.getContext('2d');
+  function animGear(){
+    gx2.clearRect(0,0,GS,GS);
+    var ov=document.getElementById('ov');
+    if(ov&&ov.style.display!=='none'){
+      var ang=Date.now()/16000*Math.PI*2;
+      gx2.save();gx2.translate(GS/2,GS/2);gx2.rotate(ang);
+      var teeth=20,R=310,r=255,rh=65,step=Math.PI*2/teeth,tw=step*0.38;
+      /* dents */
+      gx2.beginPath();
+      for(var i=0;i<teeth;i++){
+        var a=i*step,a0=a-step/2+tw;
+        if(i===0)gx2.moveTo(r*Math.cos(a0),r*Math.sin(a0));
+        else gx2.lineTo(r*Math.cos(a0),r*Math.sin(a0));
+        gx2.lineTo(R*Math.cos(a-tw),R*Math.sin(a-tw));
+        gx2.lineTo(R*Math.cos(a+tw),R*Math.sin(a+tw));
+        gx2.lineTo(r*Math.cos(a+step/2-tw),r*Math.sin(a+step/2-tw));
+      }
+      gx2.closePath();
+      gx2.fillStyle='rgba(200,140,30,0.07)';gx2.fill();
+      gx2.strokeStyle='rgba(200,140,30,0.18)';gx2.lineWidth=1.5;gx2.stroke();
+      /* moyeu */
+      gx2.beginPath();gx2.arc(0,0,rh,0,Math.PI*2);
+      gx2.fillStyle='rgba(0,0,0,0.2)';gx2.fill();
+      gx2.strokeStyle='rgba(200,140,30,0.18)';gx2.lineWidth=1.5;gx2.stroke();
+      /* rayons */
+      for(var j=0;j<6;j++){
+        var sa=j/6*Math.PI*2;
+        gx2.beginPath();
+        gx2.moveTo(rh*1.2*Math.cos(sa),rh*1.2*Math.sin(sa));
+        gx2.lineTo((r-14)*Math.cos(sa),(r-14)*Math.sin(sa));
+        gx2.strokeStyle='rgba(200,140,30,0.09)';gx2.lineWidth=14;gx2.stroke();
+      }
+      gx2.restore();
+    }
+    requestAnimationFrame(animGear);
+  }
+  animGear();
+})();

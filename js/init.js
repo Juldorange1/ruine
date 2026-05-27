@@ -8,6 +8,7 @@ function mkPlayer(name,ci,x,y,team,isHuman){
     x:x,y:y,vx:0,vy:0,team:team,isHuman:isHuman,dead:false,
     hp:hp,maxHp:hp,dmg:isHuman?10:16,speed:isHuman?1.4:2.2,regen:isHuman?4:8,
     coal:0,gold:0,diamond:0,spdUpg:0,
+    atkCharge:1,
     inCombat:false,combatTimer:0,spearTimer:0,spearAng:0,spearSwing:0,spearDir:0,
     aiTimer:0,aiGoal:null,aiOnArr:function(){},aiSt:'idle',aiBdTimer:0};
 }
