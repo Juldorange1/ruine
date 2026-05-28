@@ -31,7 +31,9 @@
       <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
         <button class="rec-dur" data-dur="5" onclick="recSetDur(5)" style="background:rgba(128,230,255,0.05);border:1px solid rgba(128,230,255,0.25);color:rgba(128,230,255,0.55);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">5 min</button>
         <button class="rec-dur" data-dur="10" onclick="recSetDur(10)" style="background:rgba(128,230,255,0.2);border:1px solid rgba(128,230,255,0.7);color:#80eeff;font-weight:bold;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">10 min</button>
-        <button class="rec-dur" data-dur="600d" onclick="recSetDur('600d')" style="background:rgba(128,230,255,0.05);border:1px solid rgba(255,220,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">RU&#201;E DES 600</button>
+        <button class="rec-dur" data-dur="400d" onclick="recSetDur('400d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">RU&#201;E 400</button>
+        <button class="rec-dur" data-dur="800d" onclick="recSetDur('800d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">RU&#201;E 800</button>
+        <button class="rec-dur" data-dur="surv" onclick="recSetDur('surv')" style="background:rgba(160,80,220,0.05);border:1px solid rgba(160,80,220,0.35);color:rgba(180,100,230,0.65);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">SURVIVANT</button>
       </div>
 
       <!-- Mineral qty -->
@@ -92,6 +94,7 @@
   <div id="timer">00:00</div>
   <div id="phase">MENU</div>
   <button id="btnmidmenu" style="margin-top:5px;background:transparent;border:1px solid rgba(220,170,80,0.3);color:rgba(220,170,80,0.55);font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:3px 12px;cursor:pointer;border-radius:3px;pointer-events:all">&#8592; MENU</button>
+  <button id="btnfinish" style="display:none;margin-top:4px;background:transparent;border:1px solid rgba(220,80,40,0.35);color:rgba(220,100,60,0.65);font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:3px 12px;cursor:pointer;border-radius:3px;pointer-events:all">&#10003; TERMINER</button>
 </div>
   <div id="team2hud">
     <div class="pc" id="p2card">

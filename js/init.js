@@ -33,7 +33,7 @@ function initGame(){
       do{gx=1+Math.floor(rr()*(MAP-2));gy=1+Math.floor(rr()*(MAP-2));k=gx+','+gy;t++;}
       while(taken[k]&&t<400);
       taken[k]=true;
-      var bhp=type==='diamond'?600:type==='gold'?400:300;
+      var bhp=type==='diamond'?420:type==='gold'?280:210;
       blocks.push({gx:gx,gy:gy,x:gx+.5,y:gy+.5,type:type,id:type+i,hp:bhp,maxHp:bhp});
     }
   }
@@ -65,7 +65,7 @@ function initGame(){
   if(GAMEMODE!=='pvp') buildings.push(mkBd('factory',6,6,0));
   return{p1:p1,p2:p2,players:p2?[p1,p2]:[p1],
     blocks:blocks,buildings:buildings,destroyed:[],meteors:[],piques:[],
-    time:0,phase:'placement',winner:null,phase_over:false,meteorTimer:20};
+    time:0,phase:'placement',winner:null,phase_over:false,meteorTimer:18};
 }
 
 /* CELL HELPERS */

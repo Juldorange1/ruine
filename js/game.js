@@ -27,8 +27,7 @@ function loop(ts){
     G.players.forEach(function(p){if(p&&!p.dead&&p.isHuman)p.atkCharge=Math.min(1,(p.atkCharge||0)+dt);});
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
       var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
-      var diaTarget=GAMEMODE==='coop'?700:700;
-      var diaGoal=diamondRace?600:99999;
+      var diaGoal=diamondRace?diamondGoal:99999;
     if(diamondRace&&totalDia>=diaGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
       else if(!diamondRace&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
     }
@@ -39,24 +38,30 @@ function loop(ts){
 
 function showEnd(){
   var ov=document.getElementById('endov');
+  var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
   if(GAMEMODE==='solo'||GAMEMODE==='coop'){
-    var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
-    // Record score for series
-    if(seriesActive) seriesScores.push(diamondRace?Math.round(G.time):totalD);
-    var isLastGame=seriesGame>=3;
+    if(seriesActive&&!survivorMode) seriesScores.push(diamondRace?Math.round(G.time):totalD);
+    var isLastGame=seriesGame>=4;
     var title='';
-    if(diamondRace&&G.winner==='DIAMOND') title='RUÉE DES 600 !';
+    if(survivorMode) title='SURVIVANT TERMINÉ';
+    else if(diamondRace&&G.winner==='DIAMOND') title='RUÉE DES '+diamondGoal+' !';
     else title=GAMEMODE==='coop'?'COOP TERMINEE':'PARTIE TERMINEE';
     document.getElementById('endtitle').textContent=title;
-    document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
+    document.getElementById('endtitle').style.color=survivorMode?'#b060e0':diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
     var timeStr=document.getElementById('timer').textContent;
-    var sub=GAMEMODE==='coop'?
-      'Total: '+totalD+' &#9670; (P1:'+( G.p1.diamond||0)+' + P2:'+(G.p2?G.p2.diamond||0:0)+')':
-      '&#9670; '+totalD;
-    if(diamondRace&&G.winner==='DIAMOND') sub+='  —  Temps: '+timeStr;
-    else sub+='  —  '+timeStr;
-    if(seriesActive){
-      sub+='  (Partie '+seriesGame+'/3)';
+    var sub='';
+    if(survivorMode){
+      sub='&#9670; '+totalD+'  &middot;  '+survivorMeteorCount+' météorites';
+    } else if(GAMEMODE==='coop'){
+      sub='Total: '+totalD+' &#9670; (P1:'+(G.p1.diamond||0)+' + P2:'+(G.p2?G.p2.diamond||0:0)+')';
+      sub+='  —  '+timeStr;
+    } else {
+      sub='&#9670; '+totalD;
+      if(diamondRace&&G.winner==='DIAMOND') sub+='  —  Temps: '+timeStr;
+      else sub+='  —  '+timeStr;
+    }
+    if(seriesActive&&!survivorMode){
+      sub+='  (Partie '+seriesGame+'/4)';
       if(isLastGame){
         var avg=Math.round(seriesScores.reduce(function(a,b){return a+b;},0)/seriesScores.length);
         function fmtSec(s2){return String(Math.floor(s2/60)).padStart(2,'0')+':'+String(s2%60).padStart(2,'0');}
@@ -68,7 +73,7 @@ function showEnd(){
         }
         document.getElementById('btnreplay').style.display='none';
       } else {
-        document.getElementById('btnreplay').textContent='PARTIE SUIVANTE ('+( seriesGame+1)+'/3)';
+        document.getElementById('btnreplay').textContent='PARTIE SUIVANTE ('+(seriesGame+1)+'/4)';
         document.getElementById('btnreplay').style.display='';
       }
     }
@@ -79,14 +84,16 @@ function showEnd(){
     document.getElementById('endtitle').style.color=G.winner==='PERSONNE'?'#a0a060':win?'#d4a040':'#c04040';
     document.getElementById('endsub').textContent=G.winner==='PERSONNE'?'Carte saturee':(G.winner+' a gagne  '+document.getElementById('timer').textContent);
   }
-  // Always show the mode at the bottom
-  var modeNames={solo:'SOLO RECORD',coop:'COOP RECORD',pvp:'AFFRONTEMENT'};
   var modeEl=document.getElementById('endmode');
-  if(modeEl) modeEl.textContent='Mode : '+(modeNames[GAMEMODE]||GAMEMODE)+(diamondRace?' — RUÉE DES 600':'');
-  sfx(G&&G.winner==='TIME'?'end':'win');
+  if(modeEl){
+    var modeName=survivorMode?'SURVIVANT':diamondRace?('RUÉE DES '+diamondGoal):
+      (GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':GAMEMODE==='coop'?'COOP '+(SOLO_DUR/60|0)+'min':'AFFRONTEMENT');
+    var scoreStr=GAMEMODE!=='pvp'?'  ·  '+totalD+' ◆'+(survivorMode?' / '+survivorMeteorCount+' ☄':''):'';
+    modeEl.innerHTML='Mode : '+modeName+'  ·  '+mineralQty+'/type'+scoreStr;
+  }
+  sfx(G&&(G.winner==='TIME'||survivorMode)?'end':'win');
   ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
 }
-
 /* INPUT */
 document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
   if(!G||!gameRunning)return;
@@ -138,7 +145,7 @@ function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();
 C.addEventListener('click',function(e){
   if(!G)return;
   var pos=getGrid(e);
-  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};document.getElementById('pbc').disabled=!ok;if(!ok)log(!drillAdjRes(pos.gx,pos.gy)?'Doit etre pres d un minerai !'  :'Case occupee !');return;}
+  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};document.getElementById('pbc').disabled=!ok;return;}
   if(G.phase==='placement'&&placeQueue.length){selectCell(pos.gx,pos.gy);return;}
   if(tpMode){doTeleport(pos.gx,pos.gy);return;}
   if(G.phase!=='combat')return;
@@ -170,7 +177,7 @@ C.addEventListener('contextmenu',function(e){
 
 C.addEventListener('dblclick',function(e){
   if(!G)return;var pos=getGrid(e);
-  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);if(ok){placePos={gx:pos.gx,gy:pos.gy,ok:true,locked:true};confirmDrill();}else log('Case invalide !');return;}
+  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);if(ok){placePos={gx:pos.gx,gy:pos.gy,ok:true,locked:true};confirmDrill();}return;}
   if(G.phase!=='placement'||!placeQueue.length)return;
   selectCell(pos.gx,pos.gy);if(placePos&&placePos.ok)confirmPlace();
 });
@@ -260,21 +267,25 @@ function startGame(mode){
     var hn=document.getElementById(pfx+'hn');
     if(hn)hn.style.display=isRec?'none':'';
   });
-  // Determine if this is a diamond race start or series continuation
-  var isDur700=(mode==='solo'&&soloDur===999)||(mode==='coop'&&coopDur===999);
-  diamondRace=isDur700;
-  if(mode==='solo') SOLO_DUR=isDur700?999999:soloDur*60;
-  else if(mode==='coop') SOLO_DUR=isDur700?999999:coopDur*60;
-  // Series logic: if not already in a series, start one
-  if((mode==='solo'||mode==='coop')&&seriesGame===0){
+  // Detect diamond race or survivor mode
+  survivorMeteorCount=0;
+  var isDiamondRace=(mode==='solo'&&soloDur===999&&!survivorMode)||(mode==='coop'&&coopDur===999&&!survivorMode);
+  diamondRace=isDiamondRace;
+  if(mode==='solo') SOLO_DUR=isDiamondRace||survivorMode?999999:soloDur*60;
+  else if(mode==='coop') SOLO_DUR=isDiamondRace||survivorMode?999999:coopDur*60;
+  // Series logic: no series for survivor
+  if((mode==='solo'||mode==='coop')&&!survivorMode&&seriesGame===0){
     seriesActive=true;seriesGame=1;seriesScores=[];
   }
-  var durLabel=isDur700?'Ruée des 600':mode==='solo'?soloDur:mode==='coop'?coopDur:null;
-  var modeLabel=mode==='solo'?'Solo':mode==='coop'?'Coop':'Affrontement';
-  if(seriesActive&&(mode==='solo'||mode==='coop'))
-    log(modeLabel+' — Partie '+seriesGame+'/3 — '+(isDur700?'Ruée des 600 !':durLabel+' min !'));
+  // Show/hide TERMINER button
+  var finEl=document.getElementById('btnfinish');
+  if(finEl) finEl.style.display=(mode==='solo'||mode==='coop')?'block':'none';
+  var modeLabel=survivorMode?'Survivant':mode==='solo'?'Solo':mode==='coop'?'Coop':'Affrontement';
+  var durLabel=survivorMode?'Survivant':isDiamondRace?('Ruée des '+diamondGoal):mode==='solo'?soloDur:mode==='coop'?coopDur:null;
+  if(seriesActive&&(mode==='solo'||mode==='coop')&&!survivorMode)
+    log(modeLabel+' — Partie '+seriesGame+'/4 — '+(isDiamondRace?durLabel+' !':durLabel+' min !'));
   else
-    log(mode==='pvp'?'Affrontement — bonne chance !':modeLabel+' — '+durLabel+(isDur700?' !':'  min')+'!');
+    log(mode==='pvp'?'Affrontement — bonne chance !':modeLabel+(isDiamondRace||survivorMode?' — '+durLabel+' !':' — '+durLabel+'  min !'));
 
   gameNum=1+Math.floor(Math.random()*6);
   gamePaused=false;
@@ -303,9 +314,11 @@ document.getElementById('shop').addEventListener('click',function(e){
 });
 document.getElementById('btn-record-play').addEventListener('click',function(){
   var mode='solo';
-  // Apply rec settings
   mineralQty=recMq;
-  if(recDur==='600d'){diamondRace=true;soloDur=999;coopDur=999;}
+  survivorMode=false;
+  if(recDur==='400d'){diamondRace=true;diamondGoal=400;soloDur=999;coopDur=999;}
+  else if(recDur==='800d'){diamondRace=true;diamondGoal=800;soloDur=999;coopDur=999;}
+  else if(recDur==='surv'){diamondRace=false;survivorMode=true;soloDur=999;coopDur=999;}
   else{diamondRace=false;if(mode==='solo')soloDur=recDur;else coopDur=recDur;}
   startGame(mode);
 });
@@ -314,7 +327,7 @@ var pvpJouerBtn=document.getElementById('pvp-jouer');
 if(pvpJouerBtn)pvpJouerBtn.addEventListener('click',function(){mineralQty=pvpMq||5;startGame('pvp');});
 // btn-pvp-play handles pvp start with mineralQty already wired above
 document.getElementById('btnreplay').addEventListener('click',function(){
-  if(seriesActive&&seriesGame<3){
+  if(seriesActive&&seriesGame<4){
     seriesGame++;
     startGame(GAMEMODE);
   } else {
@@ -326,6 +339,7 @@ document.getElementById('btnreplay').addEventListener('click',function(){
   }
 });
 function goToMenu(){
+  survivorMode=false;survivorMeteorCount=0;
   gameRunning=false;G=null;
   seriesGame=0;seriesActive=false;seriesScores=[];
   document.getElementById('btnreplay').textContent='REJOUER';
@@ -338,6 +352,7 @@ function goToMenu(){
   document.getElementById('pbar').style.display='none';
   document.getElementById('shop').style.display='none';
   document.getElementById('btnmidmenu').style.display='none';
+  var finEl2=document.getElementById('btnfinish');if(finEl2)finEl2.style.display='none';
   var gn2=document.getElementById('gamename');if(gn2)gn2.style.display='none';
   document.getElementById('ov').style.display='flex';
 }
@@ -365,22 +380,31 @@ document.getElementById('btnmidmenu').addEventListener('click',function(){
   }
 });
 document.getElementById('pbc').addEventListener('click',function(){if(drillingMode)confirmDrill();else confirmPlace();});
+var _finBtn=document.getElementById('btnfinish');
+if(_finBtn)_finBtn.addEventListener('click',function(){
+  if(!G||!gameRunning||G.phase!=='combat')return;
+  if(GAMEMODE==='solo'||GAMEMODE==='coop'){
+    G.phase='over';G.phase_over=true;G.winner='TIME';gameRunning=false;showEnd();
+  }
+});
 document.getElementById('sclose').addEventListener('click',closeShop);
 
 // Expose shop fns for onclick
 // ── Record menu state ──
-var recDur=10;      // 7, 10, '600d', 'dest'
+var recDur=10;      // 5, 10, '400d', '800d', 'surv'
 var recMq=5;        // 3, 5, 7
 var pvpMq=5;        // 3, 5, 7 for pvp
 function recSetDur(d){
   recDur=d;
   document.querySelectorAll('.rec-dur').forEach(function(btn){
-    var active=btn.getAttribute('data-dur')==String(d);
-    var is600=btn.getAttribute('data-dur')==='600d';
-    var col=is600?'rgba(240,210,80,':'rgba(128,230,255,';
-    btn.style.background=active?(col+'0.2)'):(col+'0.05)');
-    btn.style.borderColor=active?(col+'0.7)'):(col+(is600?'0.35':'0.25')+')');
-    btn.style.color=active?(col+'0.95)'):(col+(is600?'0.6':'0.55')+')');
+    var bDur=btn.getAttribute('data-dur');
+    var active=bDur===String(d);
+    var isRace=bDur==='400d'||bDur==='800d';
+    var isSurv=bDur==='surv';
+    var col=isRace?'rgba(240,210,80,':isSurv?'rgba(160,80,220,':'rgba(128,230,255,';
+    btn.style.background=active?(col+'0.22)'):(col+'0.05)');
+    btn.style.borderColor=active?(col+'0.8)'):(col+(isRace||isSurv?'0.35':'0.25')+')');
+    btn.style.color=active?(col+'1)'):(col+(isRace?'0.6':isSurv?'0.65':'0.55')+')');
     btn.style.fontWeight=active?'bold':'normal';
   });
 }
@@ -430,9 +454,12 @@ requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
   if(!gc)return;
   var GS=700;gc.width=GS;gc.height=GS;
   var gx2=gc.getContext('2d');
-  function animGear(){
+  var _gAng=0,_gLast=null;
+  function animGear(ts){
+    if(_gLast!==null)_gAng+=(ts-_gLast)/10000*Math.PI*2;
+    _gLast=ts;
     gx2.clearRect(0,0,GS,GS);
-    var ang=Date.now()/16000*Math.PI*2;
+    var ang=_gAng;
     gx2.save();gx2.translate(GS/2,GS/2);gx2.rotate(ang);
     var teeth=20,R=310,r=255,rh=65,step=Math.PI*2/teeth,tw=step*0.38;
     /* dents */
@@ -463,5 +490,5 @@ requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
     gx2.restore();
     requestAnimationFrame(animGear);
   }
-  animGear();
+  requestAnimationFrame(animGear);
 })();

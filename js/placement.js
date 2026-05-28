@@ -82,8 +82,6 @@ function selectCell(gx,gy){
   var ok=cellFreePlace(gx,gy);
   placePos={gx:gx,gy:gy,ok:ok,locked:true};
   document.getElementById('pbc').disabled=!ok;
-  if(ok)log('Case selectionnee - double-clic pour confirmer');
-  else log(cur.type==='drill'&&!drillAdjRes(gx,gy)?'Foreuse doit etre pres d un minerai!':'Case invalide!');
 }
 
 function aiPickPlace(type){
@@ -140,8 +138,6 @@ function moveP(p,dx,dy,dt){
       if(G.destroyed.some(function(d){return d.gx===gx2&&d.gy===gy2;}))return true;
       if(G.blocks.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
       if(G.buildings.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
-      // Meteors in flight block movement — can't walk into impact zone
-      if(G.meteors&&G.meteors.some(function(m){return !m.fallen&&m.timer<18&&m.gx===gx2&&m.gy===gy2;}))return true;
     }
     return false;
   }

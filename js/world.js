@@ -1,7 +1,7 @@
 ﻿/* METEORS */
 function updMeteors(dt){
   G.meteorTimer-=dt;
-  if(G.meteorTimer<=0){G.meteorTimer=20;spawnMeteor();}
+  if(G.meteorTimer<=0){G.meteorTimer=18;spawnMeteor();}
   G.meteors.forEach(function(m){
     if(!m.fallen){
       m.timer-=dt;
@@ -39,26 +39,37 @@ function floodCheck(gx,gy,extra){
 
 function spawnMeteor(){
   var free=[];
-  for(var gy=0;gy<MAP;gy++)for(var gx=0;gx<MAP;gx++){
-    if(cellOcc(gx,gy))continue;
-    if(G.meteors.some(function(m){return !m.fallen&&m.gx===gx&&m.gy===gy;}))continue;
-    var extra={gx:gx,gy:gy};
-    var ok=true;
-    G.players.forEach(function(p){
-      if(p.dead)return;
-      var z0=floodCheck(Math.floor(p.x),Math.floor(p.y),null);
-      var z1=floodCheck(Math.floor(p.x),Math.floor(p.y),extra);
-      if(Object.keys(z1).length<Object.keys(z0).length*0.5)ok=false;
+  if(survivorMode){
+    // Survivor: only target drills and minerals
+    G.buildings.forEach(function(bd){
+      if(bd.type!=='drill'&&bd.type!=='drillfast')return;
+      if(!G.meteors.some(function(m){return !m.fallen&&m.gx===bd.gx&&m.gy===bd.gy;}))
+        free.push({gx:bd.gx,gy:bd.gy});
     });
-    if(ok)free.push({gx:gx,gy:gy});
+    G.blocks.forEach(function(bl){
+      if(!G.meteors.some(function(m){return !m.fallen&&m.gx===bl.gx&&m.gy===bl.gy;}))
+        free.push({gx:bl.gx,gy:bl.gy});
+    });
+    if(!free.length){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
+  } else {
+    for(var gy=0;gy<MAP;gy++)for(var gx=0;gx<MAP;gx++){
+      if(cellOcc(gx,gy))continue;
+      if(G.meteors.some(function(m){return !m.fallen&&m.gx===gx&&m.gy===gy;}))continue;
+      var extra={gx:gx,gy:gy};
+      var ok=true;
+      G.players.forEach(function(p){
+        if(p.dead)return;
+        var z0=floodCheck(Math.floor(p.x),Math.floor(p.y),null);
+        var z1=floodCheck(Math.floor(p.x),Math.floor(p.y),extra);
+        if(Object.keys(z1).length<Object.keys(z0).length*0.5)ok=false;
+      });
+      if(ok)free.push({gx:gx,gy:gy});
+    }
+    if(!free.length){G.phase='over';G.phase_over=true;G.winner='PERSONNE';return;}
   }
-  if(!free.length){G.phase='over';G.phase_over=true;G.winner='PERSONNE';return;}
   var chosen=free[Math.floor(Math.random()*free.length)];
-  G.meteors.push({gx:chosen.gx,gy:chosen.gy,timer:20,fallen:false,cleanAt:0,hp:150,maxHp:150});
-  var el=document.getElementById('mw');
-  sfx('meteor');el.textContent='METEORITE ['+chosen.gx+','+chosen.gy+'] - 20s !';
-  el.style.display='block';setTimeout(function(){el.style.display='none';},4000);
-  log('Meteorite ! ['+chosen.gx+','+chosen.gy+']');
+  G.meteors.push({gx:chosen.gx,gy:chosen.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
+  sfx('meteor');
 }
 
 function impactMeteor(m){
@@ -80,7 +91,8 @@ function impactMeteor(m){
   G.blocks=G.blocks.filter(function(b){return!(b.gx===m.gx&&b.gy===m.gy);});
   G.piques=G.piques.filter(function(pk){return!(pk.gx===m.gx&&pk.gy===m.gy);});
   if(!G.destroyed.some(function(d){return d.gx===m.gx&&d.gy===m.gy;}))G.destroyed.push({gx:m.gx,gy:m.gy});
-  sfx('impact');log('Impact !');
+  survivorMeteorCount++;
+  sfx('impact');
   // PvP: spawn a random building on a free cell
   if(GAMEMODE==='pvp') setTimeout(spawnPvpBuilding, 300);
 }

@@ -9,13 +9,16 @@ var gameNum=1;
 var gamePaused=false;
 var soloDur=10;
 var coopDur=10;
-var diamondRace=false;   // true = 700 diamond race mode
+var diamondRace=false;   // true = diamond race mode
+var diamondGoal=400;     // target diamonds (400 or 800)
+var survivorMode=false;  // true = meteors only hit drills/minerals
+var survivorMeteorCount=0; // meteors fallen in survivor mode
 var mineralQty=5; // 3, 5, or 7 minerals per type
 var soloMineralQty=5;
 var coopMineralQty=5;
-var seriesActive=false;  // true = playing 3-game series
+var seriesActive=false;  // true = playing 4-game series
 var seriesScores=[];     // diamond scores per game in series
-var seriesGame=0;        // current game in series (1-3)
+var seriesGame=0;        // current game in series (1-4)
 
 /* STATE */
 var G=null,keys={},gameRunning=false,logLines=[];

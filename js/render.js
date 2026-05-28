@@ -264,11 +264,15 @@ function updateHUD(){
     document.getElementById(pfx+'go').textContent='G '+p.gold;
     var di=document.getElementById(pfx+'di');if(di)di.textContent='D '+(p.diamond||0);
   });
-  var s;
-  if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!diamondRace){var rem=Math.max(0,SOLO_DUR-G.time);s=Math.floor(rem);}
-  else if(diamondRace){s=Math.floor(G.time);}
-  else s=Math.floor(G.time);
-  document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  if(survivorMode){
+    document.getElementById('timer').textContent='☄ '+survivorMeteorCount;
+  } else {
+    var s;
+    if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!diamondRace){var rem=Math.max(0,SOLO_DUR-G.time);s=Math.floor(rem);}
+    else if(diamondRace){s=Math.floor(G.time);}
+    else s=Math.floor(G.time);
+    document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  }
 }
 
 function log(msg){
