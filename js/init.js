@@ -26,9 +26,7 @@ function initGame(){
   for(var _wy=0;_wy<MAP;_wy++)for(var _wx=0;_wx<MAP;_wx++){
     if(isWall(_wx,_wy))taken[_wx+','+_wy]=true;
   }
-  [[6,6],[5,6]].forEach(function(p){taken[p[0]+','+p[1]]=true;});
-  [[1,3],[1,4],[1,5],[1,6],[2,3],[2,4],[2,5],[2,6]].forEach(function(p){taken[p[0]+','+p[1]]=true;});
-  [[10,3],[10,4],[10,5],[10,6],[9,3],[9,4],[9,5],[9,6]].forEach(function(p){taken[p[0]+','+p[1]]=true;});
+  [[6,6],[5,6]].forEach(function(p){taken[p[0]+','+p[1]]=true;}); // bâtiments initiaux
 
   var blocks=[];
   function placeRes(type,n){
@@ -45,20 +43,20 @@ function initGame(){
   placeRes('gold',mineralQty);
   placeRes('diamond',mineralQty);
 
-  function safeSpawn(px,py){
-    var gx=Math.floor(px),gy=Math.floor(py),k=gx+','+gy;
-    if(!taken[k]&&!isWall(gx,gy)){taken[k]=true;return{x:gx+.5,y:gy+.5};}
-    var d=[{dx:0,dy:1},{dx:0,dy:-1},{dx:1,dy:0},{dx:-1,dy:0}];
-    for(var i=0;i<d.length;i++){var nx=gx+d[i].dx,ny=gy+d[i].dy,nk=nx+','+ny;
-      if(!taken[nk]&&!isWall(nx,ny)){taken[nk]=true;return{x:nx+.5,y:ny+.5};}}
-    // Dernier recours : balayer tout le terrain
-    for(var fy=1;fy<MAP-1;fy++)for(var fx=1;fx<MAP-1;fx++){
-      var fk=fx+','+fy;if(!taken[fk]&&!isWall(fx,fy)){taken[fk]=true;return{x:fx+.5,y:fy+.5};}
+  // Spawn aléatoire sur une case libre du terrain
+  function randFreeCell(){
+    for(var _t=0;_t<2000;_t++){
+      var fx=1+Math.floor(rr()*(MAP-2)),fy=1+Math.floor(rr()*(MAP-2)),fk=fx+','+fy;
+      if(!taken[fk]){taken[fk]=true;return{x:fx+.5,y:fy+.5};}
     }
-    return{x:gx+.5,y:gy+.5};
+    // Fallback : balayage systématique
+    for(var sy=1;sy<MAP-1;sy++)for(var sx=1;sx<MAP-1;sx++){
+      var sk=sx+','+sy;if(!taken[sk]){taken[sk]=true;return{x:sx+.5,y:sy+.5};}
+    }
+    return{x:2.5,y:2.5};
   }
 
-  var s1=safeSpawn(1,5),s2=safeSpawn(10,5);
+  var s1=randFreeCell(),s2=randFreeCell();
   var ci1=0,ci2=1+Math.floor(rr()*4);
   var p1=mkPlayer(NAMES[ci1],ci1,s1.x,s1.y,1,true);
   var p2=null;
