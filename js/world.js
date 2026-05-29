@@ -1,15 +1,22 @@
 ﻿/* PUSH HELPER — éjecte un joueur loin d'une case donnée, cherche en spirale */
 function pushAway(p,gx,gy){
+  function cellFreeForPlayer(nx,ny){
+    if(nx<0||nx>=MAP||ny<0||ny>=MAP)return false;
+    if(cellOcc(nx,ny))return false;
+    // Ne jamais pousser dans une météorite en vol
+    if(G.meteors.some(function(m){return !m.fallen&&m.gx===nx&&m.gy===ny;}))return false;
+    return true;
+  }
   var dirs=[{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1},
             {dx:1,dy:1},{dx:-1,dy:1},{dx:1,dy:-1},{dx:-1,dy:-1},
             {dx:2,dy:0},{dx:-2,dy:0},{dx:0,dy:2},{dx:0,dy:-2}];
   for(var i=0;i<dirs.length;i++){
     var nx=gx+dirs[i].dx,ny=gy+dirs[i].dy;
-    if(nx>=0&&nx<MAP&&ny>=0&&ny<MAP&&!cellOcc(nx,ny)){p.x=nx+.5;p.y=ny+.5;return;}
+    if(cellFreeForPlayer(nx,ny)){p.x=nx+.5;p.y=ny+.5;return;}
   }
-  // Dernier recours : n'importe quelle case libre
+  // Dernier recours : n'importe quelle case vraiment libre
   for(var fy=0;fy<MAP;fy++)for(var fx=0;fx<MAP;fx++){
-    if(!cellOcc(fx,fy)){p.x=fx+.5;p.y=fy+.5;return;}
+    if(cellFreeForPlayer(fx,fy)){p.x=fx+.5;p.y=fy+.5;return;}
   }
 }
 
