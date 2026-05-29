@@ -250,6 +250,9 @@ function startGame(mode){
   if(GAMEMODE==='pvp') texId='tex-stone';
   else if(GAMEMODE==='coop') texId='tex-grass2';
   else texId='tex-desert1'; // solo default
+  // Fond hors-canvas = même texture que la map
+  (function(){var bg=document.getElementById(texId)||document.getElementById('tex-desert1');
+    if(bg)document.body.style.backgroundImage="url('"+bg.src+"')";})();
   (function(){
     var fc2=floorC.getContext('2d'),img2=new Image();
     floorReady=false;
