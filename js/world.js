@@ -47,35 +47,61 @@ function floodCheck(gx,gy,extra){
 }
 
 function spawnMeteor(){
-  var free=[];
-  if(survivorMode){
-    // Survivor: only target drills and minerals
-    G.buildings.forEach(function(bd){
-      if(bd.type!=='drill'&&bd.type!=='drillfast')return;
-      if(!G.meteors.some(function(m){return !m.fallen&&m.gx===bd.gx&&m.gy===bd.gy;}))
-        free.push({gx:bd.gx,gy:bd.gy});
-    });
-    G.blocks.forEach(function(bl){
-      if(!G.meteors.some(function(m){return !m.fallen&&m.gx===bl.gx&&m.gy===bl.gy;}))
-        free.push({gx:bl.gx,gy:bl.gy});
-    });
-    if(!free.length){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
-  } else {
-    for(var gy=0;gy<MAP;gy++)for(var gx=0;gx<MAP;gx++){
-      if(cellOcc(gx,gy))continue;
-      if(G.meteors.some(function(m){return !m.fallen&&m.gx===gx&&m.gy===gy;}))continue;
-      var extra={gx:gx,gy:gy};
-      var ok=true;
-      G.players.forEach(function(p){
-        if(p.dead)return;
-        var z0=floodCheck(Math.floor(p.x),Math.floor(p.y),null);
-        var z1=floodCheck(Math.floor(p.x),Math.floor(p.y),extra);
-        if(Object.keys(z1).length<Object.keys(z0).length*0.5)ok=false;
-      });
-      if(ok)free.push({gx:gx,gy:gy});
-    }
-    if(!free.length){G.phase='over';G.phase_over=true;G.winner='PERSONNE';return;}
+  // Helper: cell already has a pending meteor
+  function alreadyTargeted(gx,gy){
+    return G.meteors.some(function(m){return !m.fallen&&m.gx===gx&&m.gy===gy;});
   }
+  // Helper: cell is currently under a player (never spawn directly on player)
+  function onPlayer(gx,gy){
+    return G.players.some(function(p){return !p.dead&&Math.floor(p.x)===gx&&Math.floor(p.y)===gy;});
+  }
+
+  if(survivorMode){
+    // ── Mode Survivant : ciblage intelligent par le jeu ──
+    // Priorité 1 : foreuses disponibles, triées par ressources stockées (décroissant)
+    var avDrills=G.buildings.filter(function(bd){
+      return (bd.type==='drill'||bd.type==='drillfast')&&!alreadyTargeted(bd.gx,bd.gy);
+    });
+    if(avDrills.length){
+      avDrills.sort(function(a,b){
+        var sa=(a.stored.coal||0)+(a.stored.gold||0)+(a.stored.diamond||0)*3;
+        var sb=(b.stored.coal||0)+(b.stored.gold||0)+(b.stored.diamond||0)*3;
+        return sb-sa; // plus de ressources = ciblée en premier
+      });
+      var t=avDrills[0];
+      G.meteors.push({gx:t.gx,gy:t.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
+      sfx('meteor');return;
+    }
+    // Priorité 2 : minéraux, triés par valeur (diamant > or > charbon)
+    var avBlocks=G.blocks.filter(function(bl){return !alreadyTargeted(bl.gx,bl.gy);});
+    if(avBlocks.length){
+      var typeVal={diamond:3,gold:2,coal:1};
+      avBlocks.sort(function(a,b){return typeVal[b.type]-typeVal[a.type];});
+      var t2=avBlocks[0];
+      G.meteors.push({gx:t2.gx,gy:t2.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
+      sfx('meteor');return;
+    }
+    // Plus rien à cibler → fin de partie
+    G.phase='over';G.phase_over=true;G.winner='TIME';return;
+  }
+
+  // ── Mode normal : case libre aléatoire (jamais sur un joueur) ──
+  var free=[];
+  for(var gy=0;gy<MAP;gy++)for(var gx=0;gx<MAP;gx++){
+    if(cellOcc(gx,gy))continue;
+    if(alreadyTargeted(gx,gy))continue;
+    if(onPlayer(gx,gy))continue; // ne jamais spawner sur le joueur
+    var extra={gx:gx,gy:gy};
+    var ok=true;
+    G.players.forEach(function(p){
+      if(p.dead)return;
+      var z0=floodCheck(Math.floor(p.x),Math.floor(p.y),null);
+      var z1=floodCheck(Math.floor(p.x),Math.floor(p.y),extra);
+      if(Object.keys(z1).length<Object.keys(z0).length*0.5)ok=false;
+    });
+    if(ok)free.push({gx:gx,gy:gy});
+  }
+  if(!free.length){G.phase='over';G.phase_over=true;G.winner='PERSONNE';return;}
   var chosen=free[Math.floor(Math.random()*free.length)];
   G.meteors.push({gx:chosen.gx,gy:chosen.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
   sfx('meteor');

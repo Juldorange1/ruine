@@ -122,6 +122,7 @@ function moveP(p,dx,dy,dt){
       var gx2=Math.floor(cx),gy2=Math.floor(cy);
       if(G.blocks.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
       if(G.buildings.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
+      if(G.meteors&&G.meteors.some(function(m){return !m.fallen&&m.gx===gx2&&m.gy===gy2;}))return true;
     }
     return false;
   }
