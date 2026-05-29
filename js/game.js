@@ -260,6 +260,43 @@ function startGame(mode){
       var vg2=fc2.createRadialGradient(CW/2,CH/2,CW*.05,CW/2,CH/2,CW*.72);
       vg2.addColorStop(0,'rgba(0,0,0,0)');vg2.addColorStop(1,'rgba(0,0,0,0.42)');
       fc2.fillStyle=vg2;fc2.fillRect(0,0,CW,CH);
+      // Murs de ruines sur le contour (border cells)
+      for(var wy=0;wy<MAP;wy++)for(var wx=0;wx<MAP;wx++){
+        if(wx>0&&wx<MAP-1&&wy>0&&wy<MAP-1)continue;
+        var wbx=wx*TILE,wby=wy*TILE,ws=(wx*41+wy*17)%11;
+        // Fond pierre sombre
+        fc2.fillStyle='rgba(26,18,9,0.97)';fc2.fillRect(wbx,wby,TILE,TILE);
+        // Face de la pierre (légèrement plus claire, variable)
+        fc2.fillStyle='rgba('+(56+ws*2)+','+(40+ws)+','+(17+ws)+',0.88)';
+        fc2.fillRect(wbx+5,wby+5,TILE-10,TILE-10);
+        // Joints horizontaux/verticaux alternés
+        fc2.fillStyle='rgba(15,10,4,0.52)';
+        if(ws%2===0) fc2.fillRect(wbx+5,wby+Math.round(TILE/2)-1,TILE-10,2);
+        else          fc2.fillRect(wbx+Math.round(TILE/2)-1,wby+5,2,TILE-10);
+        // Fissures (déterministes selon position)
+        fc2.strokeStyle='rgba(9,6,2,0.52)';fc2.lineWidth=1;
+        fc2.beginPath();
+        fc2.moveTo(wbx+7+ws*2,wby+11);
+        fc2.lineTo(wbx+15+ws,wby+TILE*.37+ws);
+        fc2.lineTo(wbx+11,wby+TILE*.63);
+        fc2.stroke();
+        if(ws%3!==2){
+          fc2.beginPath();
+          fc2.moveTo(wbx+TILE-13-ws,wby+9+ws);
+          fc2.lineTo(wbx+TILE-19,wby+TILE*.43);
+          fc2.stroke();
+        }
+        // Ombres internes (donne l'épaisseur du mur)
+        fc2.fillStyle='rgba(0,0,0,0.45)';
+        fc2.fillRect(wbx,wby,TILE,4);
+        fc2.fillRect(wbx,wby,4,TILE);
+        fc2.fillStyle='rgba(0,0,0,0.22)';
+        fc2.fillRect(wbx,wby+TILE-4,TILE,4);
+        fc2.fillRect(wbx+TILE-4,wby,4,TILE);
+        // Reflet chaud (lumière désert)
+        fc2.fillStyle='rgba(210,155,55,0.07)';
+        fc2.fillRect(wbx+5,wby+5,TILE-10,3);
+      }
       floorReady=true;
     };
     var texEl=document.getElementById(texId)||document.getElementById('tex-desert1');

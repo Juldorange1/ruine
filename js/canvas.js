@@ -1,5 +1,5 @@
 ﻿var C=document.getElementById('c'),X=C.getContext('2d');
-var TILE=64,MAP=12,CW=MAP*TILE,CH=MAP*TILE;
+var TILE=64,MAP=13,CW=MAP*TILE,CH=MAP*TILE;
 C.width=CW;C.height=CH;
 function resz(){var s=Math.min(window.innerWidth/CW,window.innerHeight/CH)*.91;document.getElementById('cw').style.transform='translate(-50%,-50%) scale('+s+')'}
 window.addEventListener('resize',resz);resz();

@@ -71,8 +71,10 @@ function initGame(){
 }
 
 /* CELL HELPERS */
+function isWall(gx,gy){return gx===0||gx===MAP-1||gy===0||gy===MAP-1;}
 function cellOcc(gx,gy,skipId){
   if(gx<0||gx>=MAP||gy<0||gy>=MAP)return true;
+  if(isWall(gx,gy))return true;
   if(G.destroyed.some(function(d){return d.gx===gx&&d.gy===gy;}))return true;
   if(G.blocks.some(function(b){return b.gx===gx&&b.gy===gy;}))return true;
   if(G.buildings.some(function(b){return b.id!==skipId&&b.gx===gx&&b.gy===gy;}))return true;
@@ -89,5 +91,6 @@ function drillAdjRes(gx,gy){
 }
 function cellOccSolid(gx,gy){
   if(gx<0||gx>=MAP||gy<0||gy>=MAP)return true;
+  if(isWall(gx,gy))return true;
   return G.destroyed.some(function(d){return d.gx===gx&&d.gy===gy;});
 }
