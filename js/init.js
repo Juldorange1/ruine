@@ -67,7 +67,7 @@ function initGame(){
   if(GAMEMODE!=='pvp') buildings.push(mkBd('factory',6,6,0));
   return{p1:p1,p2:p2,players:p2?[p1,p2]:[p1],
     blocks:blocks,buildings:buildings,destroyed:[],meteors:[],piques:[],
-    time:0,phase:'placement',winner:null,phase_over:false,meteorTimer:18};
+    time:0,phase:'placement',winner:null,phase_over:false,meteorTimer:18,rocks:[]};
 }
 
 /* CELL HELPERS */

@@ -27,22 +27,30 @@ function updBdAtk(dt){} // replaced by spear system
 
 function updBlkAtk(dt){} // replaced by spear system
 
-// ── SPEAR STRIKE ──
-// actor = player, mx/my = mouse position in world units
+// ── LANCER DE PIERRE ──
 function spearStrike(actor, worldX, worldY){
   if(!G||!gameRunning||G.phase!=='combat')return;
-  if((actor.spearTimer||0)>0)return; // cooldown
-  actor.spearTimer=1.0; // 1 strike per second
+  if((actor.spearTimer||0)>0)return;
+  actor.spearTimer=1.0;
   actor.spearSwing=1;
-  // Direction toward mouse
   var dx=worldX-actor.x, dy=worldY-actor.y;
-  var len=Math.hypot(dx,dy)||1;
+  var dist=Math.hypot(dx,dy)||1;
   actor.spearDir=Math.atan2(dy,dx);
-  var kx=actor.x+dx/len*0.5; // spear tip position (0.5 range)
-  var ky=actor.y+dy/len*0.5;
-  var RANGE=0.5;
-  // Find the CLOSEST valid target within range — only hit one thing
-  var bestDist=RANGE+0.8, bestTarget=null, bestType=null;
+  var RANGE=1.0; // 2× l'ancienne portée
+  var tDist=Math.min(dist,RANGE);
+  var tx=actor.x+(dx/dist)*tDist;
+  var ty=actor.y+(dy/dist)*tDist;
+  var speed=7; // cases/seconde
+  var travelDist=Math.hypot(tx-actor.x,ty-actor.y);
+  var totalTime=Math.max(travelDist/speed,0.04);
+  G.rocks.push({ox:actor.x,oy:actor.y,x:actor.x,y:actor.y,
+    tx:tx,ty:ty,owner:actor,time:0,totalTime:totalTime,done:false});
+}
+
+function applyRockHit(rock){
+  var RANGE=0.7;
+  var kx=rock.tx,ky=rock.ty,actor=rock.owner;
+  var bestDist=RANGE+0.5,bestTarget=null,bestType=null;
   G.players.forEach(function(p){
     if(p===actor||p.dead||p.team===actor.team)return;
     var d=Math.hypot(p.x-kx,p.y-ky);
@@ -51,38 +59,50 @@ function spearStrike(actor, worldX, worldY){
   G.buildings.forEach(function(bd){
     if(bd.type==='factory'||bd.type==='bank')return;
     var d=Math.hypot(bd.x-kx,bd.y-ky);
-    if(d<RANGE+0.5&&d<bestDist){bestDist=d;bestTarget=bd;bestType='building';}
+    if(d<RANGE+0.3&&d<bestDist){bestDist=d;bestTarget=bd;bestType='building';}
   });
   G.blocks.forEach(function(bl){
     var d=Math.hypot(bl.x-kx,bl.y-ky);
-    if(d<RANGE+0.5&&d<bestDist){bestDist=d;bestTarget=bl;bestType='block';}
+    if(d<RANGE+0.3&&d<bestDist){bestDist=d;bestTarget=bl;bestType='block';}
   });
   G.meteors.forEach(function(m){
     if(m.fallen)return;
     var d=Math.hypot(m.gx+.5-kx,m.gy+.5-ky);
-    if(d<RANGE+0.5&&d<bestDist){bestDist=d;bestTarget=m;bestType='meteor';}
+    if(d<RANGE+0.3&&d<bestDist){bestDist=d;bestTarget=m;bestType='meteor';}
   });
-  if(bestTarget){
-    if(bestType==='player'){
-      bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
-      bestTarget.inCombat=true;bestTarget.combatTimer=0.5;
-      actor.inCombat=true;actor.combatTimer=0.5;
-      sfx('damage');
-      if(bestTarget.hp<=0&&!bestTarget.dead){bestTarget.dead=true;log(bestTarget.name+' elimine !');}
-    } else if(bestType==='building'){
-      sfx('strike');
-      bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
-      if(bestTarget.hp<=0){log(bestTarget.label+' detruit !');G.buildings=G.buildings.filter(function(b){return b.id!==bestTarget.id;});}
-    } else if(bestType==='block'){
-      sfx('strike');
-      bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
-      if(bestTarget.hp<=0){G.blocks=G.blocks.filter(function(b){return b.id!==bestTarget.id;});log('Bloc detruit !');}
-    } else if(bestType==='meteor'){
-      sfx('strike');
-      bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
-      if(bestTarget.hp<=0){bestTarget.fallen=true;bestTarget.cleanAt=G.time+0.1;log('Meteorite detruite !');setTimeout(function(){if(G&&G.phase==='combat')spawnMeteor();},1500);}
-    }
+  if(!bestTarget)return;
+  if(bestType==='player'){
+    bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
+    bestTarget.inCombat=true;bestTarget.combatTimer=0.5;
+    actor.inCombat=true;actor.combatTimer=0.5;
+    sfx('damage');
+    if(bestTarget.hp<=0&&!bestTarget.dead){bestTarget.dead=true;}
+  } else if(bestType==='building'){
+    sfx('strike');
+    bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
+    if(bestTarget.hp<=0){G.buildings=G.buildings.filter(function(b){return b.id!==bestTarget.id;});}
+  } else if(bestType==='block'){
+    sfx('strike');
+    bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
+    if(bestTarget.hp<=0){G.blocks=G.blocks.filter(function(b){return b.id!==bestTarget.id;});}
+  } else if(bestType==='meteor'){
+    sfx('strike');
+    bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
+    if(bestTarget.hp<=0){bestTarget.fallen=true;bestTarget.cleanAt=G.time+0.1;setTimeout(function(){if(G&&G.phase==='combat')spawnMeteor();},1500);}
   }
+}
+
+function updRocks(dt){
+  if(!G||!G.rocks)return;
+  G.rocks.forEach(function(rock){
+    if(rock.done)return;
+    rock.time+=dt;
+    var t=Math.min(rock.time/rock.totalTime,1);
+    rock.x=rock.ox+(rock.tx-rock.ox)*t;
+    rock.y=rock.oy+(rock.ty-rock.oy)*t;
+    if(t>=1){rock.done=true;applyRockHit(rock);}
+  });
+  G.rocks=G.rocks.filter(function(r){return !r.done;});
 }
 
 

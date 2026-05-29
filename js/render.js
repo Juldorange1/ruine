@@ -94,6 +94,22 @@ function draw(){
   // Pique mode border
   if(piqueMode){X.strokeStyle='rgba(255,200,50,0.6)';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(2,2,CW-4,CH-4);X.setLineDash([]);}
 
+  // Pierres en vol (projectiles)
+  if(G.rocks)G.rocks.forEach(function(rock){
+    var rx=rock.x*TILE,ry=rock.y*TILE;
+    var t=rock.totalTime>0?Math.min(rock.time/rock.totalTime,1):1;
+    var arcH=Math.sin(t*Math.PI)*22; // arc parabolique max 22px
+    // Ombre au sol (s'étale quand la pierre monte)
+    X.fillStyle='rgba(0,0,0,0.2)';
+    X.beginPath();X.ellipse(rx,ry+4,7*(1-arcH/28),3.5,0,0,Math.PI*2);X.fill();
+    // Pierre
+    var rg2=X.createRadialGradient(rx-3,ry-arcH-3,1,rx,ry-arcH,9);
+    rg2.addColorStop(0,'rgba(168,140,94,0.98)');rg2.addColorStop(1,'rgba(62,48,26,0.93)');
+    X.fillStyle=rg2;
+    X.beginPath();X.arc(rx,ry-arcH,8,0,Math.PI*2);X.fill();
+    X.strokeStyle='rgba(28,20,8,0.55)';X.lineWidth=1.5;X.stroke();
+  });
+
   // Players
   G.players.forEach(function(p){if(!p.dead)drawPlayer(p);});
   updateHUD();
@@ -181,68 +197,38 @@ function drawPlayer(p){
   X.fillStyle=TEAM_COL[p.team-1];X.globalAlpha=0.55;X.fillRect(-sz*.2,-sz*.52,sz*.4,sz*.1);X.globalAlpha=1;
   X.fillStyle=p.skin;X.beginPath();X.arc(sz*.02,-sz*.41,sz*.12,0.2,Math.PI-0.2);X.fill();
   X.fillStyle='#181008';X.beginPath();X.arc(-sz*.05,-sz*.44,sz*.024,0,Math.PI*2);X.fill();X.beginPath();X.arc(sz*.08,-sz*.44,sz*.024,0,Math.PI*2);X.fill();
-  // ── SPEAR ANIMATION ──
-  // The canvas is already translated to (px,py) and may be X.scale(-1,1)
-  // We need to draw the spear in WORLD space so it always points to mouse.
-  // Restore the flip before drawing the spear.
-  X.restore(); // pop the flip transform
-  X.save();    // fresh save at (0,0) world
-  X.translate(px,py); // back to player world pos
+  // ── ANIMATION BRAS + PIERRE ──
+  X.restore(); // pop le flip
+  X.save();X.translate(px,py);
   var sw=p.spearSwing||0;
-  // Always compute angle toward mouse right here in drawPlayer
   var cwr=document.getElementById('cw').getBoundingClientRect();
   var _wMx=(mouseX-cwr.left)/(cwr.width/CW)/TILE;
   var _wMy=(mouseY-cwr.top)/(cwr.height/CH)/TILE;
   if(p===G.p1)p.spearDir=Math.atan2(_wMy-p.y,_wMx-p.x);
   var kdir=p.spearDir||0;
-  // Draw spear from body CENTER, rotating toward mouse — same length all directions
-  X.save();
-  X.rotate(kdir); // rotate so +X = toward mouse
-
-  // Shaft: starts slightly behind center, extends toward mouse
-  var shaftBack = -sz*0.15; // behind player
-  var shaftFront = sz*0.85 + sw*sz*0.25; // in front, extends on strike
-  X.strokeStyle='rgba(100,65,25,0.9)';X.lineWidth=sz*.09;X.lineCap='round';
-  X.beginPath();X.moveTo(shaftBack,0);X.lineTo(shaftFront,0);X.stroke();
-
-  // Grip wrap (middle)
-  X.strokeStyle='rgba(60,35,10,0.7)';X.lineWidth=sz*.11;
-  X.beginPath();X.moveTo(-sz*.1,0);X.lineTo(sz*.1,0);X.stroke();
-
-  // Spear tip (arrowhead) at the front
-  var tipX=shaftFront;
-  var tipLen=sz*(0.2+sw*0.1);
-  var tipW=sz*0.07;
-  var shine=0.7+sw*0.3;
-  X.fillStyle='rgba(200,215,235,'+shine+')';
-  X.beginPath();
-  X.moveTo(tipX,0);              // tip point
-  X.lineTo(tipX-tipLen,-tipW);   // top base
-  X.lineTo(tipX-tipLen,tipW);    // bottom base
-  X.closePath();X.fill();
-  // Edge shine on tip
-  X.strokeStyle='rgba(240,248,255,'+(0.5+sw*0.45)+')';X.lineWidth=1;
-  X.beginPath();X.moveTo(tipX,0);X.lineTo(tipX-tipLen*0.7,-tipW*0.5);X.stroke();
-
-  // Butt spike at the back
-  X.fillStyle='rgba(150,130,80,0.7)';
-  X.beginPath();X.moveTo(shaftBack,0);X.lineTo(shaftBack-sz*.08,-sz*.04);X.lineTo(shaftBack-sz*.08,sz*.04);X.closePath();X.fill();
-
-  // Strike effect
-  if(sw>0.25){
-    var sa=sw*0.65;
-    X.strokeStyle='rgba(255,230,160,'+sa+')';X.lineWidth=1.8;X.setLineDash([5,3]);
-    X.beginPath();X.arc(0,0,shaftFront*0.85,-Math.PI*.25,Math.PI*.25);X.stroke();
-    X.setLineDash([]);
-    X.fillStyle='rgba(255,245,120,'+(sw*0.85)+')';
-    X.beginPath();X.arc(tipX,0,sz*.065,0,Math.PI*2);X.fill();
+  X.save();X.rotate(kdir);
+  // Bras tendu vers curseur
+  var armLen=sz*(0.52+sw*0.32);
+  X.strokeStyle=p.skin;X.lineWidth=sz*0.21;X.lineCap='round';
+  X.beginPath();X.moveTo(0,0);X.lineTo(armLen,0);X.stroke();
+  // Pierre en main (disparaît dès qu'une pierre est en vol)
+  var hasRockInFlight=G.rocks&&G.rocks.some(function(r){return r.owner===p&&!r.done;});
+  if(!hasRockInFlight&&sw<0.4){
+    var rg=X.createRadialGradient(armLen-sz*0.06,-sz*0.06,1,armLen,0,sz*0.24);
+    rg.addColorStop(0,'rgba(162,136,92,0.97)');rg.addColorStop(1,'rgba(68,52,28,0.92)');
+    X.fillStyle=rg;
+    X.beginPath();X.arc(armLen,0,sz*0.24,0,Math.PI*2);X.fill();
+    X.strokeStyle='rgba(32,22,8,0.6)';X.lineWidth=1.5;X.stroke();
   }
-
+  // Traînée d'élan au lancer
+  if(sw>0.2){
+    X.strokeStyle='rgba(215,178,90,'+(sw*0.55)+')';X.lineWidth=1.5;X.setLineDash([3,3]);
+    X.beginPath();X.arc(0,0,armLen,-Math.PI*0.22,Math.PI*0.22);X.stroke();
+    X.setLineDash([]);
+  }
   X.lineCap='butt';
   X.restore();
   X.restore();
-  X.restore(); // spear arm
-  X.restore(); // world translate (from spear section)
   var bw=38,bh=5,hpX=px-bw/2,hpY=py-sz*.8-4;
   if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'){X.fillStyle='rgba(0,0,0,0.58)';X.fillRect(hpX-1,hpY-1,bw+2,bh+2);X.fillStyle=p.hp/p.maxHp>0.55?'rgba(78,208,58,0.95)':p.hp/p.maxHp>0.25?'rgba(218,148,28,0.95)':'rgba(208,38,28,0.95)';X.fillRect(hpX,hpY,bw*(p.hp/p.maxHp),bh);}
   X.fillStyle='rgba(255,238,188,0.95)';X.font='bold 12px Courier New';X.textAlign='center';X.textBaseline='bottom';X.fillText(p.name,px,hpY-2);

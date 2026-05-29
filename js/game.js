@@ -23,7 +23,7 @@ function loop(ts){
       if(keys['z']||keys['Z'])dy2-=1;if(keys['s']||keys['S'])dy2+=1;
       if(dx2||dy2){var l2=Math.hypot(dx2,dy2);moveP(G.p2,dx2/l2,dy2/l2,dt);}else{G.p2.vx=0;G.p2.vy=0;}
     }
-    updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updAI(dt);aiAutoCollect();updPiques(dt);
+    updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updRocks(dt);updAI(dt);aiAutoCollect();updPiques(dt);
     G.players.forEach(function(p){if(p&&!p.dead&&p.isHuman)p.atkCharge=Math.min(1,(p.atkCharge||0)+dt);});
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
       var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
