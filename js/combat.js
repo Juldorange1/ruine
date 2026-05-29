@@ -40,7 +40,7 @@ function spearStrike(actor, worldX, worldY){
   var tDist=Math.min(dist,RANGE);
   var tx=actor.x+(dx/dist)*tDist;
   var ty=actor.y+(dy/dist)*tDist;
-  var speed=7; // cases/seconde
+  var speed=3.5; // cases/seconde (lent — on voit bien le trajet)
   var travelDist=Math.hypot(tx-actor.x,ty-actor.y);
   var totalTime=Math.max(travelDist/speed,0.04);
   G.rocks.push({ox:actor.x,oy:actor.y,x:actor.x,y:actor.y,

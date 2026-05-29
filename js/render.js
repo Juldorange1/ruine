@@ -103,11 +103,11 @@ function draw(){
     X.fillStyle='rgba(0,0,0,0.2)';
     X.beginPath();X.ellipse(rx,ry+4,7*(1-arcH/28),3.5,0,0,Math.PI*2);X.fill();
     // Pierre
-    var rg2=X.createRadialGradient(rx-3,ry-arcH-3,1,rx,ry-arcH,9);
+    var rg2=X.createRadialGradient(rx-2,ry-arcH-2,1,rx,ry-arcH,5);
     rg2.addColorStop(0,'rgba(168,140,94,0.98)');rg2.addColorStop(1,'rgba(62,48,26,0.93)');
     X.fillStyle=rg2;
-    X.beginPath();X.arc(rx,ry-arcH,8,0,Math.PI*2);X.fill();
-    X.strokeStyle='rgba(28,20,8,0.55)';X.lineWidth=1.5;X.stroke();
+    X.beginPath();X.arc(rx,ry-arcH,5,0,Math.PI*2);X.fill();
+    X.strokeStyle='rgba(28,20,8,0.55)';X.lineWidth=1;X.stroke();
   });
 
   // Players
@@ -207,22 +207,22 @@ function drawPlayer(p){
   if(p===G.p1)p.spearDir=Math.atan2(_wMy-p.y,_wMx-p.x);
   var kdir=p.spearDir||0;
   X.save();X.rotate(kdir);
-  // Bras tendu vers curseur
-  var armLen=sz*(0.52+sw*0.32);
-  X.strokeStyle=p.skin;X.lineWidth=sz*0.21;X.lineCap='round';
+  // Bras court — la main reste près du corps
+  var armLen=sz*(0.28+sw*0.22);
+  X.strokeStyle=p.skin;X.lineWidth=sz*0.19;X.lineCap='round';
   X.beginPath();X.moveTo(0,0);X.lineTo(armLen,0);X.stroke();
-  // Pierre en main (disparaît dès qu'une pierre est en vol)
+  // Caillou collé à la main (disparaît quand un caillou est en vol)
   var hasRockInFlight=G.rocks&&G.rocks.some(function(r){return r.owner===p&&!r.done;});
   if(!hasRockInFlight&&sw<0.4){
-    var rg=X.createRadialGradient(armLen-sz*0.06,-sz*0.06,1,armLen,0,sz*0.24);
+    var rg=X.createRadialGradient(armLen-sz*0.04,-sz*0.04,1,armLen,0,sz*0.15);
     rg.addColorStop(0,'rgba(162,136,92,0.97)');rg.addColorStop(1,'rgba(68,52,28,0.92)');
     X.fillStyle=rg;
-    X.beginPath();X.arc(armLen,0,sz*0.24,0,Math.PI*2);X.fill();
-    X.strokeStyle='rgba(32,22,8,0.6)';X.lineWidth=1.5;X.stroke();
+    X.beginPath();X.arc(armLen,0,sz*0.15,0,Math.PI*2);X.fill();
+    X.strokeStyle='rgba(32,22,8,0.6)';X.lineWidth=1.2;X.stroke();
   }
   // Traînée d'élan au lancer
   if(sw>0.2){
-    X.strokeStyle='rgba(215,178,90,'+(sw*0.55)+')';X.lineWidth=1.5;X.setLineDash([3,3]);
+    X.strokeStyle='rgba(215,178,90,'+(sw*0.55)+')';X.lineWidth=1.2;X.setLineDash([3,3]);
     X.beginPath();X.arc(0,0,armLen,-Math.PI*0.22,Math.PI*0.22);X.stroke();
     X.setLineDash([]);
   }
