@@ -54,8 +54,10 @@ function initGame(){
   var p1=mkPlayer(NAMES[ci1],ci1,s1.x,s1.y,1,true);
   var p2=null;
   if(GAMEMODE==='pvp'){
+    // PvP: double HP, no regeneration
+    p1.hp=200;p1.maxHp=200;p1.regen=0;
     p2=mkPlayer(NAMES[ci2],ci2,s2.x,s2.y,2,false);
-    p2.isHuman=true;p2.hp=100;p2.maxHp=100;p2.dmg=10;p2.speed=1.4;p2.regen=4;
+    p2.isHuman=true;p2.hp=200;p2.maxHp=200;p2.dmg=10;p2.speed=1.4;p2.regen=0;
   } else if(GAMEMODE==='coop'){
     // Coop: p2 is human, same team as p1 (team 1), no combat between them
     p2=mkPlayer('Joueur 2',ci2,s2.x,s2.y,1,true);

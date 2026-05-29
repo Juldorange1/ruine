@@ -456,7 +456,7 @@ requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
   var gx2=gc.getContext('2d');
   var _gAng=0,_gLast=null;
   function animGear(ts){
-    if(_gLast!==null)_gAng+=(ts-_gLast)/10000*Math.PI*2;
+    if(_gLast!==null)_gAng+=(ts-_gLast)/20000*Math.PI*2;
     _gLast=ts;
     gx2.clearRect(0,0,GS,GS);
     var ang=_gAng;

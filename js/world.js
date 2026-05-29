@@ -1,22 +1,31 @@
-﻿/* METEORS */
+﻿/* PUSH HELPER — éjecte un joueur loin d'une case donnée, cherche en spirale */
+function pushAway(p,gx,gy){
+  var dirs=[{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1},
+            {dx:1,dy:1},{dx:-1,dy:1},{dx:1,dy:-1},{dx:-1,dy:-1},
+            {dx:2,dy:0},{dx:-2,dy:0},{dx:0,dy:2},{dx:0,dy:-2}];
+  for(var i=0;i<dirs.length;i++){
+    var nx=gx+dirs[i].dx,ny=gy+dirs[i].dy;
+    if(nx>=0&&nx<MAP&&ny>=0&&ny<MAP&&!cellOcc(nx,ny)){p.x=nx+.5;p.y=ny+.5;return;}
+  }
+  // Dernier recours : n'importe quelle case libre
+  for(var fy=0;fy<MAP;fy++)for(var fx=0;fx<MAP;fx++){
+    if(!cellOcc(fx,fy)){p.x=fx+.5;p.y=fy+.5;return;}
+  }
+}
+
+/* METEORS */
 function updMeteors(dt){
   G.meteorTimer-=dt;
   if(G.meteorTimer<=0){G.meteorTimer=18;spawnMeteor();}
   G.meteors.forEach(function(m){
     if(!m.fallen){
       m.timer-=dt;
-      // Emergency push: if player somehow ends up on impact cell with <1s to go
+      // Emergency push: player on impact cell — push to nearest free cell
       if(m.timer<1){
         G.players.forEach(function(p){
           if(p.dead)return;
           if(Math.floor(p.x)===m.gx&&Math.floor(p.y)===m.gy){
-            var adj2=[{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
-            for(var i=0;i<adj2.length;i++){
-              var nx=m.gx+adj2[i].dx,ny=m.gy+adj2[i].dy;
-              if(nx>=0&&nx<MAP&&ny>=0&&ny<MAP&&!cellOcc(nx,ny)){
-                p.x=nx+.5;p.y=ny+.5;break;
-              }
-            }
+            pushAway(p,m.gx,m.gy);
           }
         });
       }
@@ -76,14 +85,8 @@ function impactMeteor(m){
   m.fallen=true;m.cleanAt=G.time+5;
   G.players.forEach(function(p){
     if(Math.floor(p.x)===m.gx&&Math.floor(p.y)===m.gy){
-      var adj=[{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
-      var cands=adj.filter(function(d){var nx=m.gx+d.dx,ny=m.gy+d.dy;return nx>=0&&nx<MAP&&ny>=0&&ny<MAP&&!cellOcc(nx,ny);});
-      if(cands.length){
-        cands.sort(function(a,b){return Math.hypot(p.x-(m.gx+a.dx+.5),p.y-(m.gy+a.dy+.5))-Math.hypot(p.x-(m.gx+b.dx+.5),p.y-(m.gy+b.dy+.5));});
-        p.x=m.gx+cands[0].dx+.5;p.y=m.gy+cands[0].dy+.5;
-        if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'){p.hp=Math.max(1,p.hp-40);log(p.name+' projete ! -40PV');}
-        else log(p.name+' projete !');
-      }
+      pushAway(p,m.gx,m.gy);
+      if(GAMEMODE!=='solo'&&GAMEMODE!=='coop') p.hp=Math.max(1,p.hp-40);
     }
   });
   G.buildings.filter(function(b){return b.gx===m.gx&&b.gy===m.gy;}).forEach(function(k){log(k.label+' detruit !');});

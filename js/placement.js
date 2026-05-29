@@ -135,7 +135,7 @@ function moveP(p,dx,dy,dt){
       var cx=corners[i][0],cy=corners[i][1];
       if(cx<0||cx>=MAP||cy<0||cy>=MAP)return true;
       var gx2=Math.floor(cx),gy2=Math.floor(cy);
-      if(G.destroyed.some(function(d){return d.gx===gx2&&d.gy===gy2;}))return true;
+      // Note: G.destroyed (craters) are passable for players to avoid getting stuck
       if(G.blocks.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
       if(G.buildings.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
     }
