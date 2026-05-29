@@ -276,7 +276,7 @@ function updateHUD(){
 }
 
 function log(msg){
-  if(G&&G.phase==='combat')return; // pas de messages en jeu
+  if(gameRunning)return; // aucun message pendant une partie
   logLines.unshift(msg);if(logLines.length>3)logLines.pop();
   for(var i=0;i<3;i++){var el=document.getElementById('l'+i);if(logLines[i]){el.textContent=logLines[i];el.className='le s';}else el.className='le';}
 }

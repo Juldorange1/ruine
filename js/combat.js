@@ -108,7 +108,10 @@ function updMetAtk(dt){
   }
 }
 
+var _drillSfxCd=0; // anti-cumul : un seul son de foreuse toutes les 0.6s
 function updDrills(dt){
+  _drillSfxCd=Math.max(0,_drillSfxCd-dt);
+  var drillSounded=false;
   G.buildings.forEach(function(bd){
     if(bd.type!=='drill'&&bd.type!=='drillfast')return;
     bd.drillTimer=(bd.drillTimer||0)+dt;
@@ -118,7 +121,10 @@ function updDrills(dt){
     var fx=bd.facing==='right'?1:bd.facing==='left'?-1:0;
     var fy=bd.facing==='down'?1:bd.facing==='up'?-1:0;
     var res=G.blocks.filter(function(b){return b.gx===bd.gx+fx&&b.gy===bd.gy+fy;})[0];
-    if(res){bd.stored[res.type]=(bd.stored[res.type]||0)+1;sfx('drill');}
+    if(res){
+      bd.stored[res.type]=(bd.stored[res.type]||0)+1;
+      if(!drillSounded&&_drillSfxCd<=0){sfx('drill');drillSounded=true;_drillSfxCd=0.6;}
+    }
   });
 }
 
