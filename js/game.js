@@ -145,8 +145,8 @@ function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();
 C.addEventListener('click',function(e){
   if(!G)return;
   var pos=getGrid(e);
-  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};document.getElementById('pbc').disabled=!ok;return;}
-  if(G.phase==='placement'&&placeQueue.length){selectCell(pos.gx,pos.gy);return;}
+  if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);if(ok){placePos={gx:pos.gx,gy:pos.gy,ok:true,locked:true};confirmDrill();}return;}
+  if(G.phase==='placement'&&placeQueue.length){selectCell(pos.gx,pos.gy);if(placePos&&placePos.ok)confirmPlace();return;}
   if(tpMode){doTeleport(pos.gx,pos.gy);return;}
   if(G.phase!=='combat')return;
   if(piqueMode){placePique(pos.gx,pos.gy);return;}

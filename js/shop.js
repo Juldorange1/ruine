@@ -55,13 +55,8 @@ function buyBlock(btype){
   var cost=4+2*(p.blocksBought||0);
   if((p.diamond||0)<cost){log('Pas assez de diamants ! ('+cost+' requis)');return;}
   p.diamond-=cost;p.blocksBought=(p.blocksBought||0)+1;sfx('buy');closeShop();
-  // Enter placement mode for the block
   drillingMode='block-'+btype;
   placePos=null;
-  document.getElementById('pbar').style.display='block';
-  document.getElementById('pbc').disabled=true;
-  document.getElementById('pinfo').textContent='Clic pour placer le BLOC '+btype.toUpperCase()+', puis CONFIRMER';
-  log('Bloc '+btype.toUpperCase()+' achete — choisissez ou le placer !');
 }
 
 function buyBd(type){
@@ -73,13 +68,8 @@ function buyBd(type){
   if(p.coal<cost){log('Pas assez de charbon !');return;}
   if(type==='drill'){
     p.coal-=cost;closeShop();
-    drillingMode=type; // 'drill' or 'drillfast'
+    drillingMode=type;
     placePos=null;
-    document.getElementById('pbar').style.display='block';
-    document.getElementById('pbc').disabled=true;
-    var label=type==='drillfast'?'FOREUSE RAPIDE':'FOREUSE';
-    document.getElementById('pinfo').textContent='Clic pour placer la '+label+', puis CONFIRMER';
-    log(label+' achetee — choisissez ou la placer !');
     return;
   }
   var fac=G.buildings.filter(function(b){return b.type==='factory';})[0];if(!fac){log('Usine detruite !');return;}

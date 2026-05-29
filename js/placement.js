@@ -18,28 +18,15 @@ function startPlacement(){
     placeQueue.push({who:'p1',type:'teleporter'});
     placeQueue.push({who:'p2',type:'teleporter'});
   }
-  document.getElementById('pbar').style.display='block';
   nextPlace();
 }
 
 function nextPlace(){
-  placePos=null;document.getElementById('pbc').disabled=true;
+  placePos=null;
   if(!placeQueue.length){
-    document.getElementById('pbar').style.display='none';
     G.phase='combat';
     document.getElementById('phase').textContent='COMBAT';
-    log(GAMEMODE==='solo'?'Collecte !':GAMEMODE==='coop'?'Coop !':'Combat !');
     return;
-  }
-  var cur=placeQueue[0];
-  var lbl=cur.type==='drill'?'FOREUSE':'TELEPORTEUR';
-  document.getElementById('pturn').textContent=cur.who==='p1'?'Joueur 1':'Joueur 2';
-  // In pvp, both players place manually. In solo, only p1 exists.
-  var dispLabel=lbl;
-  if(GAMEMODE==='solo'||cur.who==='p1'){
-    document.getElementById('pinfo').textContent='Clic = selectionner  Double-clic = confirmer ('+dispLabel+')';
-  } else {
-    document.getElementById('pinfo').textContent='J2 : Clic = selectionner  Double-clic = confirmer ('+dispLabel+')';
   }
 }
 
@@ -64,15 +51,13 @@ function confirmDrill(){
     G.blocks.push({gx:placePos.gx,gy:placePos.gy,x:placePos.gx+.5,y:placePos.gy+.5,
       type:btype,id:btype+Date.now(),hp:bhp,maxHp:bhp});
     drillingMode=false;placePos=null;
-    document.getElementById('pbar').style.display='none';
-    sfx('place');log('Bloc '+btype.toUpperCase()+' pose !');
+    sfx('place');
     return;
   }
   var dtype=(drillingMode==='drillfast'?'drillfast':'drill');
   addBd(dtype,placePos.gx,placePos.gy,G.p1.team);
   drillingMode=false;placePos=null;
-  document.getElementById('pbar').style.display='none';
-  sfx('buy');log('Foreuse placee !');
+  sfx('buy');
 }
 
 function selectCell(gx,gy){
@@ -135,7 +120,6 @@ function moveP(p,dx,dy,dt){
       var cx=corners[i][0],cy=corners[i][1];
       if(cx<0||cx>=MAP||cy<0||cy>=MAP)return true;
       var gx2=Math.floor(cx),gy2=Math.floor(cy);
-      if(G.destroyed.some(function(d){return d.gx===gx2&&d.gy===gy2;}))return true;
       if(G.blocks.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
       if(G.buildings.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
     }
