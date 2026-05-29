@@ -4,10 +4,10 @@ function loop(ts){
   var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
   // In record modes, timer runs from placement onward
   var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
-  if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
+  if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused&&!survivorPickMode){
     G.time+=dt;
   }
-  if(G&&gameRunning&&G.phase==='combat'&&!gamePaused){
+  if(G&&gameRunning&&G.phase==='combat'&&!gamePaused&&!survivorPickMode){
     // P1 movement
     if(!drillingMode){
       var dx=0,dy=0;
@@ -145,6 +145,18 @@ function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();
 C.addEventListener('click',function(e){
   if(!G)return;
   var pos=getGrid(e);
+  // Mode Survivant : le joueur choisit la cible de la météorite
+  if(survivorPickMode){
+    var isDrill=G.buildings.some(function(b){return (b.type==='drill'||b.type==='drillfast')&&b.gx===pos.gx&&b.gy===pos.gy;});
+    var isBlock=G.blocks.some(function(b){return b.gx===pos.gx&&b.gy===pos.gy;});
+    var alreadyHit=G.meteors.some(function(m){return !m.fallen&&m.gx===pos.gx&&m.gy===pos.gy;});
+    if((isDrill||isBlock)&&!alreadyHit){
+      G.meteors.push({gx:pos.gx,gy:pos.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
+      sfx('meteor');
+      survivorPickMode=false;
+    }
+    return;
+  }
   if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);if(ok){placePos={gx:pos.gx,gy:pos.gy,ok:true,locked:true};confirmDrill();}return;}
   if(G.phase==='placement'&&placeQueue.length){selectCell(pos.gx,pos.gy);if(placePos&&placePos.ok)confirmPlace();return;}
   if(tpMode){doTeleport(pos.gx,pos.gy);return;}
@@ -339,7 +351,7 @@ document.getElementById('btnreplay').addEventListener('click',function(){
   }
 });
 function goToMenu(){
-  survivorMode=false;survivorMeteorCount=0;
+  survivorMode=false;survivorMeteorCount=0;survivorPickMode=false;
   gameRunning=false;G=null;
   seriesGame=0;seriesActive=false;seriesScores=[];
   document.getElementById('btnreplay').textContent='REJOUER';

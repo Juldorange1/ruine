@@ -64,32 +64,16 @@ function spawnMeteor(){
   }
 
   if(survivorMode){
-    // ── Mode Survivant : ciblage intelligent par le jeu ──
-    // Priorité 1 : foreuses disponibles, triées par ressources stockées (décroissant)
-    var avDrills=G.buildings.filter(function(bd){
+    // ── Mode Survivant : le joueur choisit la cible ──
+    // Vérifier qu'il existe au moins une cible valide
+    var hasDrillTarget=G.buildings.some(function(bd){
       return (bd.type==='drill'||bd.type==='drillfast')&&!alreadyTargeted(bd.gx,bd.gy);
     });
-    if(avDrills.length){
-      avDrills.sort(function(a,b){
-        var sa=(a.stored.coal||0)+(a.stored.gold||0)+(a.stored.diamond||0)*3;
-        var sb=(b.stored.coal||0)+(b.stored.gold||0)+(b.stored.diamond||0)*3;
-        return sb-sa; // plus de ressources = ciblée en premier
-      });
-      var t=avDrills[0];
-      G.meteors.push({gx:t.gx,gy:t.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
-      sfx('meteor');return;
-    }
-    // Priorité 2 : minéraux, triés par valeur (diamant > or > charbon)
-    var avBlocks=G.blocks.filter(function(bl){return !alreadyTargeted(bl.gx,bl.gy);});
-    if(avBlocks.length){
-      var typeVal={diamond:3,gold:2,coal:1};
-      avBlocks.sort(function(a,b){return typeVal[b.type]-typeVal[a.type];});
-      var t2=avBlocks[0];
-      G.meteors.push({gx:t2.gx,gy:t2.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
-      sfx('meteor');return;
-    }
-    // Plus rien à cibler → fin de partie
-    G.phase='over';G.phase_over=true;G.winner='TIME';return;
+    var hasBlockTarget=G.blocks.some(function(bl){return !alreadyTargeted(bl.gx,bl.gy);});
+    if(!hasDrillTarget&&!hasBlockTarget){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
+    // Suspendre le jeu et demander au joueur de cliquer une cible
+    survivorPickMode=true;
+    return; // la météorite sera créée quand le joueur aura cliqué
   }
 
   // ── Mode normal : case libre aléatoire (jamais sur un joueur) ──

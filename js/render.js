@@ -110,6 +110,29 @@ function draw(){
     X.strokeStyle='rgba(28,20,8,0.55)';X.lineWidth=1;X.stroke();
   });
 
+  // Mode Survivant — sélection de cible par le joueur
+  if(survivorPickMode){
+    var pp=0.5+0.5*Math.sin(Date.now()/150);
+    // Foreuses disponibles (rouge)
+    G.buildings.forEach(function(bd){
+      if(bd.type!=='drill'&&bd.type!=='drillfast')return;
+      if(G.meteors.some(function(m){return !m.fallen&&m.gx===bd.gx&&m.gy===bd.gy;}))return;
+      X.strokeStyle='rgba(255,70,20,'+(0.65+pp*0.35)+')';X.lineWidth=3;X.setLineDash([5,3]);
+      X.strokeRect(bd.gx*TILE+2,bd.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
+    });
+    // Minéraux disponibles (orange)
+    G.blocks.forEach(function(bl){
+      if(G.meteors.some(function(m){return !m.fallen&&m.gx===bl.gx&&m.gy===bl.gy;}))return;
+      X.strokeStyle='rgba(255,160,20,'+(0.65+pp*0.35)+')';X.lineWidth=3;X.setLineDash([5,3]);
+      X.strokeRect(bl.gx*TILE+2,bl.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
+    });
+    // Bandeau instruction
+    X.fillStyle='rgba(180,40,10,0.88)';X.fillRect(0,CH/2-22,CW,44);
+    X.fillStyle='#ffe8c0';X.font='bold 15px Courier New';
+    X.textAlign='center';X.textBaseline='middle';
+    X.fillText('☄  CLIQUEZ UNE CASE EN SURBRILLANCE — LA MÉTÉORITE TOMBERA LÀ  ☄',CW/2,CH/2);
+  }
+
   // Players
   G.players.forEach(function(p){if(!p.dead)drawPlayer(p);});
   updateHUD();
@@ -207,17 +230,17 @@ function drawPlayer(p){
   if(p===G.p1)p.spearDir=Math.atan2(_wMy-p.y,_wMx-p.x);
   var kdir=p.spearDir||0;
   X.save();X.rotate(kdir);
-  // Bras court — la main reste près du corps
-  var armLen=sz*(0.28+sw*0.22);
-  X.strokeStyle=p.skin;X.lineWidth=sz*0.19;X.lineCap='round';
+  // Bras très court
+  var armLen=sz*(0.14+sw*0.11);
+  X.strokeStyle=p.skin;X.lineWidth=sz*0.13;X.lineCap='round';
   X.beginPath();X.moveTo(0,0);X.lineTo(armLen,0);X.stroke();
   // Caillou collé à la main (disparaît quand un caillou est en vol)
   var hasRockInFlight=G.rocks&&G.rocks.some(function(r){return r.owner===p&&!r.done;});
   if(!hasRockInFlight&&sw<0.4){
-    var rg=X.createRadialGradient(armLen-sz*0.04,-sz*0.04,1,armLen,0,sz*0.15);
+    var rg=X.createRadialGradient(armLen-sz*0.03,-sz*0.03,1,armLen,0,sz*0.13);
     rg.addColorStop(0,'rgba(162,136,92,0.97)');rg.addColorStop(1,'rgba(68,52,28,0.92)');
     X.fillStyle=rg;
-    X.beginPath();X.arc(armLen,0,sz*0.15,0,Math.PI*2);X.fill();
+    X.beginPath();X.arc(armLen,0,sz*0.13,0,Math.PI*2);X.fill();
     X.strokeStyle='rgba(32,22,8,0.6)';X.lineWidth=1.2;X.stroke();
   }
   // Traînée d'élan au lancer
