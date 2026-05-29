@@ -73,6 +73,7 @@ function spawnMeteor(){
     if(!hasDrillTarget&&!hasBlockTarget){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
     // Suspendre le jeu et demander au joueur de cliquer une cible
     survivorPickMode=true;
+    survivorPickStartTime=Date.now(); // pour le délai anti-clic de 0.2s
     return; // la météorite sera créée quand le joueur aura cliqué
   }
 

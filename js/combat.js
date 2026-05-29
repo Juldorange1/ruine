@@ -36,7 +36,7 @@ function spearStrike(actor, worldX, worldY){
   var dx=worldX-actor.x, dy=worldY-actor.y;
   var dist=Math.hypot(dx,dy)||1;
   actor.spearDir=Math.atan2(dy,dx);
-  var RANGE=1.0; // 2× l'ancienne portée
+  var RANGE=1.3; // portée +30%
   var tDist=Math.min(dist,RANGE);
   var tx=actor.x+(dx/dist)*tDist;
   var ty=actor.y+(dy/dist)*tDist;
@@ -48,9 +48,9 @@ function spearStrike(actor, worldX, worldY){
 }
 
 function applyRockHit(rock){
-  var RANGE=0.7;
+  var RANGE=0.3; // zone d'impact minuscule — précision requise
   var kx=rock.tx,ky=rock.ty,actor=rock.owner;
-  var bestDist=RANGE+0.5,bestTarget=null,bestType=null;
+  var bestDist=RANGE,bestTarget=null,bestType=null;
   G.players.forEach(function(p){
     if(p===actor||p.dead||p.team===actor.team)return;
     var d=Math.hypot(p.x-kx,p.y-ky);
@@ -59,16 +59,16 @@ function applyRockHit(rock){
   G.buildings.forEach(function(bd){
     if(bd.type==='factory'||bd.type==='bank')return;
     var d=Math.hypot(bd.x-kx,bd.y-ky);
-    if(d<RANGE+0.3&&d<bestDist){bestDist=d;bestTarget=bd;bestType='building';}
+    if(d<RANGE&&d<bestDist){bestDist=d;bestTarget=bd;bestType='building';}
   });
   G.blocks.forEach(function(bl){
     var d=Math.hypot(bl.x-kx,bl.y-ky);
-    if(d<RANGE+0.3&&d<bestDist){bestDist=d;bestTarget=bl;bestType='block';}
+    if(d<RANGE&&d<bestDist){bestDist=d;bestTarget=bl;bestType='block';}
   });
   G.meteors.forEach(function(m){
     if(m.fallen)return;
     var d=Math.hypot(m.gx+.5-kx,m.gy+.5-ky);
-    if(d<RANGE+0.3&&d<bestDist){bestDist=d;bestTarget=m;bestType='meteor';}
+    if(d<RANGE&&d<bestDist){bestDist=d;bestTarget=m;bestType='meteor';}
   });
   if(!bestTarget)return;
   if(bestType==='player'){

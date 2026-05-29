@@ -26,9 +26,10 @@ function renderShop(){
     var isPvp=GAMEMODE==='pvp';
     var dmgCost=(GAMEMODE==='solo'||GAMEMODE==='coop')?2:5;
     if(isPvp){
-      // PvP: upgrades cost diamonds
-      var d5=(p.diamond||0)>=5,dDmg=(p.diamond||0)>=dmgCost;
-      html+=sItem(dDmg,'+2 DMG/s',dmgCost+' \u25c6','Actuel: '+p.dmg+'/s','dmg');
+      // PvP : DMG co\u00fbte de l'or, HP/SPD co\u00fbtent des diamants
+      var pvpGoldDmg=3, gDmgPvp=(p.gold||0)>=pvpGoldDmg;
+      html+=sItem(gDmgPvp,'+2 DMG/s',pvpGoldDmg+' or','Actuel: '+p.dmg+'/s','dmg');
+      var d5=(p.diamond||0)>=5;
       html+=sItem(d5,'+20 PV max','5 \u25c6','Actuel: '+p.maxHp+' PV','hp');
       var sc=(p.spdUpg||0)+1,ds=(p.diamond||0)>=sc;
       html+=sItem(ds,'+0.2 vitesse',sc+' \u25c6','Actuel: '+p.speed.toFixed(1)+' (achat '+(p.spdUpg+1)+')','spd');
@@ -86,8 +87,13 @@ function buyUpg(t){
   var isRec2=GAMEMODE==='solo'||GAMEMODE==='coop';
   var costs={dmg:isRec2?2:5,hp:5,spd:(p.spdUpg||0)+1};
   if(GAMEMODE==='pvp'){
-    if((p.diamond||0)<costs[t]){log('Pas assez de diamants !');return;}
-    p.diamond-=costs[t];
+    if(t==='dmg'){
+      if((p.gold||0)<3){log('Pas assez d or !');return;}
+      p.gold-=3;
+    } else {
+      if((p.diamond||0)<costs[t]){log('Pas assez de diamants !');return;}
+      p.diamond-=costs[t];
+    }
   } else {
     if(p.gold<costs[t]){log('Pas assez d or !');return;}
     p.gold-=costs[t];

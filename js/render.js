@@ -212,7 +212,17 @@ function drawPlayer(p){
   var px=p.x*TILE,py=p.y*TILE,sz=28;
   X.save();X.translate(px,py);
   if(p.vx<-0.05)X.scale(-1,1);
-  X.fillStyle='rgba(0,0,0,0.3)';X.beginPath();X.ellipse(0,sz*.5,sz*.28,sz*.08,0,0,Math.PI*2);X.fill();
+  // Halo d'équipe au sol (visibilité)
+  var teamRgb=p.team===1?'96,144,208':'208,96,64';
+  var halo=X.createRadialGradient(0,sz*.3,0,0,sz*.3,sz*.62);
+  halo.addColorStop(0,'rgba('+teamRgb+',0.42)');halo.addColorStop(1,'rgba(0,0,0,0)');
+  X.fillStyle=halo;X.beginPath();X.arc(0,sz*.3,sz*.62,0,Math.PI*2);X.fill();
+  // Ombre au sol
+  X.fillStyle='rgba(0,0,0,0.35)';X.beginPath();X.ellipse(0,sz*.5,sz*.32,sz*.1,0,0,Math.PI*2);X.fill();
+  // Outline lumineux autour du corps
+  X.strokeStyle='rgba(255,248,200,0.6)';X.lineWidth=2;
+  X.beginPath();X.moveTo(-sz*.25,-sz*.3);X.bezierCurveTo(-sz*.28,sz*.1,-sz*.2,sz*.2,-sz*.05,sz*.2);X.lineTo(sz*.05,sz*.2);X.bezierCurveTo(sz*.2,sz*.2,sz*.28,sz*.1,sz*.25,-sz*.3);X.closePath();X.stroke();
+  // Corps
   X.fillStyle=p.color;X.beginPath();X.moveTo(-sz*.25,-sz*.3);X.bezierCurveTo(-sz*.28,sz*.1,-sz*.2,sz*.2,-sz*.05,sz*.2);X.lineTo(sz*.05,sz*.2);X.bezierCurveTo(sz*.2,sz*.2,sz*.28,sz*.1,sz*.25,-sz*.3);X.closePath();X.fill();
   X.fillStyle='rgba(0,0,0,0.18)';X.fillRect(-sz*.04,-sz*.3,sz*.08,sz*.5);
   X.fillStyle=TEAM_COL[p.team-1];X.globalAlpha=0.45;X.fillRect(-sz*.2,-sz*.04,sz*.4,sz*.06);X.globalAlpha=1;

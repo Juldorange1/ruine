@@ -147,6 +147,7 @@ C.addEventListener('click',function(e){
   var pos=getGrid(e);
   // Mode Survivant : le joueur choisit la cible de la météorite
   if(survivorPickMode){
+    if(Date.now()-survivorPickStartTime<200)return; // anti-clic accidentel
     var isDrill=G.buildings.some(function(b){return (b.type==='drill'||b.type==='drillfast')&&b.gx===pos.gx&&b.gy===pos.gy;});
     var isBlock=G.blocks.some(function(b){return b.gx===pos.gx&&b.gy===pos.gy;});
     var alreadyHit=G.meteors.some(function(m){return !m.fallen&&m.gx===pos.gx&&m.gy===pos.gy;});
@@ -508,7 +509,7 @@ requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
   var gx2=gc.getContext('2d');
   var _gAng=0,_gLast=null;
   function animGear(ts){
-    if(_gLast!==null)_gAng+=(ts-_gLast)/20000*Math.PI*2;
+    if(_gLast!==null)_gAng+=(ts-_gLast)/33333*Math.PI*2;
     _gLast=ts;
     gx2.clearRect(0,0,GS,GS);
     var ang=_gAng;

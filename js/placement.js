@@ -113,7 +113,7 @@ function moveP(p,dx,dy,dt){
   var res=(p.coal||0)+(p.gold||0)+(p.diamond||0);
   var spd=p.speed*Math.max(0.65,1-res*0.03);
   var nx=p.x+dx*spd*dt,ny=p.y+dy*spd*dt;
-  var R=0.3;
+  var R=0.25; // correspond mieux au visuel du personnage
   function solid(wx,wy){
     var corners=[[wx-R,wy-R],[wx+R,wy-R],[wx-R,wy+R],[wx+R,wy+R]];
     for(var i=0;i<corners.length;i++){
