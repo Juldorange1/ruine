@@ -72,9 +72,12 @@ function spawnMeteor(){
     var hasBlockTarget=G.blocks.some(function(bl){return !alreadyTargeted(bl.gx,bl.gy);});
     if(!hasDrillTarget&&!hasBlockTarget){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
     // Suspendre le jeu et demander au joueur de cliquer une cible
+    // Fin de partie si 60 météorites ont déjà été planifiées
+    if(survivorMeteorCount>=60){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
+    survivorMeteorCount++;
     survivorPickMode=true;
-    survivorPickStartTime=Date.now(); // pour le délai anti-clic de 0.2s
-    return; // la météorite sera créée quand le joueur aura cliqué
+    survivorPickStartTime=Date.now();
+    return;
   }
 
   // ── Mode normal : case libre aléatoire (jamais sur un joueur) ──
@@ -112,7 +115,6 @@ function impactMeteor(m){
   G.blocks=G.blocks.filter(function(b){return!(b.gx===m.gx&&b.gy===m.gy);});
   G.piques=G.piques.filter(function(pk){return!(pk.gx===m.gx&&pk.gy===m.gy);});
   if(!G.destroyed.some(function(d){return d.gx===m.gx&&d.gy===m.gy;}))G.destroyed.push({gx:m.gx,gy:m.gy});
-  survivorMeteorCount++;
   sfx('impact');
   // PvP: spawn a random building on a free cell
   if(GAMEMODE==='pvp') setTimeout(spawnPvpBuilding, 300);
