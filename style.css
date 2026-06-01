@@ -14,6 +14,7 @@ canvas{display:block;cursor:crosshair}
 .res{display:flex;gap:5px;margin-top:6px;font-size:13px;font-weight:bold}
 .res span{padding:3px 10px;border-radius:3px;background:rgba(255,210,80,0.09);border:1px solid rgba(255,210,80,0.15)}
 #ch{position:fixed;top:8px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;z-index:20}
+#gamebtn{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:25;pointer-events:none}
 #timer{font-size:28px;font-weight:bold;letter-spacing:5px;color:#fff5d0;text-shadow:0 0 20px rgba(220,170,40,0.4)}
 #phase{font-size:12px;letter-spacing:3px;opacity:0.55;margin-top:2px;text-transform:uppercase;color:#c8a060}
 /* LOG */

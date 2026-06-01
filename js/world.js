@@ -114,7 +114,6 @@ function impactMeteor(m){
   if(!G.destroyed.some(function(d){return d.gx===m.gx&&d.gy===m.gy;}))G.destroyed.push({gx:m.gx,gy:m.gy});
   survivorMeteorCount++;
   sfx('impact');
-  if(survivorMode&&survivorMeteorCount>=25&&!G.phase_over){G.phase='over';G.phase_over=true;G.winner='TIME';}
   // PvP: spawn a random building on a free cell
   if(GAMEMODE==='pvp') setTimeout(spawnPvpBuilding, 300);
 }

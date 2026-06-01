@@ -28,8 +28,9 @@ function loop(ts){
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
       var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
       var diaGoal=diamondRace?diamondGoal:99999;
-    if(diamondRace&&totalDia>=diaGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
-      else if(!diamondRace&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
+    if(survivorMode&&G.blocks.length===0){G.phase='over';G.phase_over=true;G.winner='TIME';}
+      else if(diamondRace&&totalDia>=diaGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
+      else if(!diamondRace&&!survivorMode&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
     }
     if(G.phase==='over'){gameRunning=false;showEnd();}
   }
