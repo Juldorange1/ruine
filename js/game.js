@@ -147,7 +147,7 @@ C.addEventListener('click',function(e){
   var pos=getGrid(e);
   // Mode Survivant : le joueur choisit la cible de la météorite
   if(survivorPickMode){
-    if(Date.now()-survivorPickStartTime<200)return; // anti-clic accidentel
+    if(Date.now()-survivorPickStartTime<1000)return; // attendre 1 seconde
     var isDrill=G.buildings.some(function(b){return (b.type==='drill'||b.type==='drillfast')&&b.gx===pos.gx&&b.gy===pos.gy;});
     var isBlock=G.blocks.some(function(b){return b.gx===pos.gx&&b.gy===pos.gy;});
     var alreadyHit=G.meteors.some(function(m){return !m.fallen&&m.gx===pos.gx&&m.gy===pos.gy;});
