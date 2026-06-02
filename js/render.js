@@ -119,15 +119,16 @@ function draw(){
     if(!_fogC||_fogC.width!==CW){_fogC=document.createElement('canvas');_fogC.width=CW;_fogC.height=CH;}
     var _fx=_fogC.getContext('2d');
     _fx.clearRect(0,0,CW,CH);
-    _fx.fillStyle='rgba(3,1,0,0.97)';_fx.fillRect(0,0,CW,CH);
+    _fx.fillStyle='#000'; // noir absolu, alpha=1
+    _fx.fillRect(0,0,CW,CH);
     _fx.globalCompositeOperation='destination-out';
     G.players.forEach(function(p){
       if(p.dead)return;
       var px=p.x*TILE,py=p.y*TILE,R=3*TILE;
       var grd=_fx.createRadialGradient(px,py,0,px,py,R);
-      grd.addColorStop(0,'rgba(0,0,0,1)');
-      grd.addColorStop(0.75,'rgba(0,0,0,1)');
-      grd.addColorStop(1,'rgba(0,0,0,0)');
+      grd.addColorStop(0,'rgba(0,0,0,1)');   // pleinement visible
+      grd.addColorStop(0.82,'rgba(0,0,0,1)'); // bord net
+      grd.addColorStop(1,'rgba(0,0,0,0)');    // au-delà : noir total
       _fx.fillStyle=grd;_fx.beginPath();_fx.arc(px,py,R,0,Math.PI*2);_fx.fill();
     });
     _fx.globalCompositeOperation='source-over';

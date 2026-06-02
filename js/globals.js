@@ -12,6 +12,7 @@ var coopDur=10;
 var diamondRace=false;   // true = diamond race mode
 var diamondGoal=400;     // target diamonds (400 or 800)
 var nightMode=false;     // true = brouillard nuit, visibilité 3 cases
+var speedMode=false;     // true = jeu 2× plus vite
 var mineralQty=5; // 3, 5, or 7 minerals per type
 var soloMineralQty=5;
 var coopMineralQty=5;

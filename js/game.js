@@ -2,6 +2,7 @@
 function loop(ts){
   requestAnimationFrame(loop);
   var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
+  if(speedMode)dt*=2;
   // In record modes, timer runs from placement onward
   var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
   if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
@@ -13,6 +14,11 @@ function loop(ts){
       var dx=0,dy=0;
       if(keys['ArrowLeft'])dx-=1;if(keys['ArrowRight'])dx+=1;
       if(keys['ArrowUp'])dy-=1;if(keys['ArrowDown'])dy+=1;
+      // Touches éaui (AZERTY alt) pour P1
+      if(keys['\xe9']||keys['\xc9'])dy-=1; // é = haut
+      if(keys['a']||keys['A'])dx-=1;       // a = gauche
+      if(keys['u']||keys['U'])dy+=1;       // u = bas
+      if(keys['i']||keys['I'])dx+=1;       // i = droite
       if(GAMEMODE==='solo'){if(keys['q']||keys['Q'])dx-=1;if(keys['d']||keys['D'])dx+=1;if(keys['z']||keys['Z'])dy-=1;if(keys['s']||keys['S'])dy+=1;}
       if(dx||dy){var l=Math.hypot(dx,dy);moveP(G.p1,dx/l,dy/l,dt);}else{G.p1.vx=0;G.p1.vy=0;}
     }else{G.p1.vx=0;G.p1.vy=0;}
@@ -473,17 +479,29 @@ function pvpSetMq(q){
   });
 }
 
-function toggleNightMode(){
-  nightMode=!nightMode;
-  var btn=document.getElementById('btn-night');
+function _toggleOpt(flag,btnId,colOn,colOff){
+  var btn=document.getElementById(btnId);
   if(btn){
-    btn.style.background=nightMode?'rgba(20,30,80,0.38)':'rgba(20,30,60,0.06)';
-    btn.style.borderColor=nightMode?'rgba(100,130,255,0.75)':'rgba(100,120,200,0.25)';
-    btn.style.color=nightMode?'rgba(150,170,255,0.95)':'rgba(120,140,220,0.6)';
-    btn.style.fontWeight=nightMode?'bold':'normal';
+    btn.style.background=flag?colOn[0]:colOff[0];
+    btn.style.borderColor=flag?colOn[1]:colOff[1];
+    btn.style.color=flag?colOn[2]:colOff[2];
+    btn.style.fontWeight=flag?'bold':'normal';
   }
 }
+function toggleNightMode(){
+  nightMode=!nightMode;
+  _toggleOpt(nightMode,'btn-night',
+    ['rgba(20,30,80,0.38)','rgba(100,130,255,0.75)','rgba(150,170,255,0.95)'],
+    ['rgba(20,30,60,0.06)','rgba(100,120,200,0.25)','rgba(120,140,220,0.6)']);
+}
+function toggleSpeedMode(){
+  speedMode=!speedMode;
+  _toggleOpt(speedMode,'btn-speed',
+    ['rgba(60,20,0,0.38)','rgba(255,140,30,0.75)','rgba(255,180,80,0.95)'],
+    ['rgba(40,20,0,0.06)','rgba(200,120,30,0.25)','rgba(200,140,60,0.6)']);
+}
 window.toggleNightMode=toggleNightMode;
+window.toggleSpeedMode=toggleSpeedMode;
 
 window.recSetDur=recSetDur;
 window.recSetMq=recSetMq;
