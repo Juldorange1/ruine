@@ -63,24 +63,7 @@ function spawnMeteor(){
     return G.players.some(function(p){return !p.dead&&Math.floor(p.x)===gx&&Math.floor(p.y)===gy;});
   }
 
-  if(survivorMode){
-    // ── Mode Survivant : le joueur choisit la cible ──
-    // Vérifier qu'il existe au moins une cible valide
-    var hasDrillTarget=G.buildings.some(function(bd){
-      return (bd.type==='drill'||bd.type==='drillfast')&&!alreadyTargeted(bd.gx,bd.gy);
-    });
-    var hasBlockTarget=G.blocks.some(function(bl){return !alreadyTargeted(bl.gx,bl.gy);});
-    if(!hasDrillTarget&&!hasBlockTarget){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
-    // Suspendre le jeu et demander au joueur de cliquer une cible
-    // Fin de partie si 60 météorites ont déjà été planifiées
-    if(survivorMeteorCount>=60){G.phase='over';G.phase_over=true;G.winner='TIME';return;}
-    survivorMeteorCount++;
-    survivorPickMode=true;
-    survivorPickStartTime=Date.now();
-    return;
-  }
-
-  // ── Mode normal : case libre aléatoire (jamais sur un joueur) ──
+  // ── Case libre aléatoire (jamais sur un joueur) ──
   var free=[];
   for(var gy=0;gy<MAP;gy++)for(var gx=0;gx<MAP;gx++){
     if(cellOcc(gx,gy))continue;
@@ -98,7 +81,8 @@ function spawnMeteor(){
   }
   if(!free.length){G.phase='over';G.phase_over=true;G.winner='PERSONNE';return;}
   var chosen=free[Math.floor(Math.random()*free.length)];
-  G.meteors.push({gx:chosen.gx,gy:chosen.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
+  var _mt=['coal','gold','diamond'][Math.floor(Math.random()*3)];
+  G.meteors.push({gx:chosen.gx,gy:chosen.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150,resType:_mt});
   sfx('meteor');
 }
 
@@ -114,7 +98,10 @@ function impactMeteor(m){
   G.buildings=G.buildings.filter(function(b){return!(b.gx===m.gx&&b.gy===m.gy);});
   G.blocks=G.blocks.filter(function(b){return!(b.gx===m.gx&&b.gy===m.gy);});
   G.piques=G.piques.filter(function(pk){return!(pk.gx===m.gx&&pk.gy===m.gy);});
-  if(!G.destroyed.some(function(d){return d.gx===m.gx&&d.gy===m.gy;}))G.destroyed.push({gx:m.gx,gy:m.gy});
+  // La météorite laisse un minéral aléatoire au lieu d'un cratère
+  var rt=m.resType||(['coal','gold','diamond'][Math.floor(Math.random()*3)]);
+  var bhp=rt==='diamond'?420:rt==='gold'?280:210;
+  G.blocks.push({gx:m.gx,gy:m.gy,x:m.gx+.5,y:m.gy+.5,type:rt,id:rt+Date.now(),hp:bhp,maxHp:bhp});
   sfx('impact');
   // PvP: spawn a random building on a free cell
   if(GAMEMODE==='pvp') setTimeout(spawnPvpBuilding, 300);

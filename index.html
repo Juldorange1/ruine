@@ -33,7 +33,6 @@
         <button class="rec-dur" data-dur="10" onclick="recSetDur(10)" style="background:rgba(128,230,255,0.2);border:1px solid rgba(128,230,255,0.7);color:#80eeff;font-weight:bold;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">10 min</button>
         <button class="rec-dur" data-dur="400d" onclick="recSetDur('400d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">RU&#201;E 400</button>
         <button class="rec-dur" data-dur="800d" onclick="recSetDur('800d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">RU&#201;E 800</button>
-        <button class="rec-dur" data-dur="surv" onclick="recSetDur('surv')" style="background:rgba(160,80,220,0.05);border:1px solid rgba(160,80,220,0.35);color:rgba(180,100,230,0.65);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">SURVIVANT</button>
       </div>
 
       <!-- Mineral qty -->
@@ -57,6 +56,9 @@
       </div>
       <button id="pvp-jouer" style="background:transparent;border:1px solid rgba(220,130,80,0.4);color:#d4b060;font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;padding:12px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
     </div>
+  </div>
+  <div style="margin-bottom:14px">
+    <button id="btn-night" onclick="toggleNightMode()" style="background:rgba(20,30,60,0.06);border:1px solid rgba(100,120,200,0.25);color:rgba(120,140,220,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 18px;pointer-events:all">🌙 NUIT</button>
   </div>
   <div class="hint">SOLO : collecte max de diamants · DMG pas cher · pas de piques<br>PVP : 2 joueurs · P1=fleches, P2=ZQSD · F=activer · R=attaquer<br>Clic=activer · Clic droit=attaquer · ESC=annuler</div>
 </div>
@@ -105,6 +107,8 @@
     </div>
   </div>
 </div>
+
+<div id="placeind" style="display:none;position:fixed;top:88px;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.35);border-radius:6px;padding:6px 20px;z-index:50;font-family:'Courier New',monospace;font-size:13px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap"></div>
 
 <div id="gamebtn">
   <button id="btnmidmenu" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all">&#8592; MENU</button>

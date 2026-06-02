@@ -4,10 +4,10 @@ function loop(ts){
   var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
   // In record modes, timer runs from placement onward
   var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
-  if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused&&!survivorPickMode){
+  if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
     G.time+=dt;
   }
-  if(G&&gameRunning&&G.phase==='combat'&&!gamePaused&&!survivorPickMode){
+  if(G&&gameRunning&&G.phase==='combat'&&!gamePaused){
     // P1 movement
     if(!drillingMode){
       var dx=0,dy=0;
@@ -28,9 +28,8 @@ function loop(ts){
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
       var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
       var diaGoal=diamondRace?diamondGoal:99999;
-    if(survivorMode&&G.blocks.length===0){G.phase='over';G.phase_over=true;G.winner='TIME';}
-      else if(diamondRace&&totalDia>=diaGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
-      else if(!diamondRace&&!survivorMode&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
+    if(diamondRace&&totalDia>=diaGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
+      else if(!diamondRace&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
     }
     if(G.phase==='over'){gameRunning=false;showEnd();}
   }
@@ -41,19 +40,16 @@ function showEnd(){
   var ov=document.getElementById('endov');
   var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
   if(GAMEMODE==='solo'||GAMEMODE==='coop'){
-    if(seriesActive&&!survivorMode) seriesScores.push(diamondRace?Math.round(G.time):totalD);
+    if(seriesActive) seriesScores.push(diamondRace?Math.round(G.time):totalD);
     var isLastGame=seriesGame>=4;
     var title='';
-    if(survivorMode) title='SURVIVANT TERMINÉ';
-    else if(diamondRace&&G.winner==='DIAMOND') title='RUÉE DES '+diamondGoal+' !';
+    if(diamondRace&&G.winner==='DIAMOND') title='RUÉE DES '+diamondGoal+' !';
     else title=GAMEMODE==='coop'?'COOP TERMINEE':'PARTIE TERMINEE';
     document.getElementById('endtitle').textContent=title;
-    document.getElementById('endtitle').style.color=survivorMode?'#b060e0':diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
+    document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
     var timeStr=document.getElementById('timer').textContent;
     var sub='';
-    if(survivorMode){
-      sub='&#9670; '+totalD+'  &middot;  '+survivorMeteorCount+' météorites';
-    } else if(GAMEMODE==='coop'){
+    if(GAMEMODE==='coop'){
       sub='Total: '+totalD+' &#9670; (P1:'+(G.p1.diamond||0)+' + P2:'+(G.p2?G.p2.diamond||0:0)+')';
       sub+='  —  '+timeStr;
     } else {
@@ -61,7 +57,7 @@ function showEnd(){
       if(diamondRace&&G.winner==='DIAMOND') sub+='  —  Temps: '+timeStr;
       else sub+='  —  '+timeStr;
     }
-    if(seriesActive&&!survivorMode){
+    if(seriesActive){
       sub+='  (Partie '+seriesGame+'/4)';
       if(isLastGame){
         var avg=Math.round(seriesScores.reduce(function(a,b){return a+b;},0)/seriesScores.length);
@@ -87,12 +83,11 @@ function showEnd(){
   }
   var modeEl=document.getElementById('endmode');
   if(modeEl){
-    var modeName=survivorMode?'SURVIVANT':diamondRace?('RUÉE DES '+diamondGoal):
-      (GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':GAMEMODE==='coop'?'COOP '+(SOLO_DUR/60|0)+'min':'AFFRONTEMENT');
-    var scoreStr=GAMEMODE!=='pvp'?'  ·  '+totalD+' ◆'+(survivorMode?' / '+survivorMeteorCount+' ☄':''):'';
+    var modeName=diamondRace?('RUÉE DES '+diamondGoal):(GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':GAMEMODE==='coop'?'COOP '+(SOLO_DUR/60|0)+'min':'AFFRONTEMENT');
+    var scoreStr=GAMEMODE!=='pvp'?'  ·  '+totalD+' ◆':'';
     modeEl.innerHTML='Mode : '+modeName+'  ·  '+mineralQty+'/type'+scoreStr;
   }
-  sfx(G&&(G.winner==='TIME'||survivorMode)?'end':'win');
+  sfx(G&&G.winner==='TIME'?'end':'win');
   ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
 }
 /* INPUT */
@@ -103,7 +98,7 @@ document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
     if(shopOpen||tpMode||drillingMode||piqueMode){
       closeShop();tpMode=false;tpSrc=null;tpPlayer=null;
       bdAtk=null;blkAtk=null;metAtk=null;
-      if(drillingMode){drillingMode=false;placePos=null;document.getElementById('pbar').style.display='none';log('Placement annule');}
+      if(drillingMode){drillingMode=false;placePos=null;_hidePlaceInfo();}
       piqueMode=false;piquePlayer=null;
       return;
     }
@@ -146,19 +141,8 @@ function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();
 C.addEventListener('click',function(e){
   if(!G)return;
   var pos=getGrid(e);
-  // Mode Survivant : le joueur choisit la cible de la météorite
-  if(survivorPickMode){
-    if(Date.now()-survivorPickStartTime<1000)return; // attendre 1 seconde
-    var isDrill=G.buildings.some(function(b){return (b.type==='drill'||b.type==='drillfast')&&b.gx===pos.gx&&b.gy===pos.gy;});
-    var isBlock=G.blocks.some(function(b){return b.gx===pos.gx&&b.gy===pos.gy;});
-    var alreadyHit=G.meteors.some(function(m){return !m.fallen&&m.gx===pos.gx&&m.gy===pos.gy;});
-    if((isDrill||isBlock)&&!alreadyHit){
-      G.meteors.push({gx:pos.gx,gy:pos.gy,timer:18,fallen:false,cleanAt:0,hp:150,maxHp:150});
-      sfx('meteor');
-      survivorPickMode=false;
-    }
-    return;
-  }
+
+
   if(drillingMode){var ok=cellFreePlace(pos.gx,pos.gy);if(ok){placePos={gx:pos.gx,gy:pos.gy,ok:true,locked:true};confirmDrill();}return;}
   if(G.phase==='placement'&&placeQueue.length){selectCell(pos.gx,pos.gy);if(placePos&&placePos.ok)confirmPlace();return;}
   if(tpMode){doTeleport(pos.gx,pos.gy);return;}
@@ -321,25 +305,24 @@ function startGame(mode){
     var hn=document.getElementById(pfx+'hn');
     if(hn)hn.style.display=isRec?'none':'';
   });
-  // Detect diamond race or survivor mode
-  survivorMeteorCount=0;
-  var isDiamondRace=(mode==='solo'&&soloDur===999&&!survivorMode)||(mode==='coop'&&coopDur===999&&!survivorMode);
+  // Detect diamond race
+  var isDiamondRace=(mode==='solo'&&soloDur===999)||(mode==='coop'&&coopDur===999);
   diamondRace=isDiamondRace;
-  if(mode==='solo') SOLO_DUR=isDiamondRace||survivorMode?999999:soloDur*60;
-  else if(mode==='coop') SOLO_DUR=isDiamondRace||survivorMode?999999:coopDur*60;
-  // Series logic: no series for survivor
-  if((mode==='solo'||mode==='coop')&&!survivorMode&&seriesGame===0){
+  if(mode==='solo') SOLO_DUR=isDiamondRace?999999:soloDur*60;
+  else if(mode==='coop') SOLO_DUR=isDiamondRace?999999:coopDur*60;
+  // Series logic
+  if((mode==='solo'||mode==='coop')&&seriesGame===0){
     seriesActive=true;seriesGame=1;seriesScores=[];
   }
   // Show/hide TERMINER button
   var finEl=document.getElementById('btnfinish');
   if(finEl) finEl.style.display=(mode==='solo'||mode==='coop')?'block':'none';
-  var modeLabel=survivorMode?'Survivant':mode==='solo'?'Solo':mode==='coop'?'Coop':'Affrontement';
-  var durLabel=survivorMode?'Survivant':isDiamondRace?('Ruée des '+diamondGoal):mode==='solo'?soloDur:mode==='coop'?coopDur:null;
-  if(seriesActive&&(mode==='solo'||mode==='coop')&&!survivorMode)
+  var modeLabel=mode==='solo'?'Solo':mode==='coop'?'Coop':'Affrontement';
+  var durLabel=isDiamondRace?('Ruée des '+diamondGoal):mode==='solo'?soloDur:mode==='coop'?coopDur:null;
+  if(seriesActive&&(mode==='solo'||mode==='coop'))
     log(modeLabel+' — Partie '+seriesGame+'/4 — '+(isDiamondRace?durLabel+' !':durLabel+' min !'));
   else
-    log(mode==='pvp'?'Affrontement — bonne chance !':modeLabel+(isDiamondRace||survivorMode?' — '+durLabel+' !':' — '+durLabel+'  min !'));
+    log(mode==='pvp'?'Affrontement — bonne chance !':modeLabel+(isDiamondRace?' — '+durLabel+' !':' — '+durLabel+'  min !'));
 
   gameNum=1+Math.floor(Math.random()*6);
   gamePaused=false;
@@ -369,10 +352,8 @@ document.getElementById('shop').addEventListener('click',function(e){
 document.getElementById('btn-record-play').addEventListener('click',function(){
   var mode='solo';
   mineralQty=recMq;
-  survivorMode=false;
   if(recDur==='400d'){diamondRace=true;diamondGoal=400;soloDur=999;coopDur=999;}
   else if(recDur==='800d'){diamondRace=true;diamondGoal=800;soloDur=999;coopDur=999;}
-  else if(recDur==='surv'){diamondRace=false;survivorMode=true;soloDur=999;coopDur=999;}
   else{diamondRace=false;if(mode==='solo')soloDur=recDur;else coopDur=recDur;}
   startGame(mode);
 });
@@ -393,7 +374,7 @@ document.getElementById('btnreplay').addEventListener('click',function(){
   }
 });
 function goToMenu(){
-  survivorMode=false;survivorMeteorCount=0;survivorPickMode=false;
+
   gameRunning=false;G=null;
   seriesGame=0;seriesActive=false;seriesScores=[];
   document.getElementById('btnreplay').textContent='REJOUER';
@@ -491,6 +472,18 @@ function pvpSetMq(q){
     btn.textContent=(n===3||n===7)?((active?'\u2611':'\u2744')+' '+n):'5 (def)';
   });
 }
+
+function toggleNightMode(){
+  nightMode=!nightMode;
+  var btn=document.getElementById('btn-night');
+  if(btn){
+    btn.style.background=nightMode?'rgba(20,30,80,0.38)':'rgba(20,30,60,0.06)';
+    btn.style.borderColor=nightMode?'rgba(100,130,255,0.75)':'rgba(100,120,200,0.25)';
+    btn.style.color=nightMode?'rgba(150,170,255,0.95)':'rgba(120,140,220,0.6)';
+    btn.style.fontWeight=nightMode?'bold':'normal';
+  }
+}
+window.toggleNightMode=toggleNightMode;
 
 window.recSetDur=recSetDur;
 window.recSetMq=recSetMq;

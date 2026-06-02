@@ -24,10 +24,9 @@ function renderShop(){
     if(GAMEMODE!=='solo'&&GAMEMODE!=='coop')html+=sItem(ok3,'PIQUE',pc+' charbon','Blesse ceux qui marchent dessus (-25PV/s)','pique');
   } else {
     var isPvp=GAMEMODE==='pvp';
-    var dmgCost=(GAMEMODE==='solo'||GAMEMODE==='coop')?2:5;
+    var dmgCost=(GAMEMODE==='solo'||GAMEMODE==='coop')?1:2;
     if(isPvp){
-      // PvP : DMG co\u00fbte de l'or, HP/SPD co\u00fbtent des diamants
-      var pvpGoldDmg=3, gDmgPvp=(p.gold||0)>=pvpGoldDmg;
+      var pvpGoldDmg=2, gDmgPvp=(p.gold||0)>=pvpGoldDmg;
       html+=sItem(gDmgPvp,'+2 DMG/s',pvpGoldDmg+' or','Actuel: '+p.dmg+'/s','dmg');
       var d5=(p.diamond||0)>=5;
       html+=sItem(d5,'+20 PV max','5 \u25c6','Actuel: '+p.maxHp+' PV','hp');
@@ -58,6 +57,7 @@ function buyBlock(btype){
   p.diamond-=cost;p.blocksBought=(p.blocksBought||0)+1;sfx('buy');closeShop();
   drillingMode='block-'+btype;
   placePos=null;
+  _showPlaceInfo('BLOC '+btype.toUpperCase());
 }
 
 function buyBd(type){
@@ -71,6 +71,7 @@ function buyBd(type){
     p.coal-=cost;closeShop();
     drillingMode=type;
     placePos=null;
+    _showPlaceInfo('FOREUSE');
     return;
   }
   var fac=G.buildings.filter(function(b){return b.type==='factory';})[0];if(!fac){log('Usine detruite !');return;}
@@ -88,8 +89,8 @@ function buyUpg(t){
   var costs={dmg:isRec2?2:5,hp:5,spd:(p.spdUpg||0)+1};
   if(GAMEMODE==='pvp'){
     if(t==='dmg'){
-      if((p.gold||0)<3){log('Pas assez d or !');return;}
-      p.gold-=3;
+      if((p.gold||0)<2){log('Pas assez d or !');return;}
+      p.gold-=2;
     } else {
       if((p.diamond||0)<costs[t]){log('Pas assez de diamants !');return;}
       p.diamond-=costs[t];

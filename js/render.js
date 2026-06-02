@@ -21,8 +21,9 @@ function draw(){
   G.meteors.forEach(function(m){
     if(m.fallen)return;
     var p2=0.5+0.5*Math.sin(G.time*7),bx=m.gx*TILE,by=m.gy*TILE,cx=bx+TILE/2,cy=by+TILE/2;
+    var _rc=m.resType==='diamond'?'80,200,255':m.resType==='gold'?'255,200,30':'180,180,190';
     var mg=X.createRadialGradient(cx,cy,6,cx,cy,TILE*.6);
-    mg.addColorStop(0,'rgba(255,100,20,'+(0.2+p2*.2)+')');mg.addColorStop(1,'rgba(200,60,10,0)');
+    mg.addColorStop(0,'rgba('+_rc+','+(0.25+p2*.2)+')');mg.addColorStop(1,'rgba('+_rc.split(',')[0]+','+_rc.split(',')[1]+','+_rc.split(',')[2]+',0)');
     X.fillStyle=mg;X.fillRect(bx,by,TILE,TILE);
     X.fillStyle='rgba(80,50,30,0.9)';X.beginPath();X.arc(cx,cy-8+p2*4,12,0,Math.PI*2);X.fill();
     var hg=X.createRadialGradient(cx,cy-8+p2*4,2,cx,cy-8+p2*4,12);
@@ -110,33 +111,32 @@ function draw(){
     X.strokeStyle='rgba(28,20,8,0.55)';X.lineWidth=1;X.stroke();
   });
 
-  // Mode Survivant — sélection de cible par le joueur
-  if(survivorPickMode){
-    var pp=0.5+0.5*Math.sin(Date.now()/150);
-    // Foreuses disponibles (rouge)
-    G.buildings.forEach(function(bd){
-      if(bd.type!=='drill'&&bd.type!=='drillfast')return;
-      if(G.meteors.some(function(m){return !m.fallen&&m.gx===bd.gx&&m.gy===bd.gy;}))return;
-      X.strokeStyle='rgba(255,70,20,'+(0.65+pp*0.35)+')';X.lineWidth=3;X.setLineDash([5,3]);
-      X.strokeRect(bd.gx*TILE+2,bd.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
-    });
-    // Minéraux disponibles (orange)
-    G.blocks.forEach(function(bl){
-      if(G.meteors.some(function(m){return !m.fallen&&m.gx===bl.gx&&m.gy===bl.gy;}))return;
-      X.strokeStyle='rgba(255,160,20,'+(0.65+pp*0.35)+')';X.lineWidth=3;X.setLineDash([5,3]);
-      X.strokeRect(bl.gx*TILE+2,bl.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
-    });
-    // Bandeau instruction
-    X.fillStyle='rgba(180,40,10,0.88)';X.fillRect(0,CH/2-22,CW,44);
-    X.fillStyle='#ffe8c0';X.font='bold 15px Courier New';
-    X.textAlign='center';X.textBaseline='middle';
-    X.fillText('☄  CLIQUEZ UNE CASE EN SURBRILLANCE — LA MÉTÉORITE TOMBERA LÀ  ☄',CW/2,CH/2);
-  }
-
   // Players
   G.players.forEach(function(p){if(!p.dead)drawPlayer(p);});
+
+  // Mode Nuit — brouillard de visibilité (3 cases de portée)
+  if(nightMode&&G.phase==='combat'){
+    if(!_fogC||_fogC.width!==CW){_fogC=document.createElement('canvas');_fogC.width=CW;_fogC.height=CH;}
+    var _fx=_fogC.getContext('2d');
+    _fx.clearRect(0,0,CW,CH);
+    _fx.fillStyle='rgba(3,1,0,0.97)';_fx.fillRect(0,0,CW,CH);
+    _fx.globalCompositeOperation='destination-out';
+    G.players.forEach(function(p){
+      if(p.dead)return;
+      var px=p.x*TILE,py=p.y*TILE,R=3*TILE;
+      var grd=_fx.createRadialGradient(px,py,0,px,py,R);
+      grd.addColorStop(0,'rgba(0,0,0,1)');
+      grd.addColorStop(0.75,'rgba(0,0,0,1)');
+      grd.addColorStop(1,'rgba(0,0,0,0)');
+      _fx.fillStyle=grd;_fx.beginPath();_fx.arc(px,py,R,0,Math.PI*2);_fx.fill();
+    });
+    _fx.globalCompositeOperation='source-over';
+    X.drawImage(_fogC,0,0);
+  }
+
   updateHUD();
 }
+var _fogC=null;
 
 function drawBd(bd){
   var bx=bd.gx*TILE,by=bd.gy*TILE,cx=bx+TILE/2,cy=by+TILE/2;
@@ -283,15 +283,11 @@ function updateHUD(){
     document.getElementById(pfx+'go').textContent='G '+p.gold;
     var di=document.getElementById(pfx+'di');if(di)di.textContent='D '+(p.diamond||0);
   });
-  if(survivorMode){
-    document.getElementById('timer').textContent='☄ '+survivorMeteorCount;
-  } else {
-    var s;
-    if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!diamondRace){var rem=Math.max(0,SOLO_DUR-G.time);s=Math.floor(rem);}
-    else if(diamondRace){s=Math.floor(G.time);}
-    else s=Math.floor(G.time);
-    document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-  }
+  var s;
+  if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!diamondRace){var rem=Math.max(0,SOLO_DUR-G.time);s=Math.floor(rem);}
+  else if(diamondRace){s=Math.floor(G.time);}
+  else s=Math.floor(G.time);
+  document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 }
 
 function log(msg){

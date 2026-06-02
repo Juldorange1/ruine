@@ -21,13 +21,26 @@ function startPlacement(){
   nextPlace();
 }
 
+function _showPlaceInfo(txt){
+  var el=document.getElementById('placeind');
+  if(el){el.textContent='PLACER : '+txt;el.style.display='block';}
+}
+function _hidePlaceInfo(){
+  var el=document.getElementById('placeind');if(el)el.style.display='none';
+}
+
 function nextPlace(){
   placePos=null;
   if(!placeQueue.length){
     G.phase='combat';
     document.getElementById('phase').textContent='COMBAT';
+    _hidePlaceInfo();
     return;
   }
+  var cur=placeQueue[0];
+  var lbl=cur.type==='drill'?'FOREUSE':'TÉLÉPORTEUR';
+  var who=(GAMEMODE!=='solo'&&cur.who==='p2')?'J2':'J1';
+  _showPlaceInfo(lbl+(GAMEMODE!=='solo'?' ('+who+')':''));
 }
 
 function confirmPlace(){
@@ -51,13 +64,13 @@ function confirmDrill(){
     G.blocks.push({gx:placePos.gx,gy:placePos.gy,x:placePos.gx+.5,y:placePos.gy+.5,
       type:btype,id:btype+Date.now(),hp:bhp,maxHp:bhp});
     drillingMode=false;placePos=null;
-    sfx('place');
+    _hidePlaceInfo();sfx('place');
     return;
   }
   var dtype=(drillingMode==='drillfast'?'drillfast':'drill');
   addBd(dtype,placePos.gx,placePos.gy,G.p1.team);
   drillingMode=false;placePos=null;
-  sfx('buy');
+  _hidePlaceInfo();sfx('buy');
 }
 
 function selectCell(gx,gy){
