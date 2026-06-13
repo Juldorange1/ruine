@@ -51,14 +51,7 @@ function initGame(){
         var gx,gy,k,t=0;
         do{
           gx=1+Math.floor(rr()*(MAP-2));gy=1+Math.floor(rr()*(MAP-2));k=gx+','+gy;t++;
-          // Charbon : pas sur les cases du contour intérieur
-          var borderFail=(type==='coal')&&(gx<=1||gx>=MAP-2||gy<=1||gy>=MAP-2);
-          // Diamant : pas adjacent (orthogonal) à l'usine (6,6) ou au magazin (5,6)
-          var adjFail=(type==='diamond')&&(
-            Math.abs(gx-6)+Math.abs(gy-6)<=1||
-            Math.abs(gx-5)+Math.abs(gy-6)<=1
-          );
-        }while((taken[k]||borderFail||adjFail)&&t<400);
+        }while(taken[k]&&t<400);
         taken[k]=true;
         var bhp=type==='diamond'?420:type==='gold'?280:210;
         var block={gx:gx,gy:gy,x:gx+.5,y:gy+.5,type:type,id:type+i,hp:bhp,maxHp:bhp};
