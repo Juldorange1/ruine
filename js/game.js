@@ -422,12 +422,12 @@ function startGame(mode){
   // ULTIME — pool fixe avec toutes les options, tirer la 1ère dès le début
   _ultimateActiveOpt=null;
   _ultimatePool=[];
-  nightMode=false;speedMode=false;quadMineralMode=false;randomCostMode=false;
+  nightMode=false;speedMode=false;quadMineralMode=false;
   destructMode=false;ghostMode=false;
   if(ultimateMode){
     _ultimatePool=['night','speed','quad','destruct','ghost'];
     _destructTimer=28;_ghostTimer=28;
-    costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
+    if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
     _ultimateTimer=60;
   }
   // Reset destruct/ghost
@@ -525,10 +525,14 @@ function _updateRandomCostDisplay(){
   var rc=document.getElementById('randomcostinfo');
   if(!rc)return;
   if(randomCostMode&&gameRunning){
-    var cn={coal:'Charbon',gold:'Or',diamond:'Diamant'};
+    var sym={coal:'■',gold:'★',diamond:'◆'};
+    var col={coal:'#c0a060',gold:'#f0c030',diamond:'#80eeff'};
     var kLabels={drill:'Foreuse',dmg:'Dégâts',spd:'Vitesse',block:'Blocs'};
-    var lines=Object.keys(costTypes).map(function(k){return kLabels[k]+' → '+cn[costTypes[k]];});
-    rc.innerHTML=lines.join('<br>');
+    var lines=Object.keys(costTypes).map(function(k){
+      var r=costTypes[k];
+      return kLabels[k]+' <span style="color:'+col[r]+'">'+sym[r]+'</span>';
+    });
+    rc.innerHTML='<div style="opacity:0.5;font-size:11px;margin-bottom:3px;letter-spacing:2px">COÛTS</div>'+lines.join('<br>');
     rc.style.display='block';
   } else {
     rc.style.display='none';
