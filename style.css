@@ -58,3 +58,73 @@ h1.title{font-size:64px;letter-spacing:14px;margin-bottom:6px;color:#d4a040;text
 #shint{font-size:11px;opacity:0.25;color:#c0a060}
 /* KEYS */
 #kh{position:fixed;right:12px;bottom:12px;font-size:13px;opacity:0.28;letter-spacing:1px;line-height:2.2;pointer-events:none;z-index:20;color:#c0a060;font-weight:600}
+/* BOUTON PAUSE MOBILE */
+#mob-pause{display:none;position:fixed;top:6px;right:6px;z-index:35;background:rgba(8,5,2,0.88);border:1px solid rgba(220,170,80,0.35);color:#d4b060;font-family:'Courier New',monospace;font-size:14px;padding:6px 14px;cursor:pointer;border-radius:4px;pointer-events:all;letter-spacing:1px}
+
+/* ═══════════════════════════════════════
+   MOBILE (largeur < 600px)
+═══════════════════════════════════════ */
+@media(max-width:599px){
+  /* ─ HUD : cartes joueur compactes ─ */
+  .hud{padding:3px 4px;align-items:flex-start}
+  .pc{min-width:0;max-width:44vw;padding:4px 7px}
+  .pc h3{font-size:9px;margin-bottom:1px}
+  .nm{font-size:13px;margin-bottom:1px}
+  .hb{height:5px;margin-bottom:1px}
+  .srow{display:none}
+  .res{gap:2px;margin-top:2px}
+  .res span{font-size:11px;padding:1px 4px}
+  #p1hn{display:none}
+  #team2hud{display:none}
+  /* ─ Timer central ─ */
+  #ch{top:2px}
+  #gamemodedisp{font-size:11px;letter-spacing:1px;margin-bottom:0}
+  #timer{font-size:20px;letter-spacing:2px}
+  #phase{font-size:9px;margin-top:1px}
+  /* ─ Bouton pause mobile ─ */
+  #mob-pause{display:none}/* géré par JS, affiché seulement en jeu */
+  /* ─ Shop : panneau bas plein-largeur ─ */
+  #shop{width:100%;max-width:100%;right:0;left:0;border-radius:10px 10px 0 0;top:auto;bottom:0;transform:none;max-height:62vh;border-right:1px solid rgba(220,170,80,0.22);border-bottom:none}
+  #shint{display:none}
+  /* ─ Barre de placement ─ */
+  #pbar{top:60px;padding:5px 12px;white-space:normal;max-width:94vw;text-align:center;font-size:12px}
+  #pbar h4{font-size:12px;margin-bottom:4px}
+  .pb{font-size:12px;padding:7px 14px}
+  #pinfo{font-size:12px;margin-left:4px}
+  /* ─ Indicateur placement/sélection ─ */
+  #placeind{top:60px;font-size:12px;padding:5px 14px;white-space:normal;max-width:92vw;text-align:center}
+  /* ─ Log messages ─ */
+  .le{font-size:12px;white-space:normal;max-width:88vw;text-align:center;padding:5px 12px}
+  /* ─ Panel gauche (ULTIME / coûts) ─ */
+  #leftpanel{top:auto;bottom:64px;left:6px;right:6px;pointer-events:none}
+  #ultimatehud{font-size:11px;padding:7px 10px}
+  #randomcostinfo{font-size:11px;padding:5px 10px}
+  /* ─ Alerte météorite ─ */
+  #mw{top:52px;font-size:13px;padding:5px 14px}
+  /* ─ Hint clavier masqué ─ */
+  #kh{display:none}
+  /* ─ Boutons en jeu (bas) ─ */
+  #gamebtn{bottom:5px}
+  /* ─ Menu principal ─ */
+  #ov{overflow-y:auto;justify-content:flex-start;padding:14px 10px 28px}
+  h1.title{font-size:34px;letter-spacing:6px;margin-bottom:2px}
+  .sub{font-size:10px;letter-spacing:3px;margin-bottom:12px}
+  .mcards{margin-bottom:12px;gap:10px}
+  .mcard{padding:12px 16px;max-width:100%;width:100%}
+  .mcard h2{font-size:16px;margin-bottom:6px}
+  .hint{font-size:9px;line-height:1.9;margin-top:8px}
+  /* boutons options */
+  #ov button[id^="btn-"]{font-size:12px;padding:7px 12px}
+  /* Boutons durée */
+  .rec-dur{font-size:12px;padding:7px 10px}
+  /* Bouton JOUER */
+  #btn-record-play{font-size:13px;padding:10px}
+  /* Slider volume */
+  #vol-slider{width:80px}
+  /* ─ Fin de partie ─ */
+  #endov{padding:16px 12px}
+  #endmapcode{font-size:7px;max-width:90vw}
+  /* ─ Modal règles ─ */
+  #rulesov{padding:14px 10px}
+  #rulesov>div{max-width:100%}
+}

@@ -51,7 +51,13 @@ function loop(ts){
     if(_touchMoveTarget&&!_selectionPending&&!drillingMode){
       var _tdx=_touchMoveTarget.gx-G.p1.x,_tdy=_touchMoveTarget.gy-G.p1.y;
       var _tdd=Math.hypot(_tdx,_tdy);
-      if(_tdd>0.15){moveP(G.p1,_tdx/_tdd,_tdy/_tdd,dt);}else{_touchMoveTarget=null;G.p1.vx=0;G.p1.vy=0;}
+      if(_tdd>0.12){moveP(G.p1,_tdx/_tdd,_tdy/_tdd,dt);}else{_touchMoveTarget=null;_touchActivateBd=null;G.p1.vx=0;G.p1.vy=0;}
+    }
+    // Auto-activer bâtiment cible (tap mobile sur bâtiment éloigné)
+    if(_touchActivateBd&&G.p1&&!G.p1.dead&&!shopOpen){
+      if(Math.hypot(G.p1.x-_touchActivateBd.x,G.p1.y-_touchActivateBd.y)<=1.6){
+        activateBd(_touchActivateBd,G.p1);_touchActivateBd=null;_touchMoveTarget=null;
+      }
     }
     // Décompte du délai de sélection (0,5s d'invincibilité au clic)
     if(_selectionDelay>0){_selectionDelay=Math.max(0,_selectionDelay-dt);}
@@ -289,7 +295,9 @@ C.addEventListener('dblclick',function(e){
 
 /* CONTRÔLES TACTILES (mobile) */
 var _touchMoveTarget=null;
-var _touchStartTime=0,_touchStartCx=0,_touchStartCy=0;
+var _touchActivateBd=null;
+var _touchStartTime=0,_touchStartGx=0,_touchStartGy=0;
+var _touchDragging=false;
 
 function _getTouchGrid(touch){
   var r=document.getElementById('cw').getBoundingClientRect();
@@ -303,45 +311,94 @@ C.addEventListener('touchstart',function(e){
   if(!G||!gameRunning)return;
   var t=e.touches[0];
   var tg=_getTouchGrid(t);
-  _touchStartTime=Date.now();_touchStartCx=tg.gx;_touchStartCy=tg.gy;
-  if(G.phase==='combat'&&!_selectionPending&&!drillingMode)_touchMoveTarget={gx:tg.gx,gy:tg.gy};
-  // Phase placement : sélectionner la case
+  _touchStartTime=Date.now();_touchStartGx=tg.gx;_touchStartGy=tg.gy;
+  _touchDragging=false;
+  // Prévisualiser la case en phase de placement
   if(G.phase==='placement'&&placeQueue.length){selectCell(tg.igx,tg.igy);}
 },{passive:false});
 
 C.addEventListener('touchmove',function(e){
   e.preventDefault();
-  if(!G||!gameRunning||G.phase!=='combat'||_selectionPending||drillingMode)return;
+  if(!G||!gameRunning)return;
   var t=e.touches[0];
   var tg=_getTouchGrid(t);
-  _touchMoveTarget={gx:tg.gx,gy:tg.gy};
+  var moved=Math.hypot(tg.gx-_touchStartGx,tg.gy-_touchStartGy);
+  if(moved>0.3&&G.phase==='combat'&&!_selectionPending){
+    _touchDragging=true;
+    _touchMoveTarget={gx:tg.gx,gy:tg.gy};
+    _touchActivateBd=null;
+  }
+  // Glisser pendant placement : mettre à jour la case sélectionnée
+  if(G.phase==='placement'&&placeQueue.length&&moved>0.3){selectCell(tg.igx,tg.igy);}
 },{passive:false});
 
 C.addEventListener('touchend',function(e){
   e.preventDefault();
-  _touchMoveTarget=null;
   if(!G||!gameRunning)return;
   var t=e.changedTouches[0];
   var tg=_getTouchGrid(t);
   var elapsed=Date.now()-_touchStartTime;
-  var moved=Math.hypot(tg.gx-_touchStartCx,tg.gy-_touchStartCy);
-  var isTap=elapsed<300&&moved<0.6;
-  // Sélection DESTRUCTION / FANTÔME
-  if(isTap&&(_destructPending||_ghostPending)&&_selectionDelay<=0){
-    var synth={clientX:t.clientX,clientY:t.clientY};
-    C.dispatchEvent(new MouseEvent('click',{clientX:t.clientX,clientY:t.clientY,bubbles:true}));
+  var moved=Math.hypot(tg.gx-_touchStartGx,tg.gy-_touchStartGy);
+  var isTap=!_touchDragging&&elapsed<400&&moved<0.5;
+
+  // Fin de glisser : arrêter le mouvement
+  if(_touchDragging){_touchDragging=false;_touchMoveTarget=null;return;}
+  if(!isTap)return;
+
+  // ─ Sélection DESTRUCTION (directement, sans faux clic souris)
+  if(_destructPending&&_selectionDelay<=0){
+    var _db=G.blocks.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy;})[0];
+    var _dd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast')&&b.gx===tg.igx&&b.gy===tg.igy;})[0];
+    if(_db){G.blocks=G.blocks.filter(function(b){return b!==_db;});_destructPending=false;sfx('impact');}
+    else if(_dd){G.buildings=G.buildings.filter(function(b){return b!==_dd;});_destructPending=false;sfx('impact');}
+    if(!_destructPending){_selectionPending=_ghostPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
     return;
   }
-  if(!isTap)return;
-  if(G.phase==='placement'&&placeQueue.length){if(placePos&&placePos.ok)confirmPlace();return;}
-  if(G.phase!=='combat')return;
-  // Tap rapide : activer bâtiment si à portée, sinon aller vers la case
-  var bd=G.buildings.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy;})[0];
-  if(bd){
-    var actor=G.p1;
-    if(Math.hypot(actor.x-bd.x,actor.y-bd.y)<=2){activateBd(bd,actor);}
-    else{_touchMoveTarget={gx:tg.gx,gy:tg.gy};}
+
+  // ─ Sélection FANTÔME (directement)
+  if(_ghostPending&&_selectionDelay<=0){
+    var _gb=G.blocks.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
+    var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast')&&b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
+    if(_gb){_gb.ghost=true;_ghostPending=false;sfx('tp');}
+    else if(_gd){_gd.ghost=true;_ghostPending=false;sfx('tp');}
+    if(!_ghostPending){_selectionPending=_destructPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
+    return;
   }
+
+  // ─ Phase placement : confirmer la case sélectionnée
+  if(G.phase==='placement'&&placeQueue.length){
+    selectCell(tg.igx,tg.igy);
+    if(placePos&&placePos.ok)confirmPlace();
+    return;
+  }
+
+  // ─ Mode téléporteur
+  if(tpMode){doTeleport(tg.igx,tg.igy);return;}
+
+  // ─ Mode foreuse (drilling depuis shop)
+  if(drillingMode){
+    var _ok=cellFreePlace(tg.igx,tg.igy);
+    if(_ok){placePos={gx:tg.igx,gy:tg.igy,ok:true,locked:true};confirmDrill();}
+    return;
+  }
+
+  if(G.phase!=='combat')return;
+
+  // ─ Tap sur un bâtiment : activer si proche, sinon marcher vers lui
+  var bd=G.buildings.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
+  if(bd){
+    if(Math.hypot(G.p1.x-bd.x,G.p1.y-bd.y)<=1.8){
+      activateBd(bd,G.p1);
+    } else {
+      _touchActivateBd=bd;
+      _touchMoveTarget={gx:bd.gx+0.5,gy:bd.gy+0.5};
+    }
+    return;
+  }
+
+  // ─ Tap sur case vide : se déplacer
+  _touchMoveTarget={gx:tg.gx,gy:tg.gy};
+  _touchActivateBd=null;
 },{passive:false});
 
 /* START GAME */
@@ -399,6 +456,7 @@ function startGame(mode){
   document.getElementById('endov').style.display='none';
   document.getElementById('endov').style.opacity='0';
   document.getElementById('phase').textContent='PLACEMENT';
+  var _mp=document.getElementById('mob-pause');if(_mp&&window.innerWidth<600)_mp.style.display='block';
 
   _updateRandomCostDisplay();
 
@@ -537,6 +595,8 @@ function goToMenu(){
   var rcm=document.getElementById('randomcostinfo');if(rcm)rcm.style.display='none';
   document.getElementById('ov').style.display='flex';
   recSetDur(recDur);
+  var _mp2=document.getElementById('mob-pause');if(_mp2)_mp2.style.display='none';
+  _touchMoveTarget=null;_touchActivateBd=null;_touchDragging=false;
 }
 document.getElementById('btnpauseresume').addEventListener('click',function(){gamePaused=false;document.getElementById('pauseov').style.display='none';});
 document.getElementById('btnpausemenu').addEventListener('click',function(){goToMenu();});

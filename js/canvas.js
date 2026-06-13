@@ -1,7 +1,15 @@
 ﻿var C=document.getElementById('c'),X=C.getContext('2d');
 var TILE=64,MAP=13,CW=MAP*TILE,CH=MAP*TILE;
 C.width=CW;C.height=CH;
-function resz(){var s=Math.min(window.innerWidth/CW,window.innerHeight/CH)*.91;document.getElementById('cw').style.transform='translate(-50%,-50%) scale('+s+')'}
+function resz(){
+  var mob=window.innerWidth<600;
+  var hudH=mob?58:0;
+  var avW=window.innerWidth,avH=window.innerHeight-hudH;
+  var s=Math.min(avW/CW,avH/CH)*(mob?0.97:0.91);
+  var cw=document.getElementById('cw');
+  cw.style.transform='translate(-50%,-50%) scale('+s+')';
+  cw.style.top=mob?(hudH+avH/2)+'px':'50%';
+}
 window.addEventListener('resize',resz);resz();
 
 /* DESERT FLOOR IMAGE */
