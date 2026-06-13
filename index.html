@@ -56,15 +56,7 @@
 
   </div>
 
-  <!-- Options principale -->
-  <div style="margin-bottom:6px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
-    <button id="btn-night" onclick="toggleNightMode()" style="background:rgba(20,30,60,0.06);border:1px solid rgba(100,120,200,0.25);color:rgba(120,140,220,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">🌙 NOCTURNE</button>
-    <button id="btn-speed" onclick="toggleSpeedMode()" style="background:rgba(40,20,0,0.06);border:1px solid rgba(200,120,30,0.25);color:rgba(200,140,60,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">&#9889; DBL VITESSE</button>
-    <button id="btn-quad" onclick="toggleQuadMineralMode()" style="background:rgba(15,0,20,0.06);border:1px solid rgba(130,50,170,0.25);color:rgba(150,70,190,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">&#10753; QUADRANT</button>
-<button id="btn-destruct" onclick="toggleDestructMode()" style="background:rgba(30,0,0,0.06);border:1px solid rgba(180,40,20,0.25);color:rgba(200,60,40,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">💥 DESTRUCTION</button>
-    <button id="btn-ghost" onclick="toggleGhostMode()" style="background:rgba(0,10,20,0.06);border:1px solid rgba(30,120,180,0.25);color:rgba(60,150,200,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">👻 FANT&#212;ME</button>
-  </div>
-  <!-- Option ULTIME + bouton RÈGLES -->
+  <!-- ULTIME + RÈGLES -->
   <div style="margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:14px">
     <button id="btn-ultimate" onclick="toggleUltimateMode()" style="background:rgba(25,0,30,0.06);border:2px solid rgba(140,30,180,0.25);color:rgba(170,60,210,0.6);font-family:'Courier New',monospace;font-size:15px;letter-spacing:3px;cursor:pointer;border-radius:6px;transition:all .2s;padding:9px 30px;pointer-events:all">&#9889; ULTIME</button>
     <button onclick="document.getElementById('rulesov').style.display='flex'" style="background:rgba(10,8,2,0.7);border:1px solid rgba(200,160,50,0.35);color:rgba(220,180,80,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all">? R&#200;GLES</button>
@@ -180,7 +172,7 @@
 
       <div style="border:2px solid rgba(140,30,180,0.35);border-radius:6px;padding:14px 18px;background:rgba(25,0,30,0.3)">
         <div style="font-size:16px;font-weight:bold;color:rgba(200,80,255,0.95);letter-spacing:3px;margin-bottom:8px">⚡ ULTIME</div>
-        <div style="color:#c0b080">Dès le début de la partie, une des options sélectionnées est tirée au hasard et activée. Toutes les 60 secondes l'option change aléatoirement (DBL VITESSE dure 2 minutes au lieu d'1). Le pool d'options actives est affiché à gauche. Compatible avec : NOCTURNE, DBL VITESSE, QUADRANT, DESTRUCTION, FANTÔME.</div>
+        <div style="color:#c0b080">Dès le début de la partie, une option est tirée au hasard parmi toutes : NOCTURNE, DBL VITESSE, QUADRANT, DESTRUCTION, FANTÔME. Toutes les 60 secondes l'option change aléatoirement (jamais la même deux fois de suite). DBL VITESSE dure 2 minutes. L'option active est affichée à gauche de l'écran.</div>
       </div>
 
     </div>

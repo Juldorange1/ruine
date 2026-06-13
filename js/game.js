@@ -167,17 +167,8 @@ document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
     e.preventDefault();
     var _gm=GAMEMODE;
     seriesGame=0;seriesActive=false;seriesScores=[];
-    // Restaurer les flags d'options depuis le pool ULTIME avant de relancer
-    if(ultimateMode&&_ultimatePool.length){
-      _ultimateDeactivate();
-      _ultimatePool.forEach(function(opt){
-        if(opt==='night')nightMode=true;
-        else if(opt==='speed')speedMode=true;
-        else if(opt==='quad')quadMineralMode=true;
-        else if(opt==='destruct')destructMode=true;
-        else if(opt==='ghost')ghostMode=true;
-      });
-    }
+    // Désactiver l'option active avant de relancer
+    if(ultimateMode)_ultimateDeactivate();
     // Si un code map avait été chargé, relancer avec le même code
     if(_lastMapCode){
       var _B36r='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -426,17 +417,14 @@ function startGame(mode){
     costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
   }
 
-  // ULTIME — construire le pool, désactiver les options individuelles, tirer la 1ère dès le début
+  // ULTIME — pool fixe avec toutes les options, tirer la 1ère dès le début
   _ultimateActiveOpt=null;
   _ultimatePool=[];
+  nightMode=false;speedMode=false;quadMineralMode=false;randomCostMode=false;
+  destructMode=false;ghostMode=false;
   if(ultimateMode){
-    if(nightMode)_ultimatePool.push('night');
-    if(speedMode)_ultimatePool.push('speed');
-    if(quadMineralMode)_ultimatePool.push('quad');
-    if(destructMode)_ultimatePool.push('destruct');
-    if(ghostMode)_ultimatePool.push('ghost');
-    nightMode=false;speedMode=false;quadMineralMode=false;randomCostMode=false;
-    destructMode=false;ghostMode=false;_destructTimer=28;_ghostTimer=28;
+    _ultimatePool=['night','speed','quad','destruct','ghost'];
+    _destructTimer=28;_ghostTimer=28;
     costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
     _ultimateTimer=60;
   }
@@ -643,24 +631,6 @@ function _toggleOpt(flag,btnId,colOn,colOff){
     btn.style.fontWeight=flag?'bold':'normal';
   }
 }
-function toggleNightMode(){
-  nightMode=!nightMode;
-  _toggleOpt(nightMode,'btn-night',
-    ['rgba(20,30,80,0.38)','rgba(100,130,255,0.75)','rgba(150,170,255,0.95)'],
-    ['rgba(20,30,60,0.06)','rgba(100,120,200,0.25)','rgba(120,140,220,0.6)']);
-}
-function toggleSpeedMode(){
-  speedMode=!speedMode;
-  _toggleOpt(speedMode,'btn-speed',
-    ['rgba(60,20,0,0.38)','rgba(255,140,30,0.75)','rgba(255,180,80,0.95)'],
-    ['rgba(40,20,0,0.06)','rgba(200,120,30,0.25)','rgba(200,140,60,0.6)']);
-}
-function toggleQuadMineralMode(){
-  quadMineralMode=!quadMineralMode;
-  _toggleOpt(quadMineralMode,'btn-quad',
-    ['rgba(30,0,40,0.38)','rgba(180,80,220,0.75)','rgba(210,120,250,0.95)'],
-    ['rgba(15,0,20,0.06)','rgba(130,50,170,0.25)','rgba(150,70,190,0.6)']);
-}
 function _ultimateDeactivate(){
   var opt=_ultimateActiveOpt;
   _ultimateActiveOpt=null;
@@ -700,31 +670,12 @@ function _ultimateShuffleMinerals(){
   for(var _fi=free.length-1;_fi>0;_fi--){var _fj=Math.floor(Math.random()*(_fi+1));var _ft=free[_fi];free[_fi]=free[_fj];free[_fj]=_ft;}
   G.blocks.forEach(function(b,idx){if(idx<free.length){b.gx=free[idx].gx;b.gy=free[idx].gy;b.x=b.gx+.5;b.y=b.gy+.5;}});
 }
-function toggleDestructMode(){
-  destructMode=!destructMode;
-  _toggleOpt(destructMode,'btn-destruct',
-    ['rgba(60,0,0,0.38)','rgba(255,60,40,0.75)','rgba(255,100,80,0.95)'],
-    ['rgba(30,0,0,0.06)','rgba(180,40,20,0.25)','rgba(200,60,40,0.6)']);
-}
-function toggleGhostMode(){
-  ghostMode=!ghostMode;
-  _toggleOpt(ghostMode,'btn-ghost',
-    ['rgba(0,20,40,0.38)','rgba(60,180,255,0.75)','rgba(100,210,255,0.95)'],
-    ['rgba(0,10,20,0.06)','rgba(30,120,180,0.25)','rgba(60,150,200,0.6)']);
-}
 function toggleUltimateMode(){
   ultimateMode=!ultimateMode;
   _toggleOpt(ultimateMode,'btn-ultimate',
     ['rgba(50,0,60,0.45)','rgba(200,60,255,0.8)','rgba(230,120,255,0.95)'],
     ['rgba(25,0,30,0.06)','rgba(140,30,180,0.25)','rgba(170,60,210,0.6)']);
 }
-function toggleRandomCostMode(){
-  randomCostMode=!randomCostMode;
-  _toggleOpt(randomCostMode,'btn-random',
-    ['rgba(0,50,30,0.38)','rgba(50,220,130,0.75)','rgba(80,255,160,0.95)'],
-    ['rgba(0,25,15,0.06)','rgba(30,150,80,0.25)','rgba(50,180,100,0.6)']);
-}
-
 /* MAP CODE */
 function loadMapCode(){
   var inp=document.getElementById('mapcodeload');
@@ -768,12 +719,6 @@ function loadMapCode(){
   startGame('solo');
   inp.value='';
 }
-function _syncOptionButtons(){
-  _toggleOpt(nightMode,'btn-night',['rgba(20,30,80,0.38)','rgba(100,130,255,0.75)','rgba(150,170,255,0.95)'],['rgba(20,30,60,0.06)','rgba(100,120,200,0.25)','rgba(120,140,220,0.6)']);
-  _toggleOpt(speedMode,'btn-speed',['rgba(60,20,0,0.38)','rgba(255,140,30,0.75)','rgba(255,180,80,0.95)'],['rgba(40,20,0,0.06)','rgba(200,120,30,0.25)','rgba(200,140,60,0.6)']);
-  _toggleOpt(quadMineralMode,'btn-quad',['rgba(30,0,40,0.38)','rgba(180,80,220,0.75)','rgba(210,120,250,0.95)'],['rgba(15,0,20,0.06)','rgba(130,50,170,0.25)','rgba(150,70,190,0.6)']);
-  _toggleOpt(randomCostMode,'btn-random',['rgba(0,50,30,0.38)','rgba(50,220,130,0.75)','rgba(80,255,160,0.95)'],['rgba(0,25,15,0.06)','rgba(30,150,80,0.25)','rgba(50,180,100,0.6)']);
-}
 function copyMapCode(){
   var el=document.getElementById('endmapcode');
   if(!el||!el.textContent)return;
@@ -782,12 +727,6 @@ function copyMapCode(){
   else{var ta=document.createElement('textarea');ta.value=el.textContent;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);fn();}
 }
 
-window.toggleNightMode=toggleNightMode;
-window.toggleSpeedMode=toggleSpeedMode;
-window.toggleQuadMineralMode=toggleQuadMineralMode;
-window.toggleRandomCostMode=toggleRandomCostMode;
-window.toggleDestructMode=toggleDestructMode;
-window.toggleGhostMode=toggleGhostMode;
 window.toggleUltimateMode=toggleUltimateMode;
 window.loadMapCode=loadMapCode;
 window.copyMapCode=copyMapCode;
