@@ -1,13 +1,19 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RUINE">
+<meta name="theme-color" content="#d4a040">
 <title>RUINE</title>
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
-<!-- Textures de sol (images reelles, chargees par canvas.js) -->
+<!-- Textures de sol -->
 <img id="tex-grass1"  src="images/grass1.jpg"  style="display:none">
 <img id="tex-grass2"  src="images/grass2.jpg"  style="display:none">
 <img id="tex-stone"   src="images/stone.jpg"   style="display:none">
@@ -19,55 +25,69 @@
 <!-- MENU -->
 <div class="ovl" id="ov">
   <canvas id="gear-bg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:-1;"></canvas>
+
+  <!-- Zone code map — rejouer une map précédente -->
+  <div style="margin-bottom:10px;padding:8px 16px;background:rgba(8,5,2,0.6);border:1px solid rgba(200,160,50,0.2);border-radius:6px;max-width:480px;width:100%;box-sizing:border-box">
+    <div style="font-size:9px;letter-spacing:3px;color:rgba(200,160,50,0.5);margin-bottom:4px;font-family:'Courier New',monospace">CODE MAP PRÉCÉDENTE</div>
+    <div id="lastmapcode" style="font-size:8px;color:rgba(200,160,50,0.55);font-family:'Courier New',monospace;margin-bottom:6px;word-break:break-all;min-height:10px;line-height:1.4"></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="mapcodeload" type="text" placeholder="Coller un code ici pour rejouer cette map..." style="flex:1;background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:rgba(220,180,80,0.9);font-family:'Courier New',monospace;font-size:10px;padding:5px 8px;border-radius:3px;outline:none">
+    </div>
+  </div>
+
   <h1 class="title">RUINE</h1>
   <div class="sub">CHOISISSEZ UN MODE</div>
   <div class="mcards">
 
-    <!-- RECORD card (solo/coop merged) -->
+    <!-- RECORD card (solo) -->
     <div class="mcard" style="min-width:260px">
       <h2 id="record-title" style="color:#80eeff;margin-bottom:10px">RECORD</h2>
 
       <!-- Duration -->
-      <div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
-        <button class="rec-dur" data-dur="5" onclick="recSetDur(5)" style="background:rgba(128,230,255,0.05);border:1px solid rgba(128,230,255,0.25);color:rgba(128,230,255,0.55);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">5 min</button>
-        <button class="rec-dur" data-dur="10" onclick="recSetDur(10)" style="background:rgba(128,230,255,0.2);border:1px solid rgba(128,230,255,0.7);color:#80eeff;font-weight:bold;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">10 min</button>
-        <button class="rec-dur" data-dur="400d" onclick="recSetDur('400d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">RU&#201;E 400</button>
-        <button class="rec-dur" data-dur="800d" onclick="recSetDur('800d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;">RU&#201;E 800</button>
+      <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;justify-content:center">
+        <button class="rec-dur" data-dur="500d" onclick="recSetDur('500d')" style="background:rgba(240,210,80,0.2);border:1px solid rgba(240,210,80,0.7);color:#f0d250;font-weight:bold;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">500</button>
+        <button class="rec-dur" data-dur="1000d" onclick="recSetDur('1000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">1000</button>
+        <button class="rec-dur" data-dur="2000d" onclick="recSetDur('2000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">2000</button>
+        <button class="rec-dur" data-dur="3000d" onclick="recSetDur('3000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">3000</button>
       </div>
 
-      <!-- Mineral qty -->
-      <div style="display:flex;gap:5px;margin-bottom:10px">
-        <button class="rec-mq" data-qty="3" onclick="recSetMq(3)" style="flex:1;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(128,230,255,0.05);border:1px solid rgba(128,230,255,0.25);color:rgba(128,230,255,0.45)">&#9744; 3</button>
-        <button class="rec-mq" data-qty="5" onclick="recSetMq(5)" style="flex:1;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(128,230,255,0.2);border:1px solid rgba(128,230,255,0.7);color:#80eeff;font-weight:bold">5 (def)</button>
-        <button class="rec-mq" data-qty="7" onclick="recSetMq(7)" style="flex:1;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(128,230,255,0.05);border:1px solid rgba(128,230,255,0.25);color:rgba(128,230,255,0.45)">&#9744; 7</button>
-      </div>
-
-      <button id="btn-record-play" style="background:transparent;border:1px solid rgba(220,170,80,0.4);color:#d4b060;font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;padding:12px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
+      <button id="btn-record-play" style="background:transparent;border:1px solid rgba(220,170,80,0.4);color:#d4b060;font-family:'Courier New',monospace;font-size:15px;letter-spacing:2px;padding:13px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
     </div>
 
-    <!-- AFFRONTEMENT -->
-    <div class="mcard" id="btn-pvp">
-      <h2 style="color:#e08060">AFFRONTEMENT</h2>
-      <p>2 joueurs local<br>P1 : Fleches + Clic<br>P2 : ZQSD + F + R<br>Elimination</p>
-      <div style="display:flex;gap:5px;margin-bottom:10px">
-        <button id="pvp-mq3" onclick="pvpSetMq(3)" style="flex:1;font-family:'Courier New',monospace;font-size:13px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(220,128,80,0.05);border:1px solid rgba(220,128,80,0.25);color:rgba(220,128,80,0.45)">&#9744; 3</button>
-        <button id="pvp-mq5" onclick="pvpSetMq(5)" style="flex:1;font-family:'Courier New',monospace;font-size:13px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(220,128,80,0.2);border:1px solid rgba(220,128,80,0.7);color:#e08060;font-weight:bold">5 (def)</button>
-        <button id="pvp-mq7" onclick="pvpSetMq(7)" style="flex:1;font-family:'Courier New',monospace;font-size:13px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 12px;background:rgba(220,128,80,0.05);border:1px solid rgba(220,128,80,0.25);color:rgba(220,128,80,0.45)">&#9744; 7</button>
-      </div>
-      <button id="pvp-jouer" style="background:transparent;border:1px solid rgba(220,130,80,0.4);color:#d4b060;font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;padding:12px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
-    </div>
   </div>
-  <div style="margin-bottom:14px">
-    <button id="btn-night" onclick="toggleNightMode()" style="background:rgba(20,30,60,0.06);border:1px solid rgba(100,120,200,0.25);color:rgba(120,140,220,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 18px;pointer-events:all">🌙 NUIT</button>
-    <button id="btn-speed" onclick="toggleSpeedMode()" style="background:rgba(40,20,0,0.06);border:1px solid rgba(200,120,30,0.25);color:rgba(200,140,60,0.6);font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;padding:7px 18px;pointer-events:all">⚡ ×2 VITESSE</button>
+
+  <!-- Options principale -->
+  <div style="margin-bottom:6px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+    <button id="btn-night" onclick="toggleNightMode()" style="background:rgba(20,30,60,0.06);border:1px solid rgba(100,120,200,0.25);color:rgba(120,140,220,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">🌙 NOCTURNE</button>
+    <button id="btn-speed" onclick="toggleSpeedMode()" style="background:rgba(40,20,0,0.06);border:1px solid rgba(200,120,30,0.25);color:rgba(200,140,60,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">&#9889; DBL VITESSE</button>
+    <button id="btn-quad" onclick="toggleQuadMineralMode()" style="background:rgba(15,0,20,0.06);border:1px solid rgba(130,50,170,0.25);color:rgba(150,70,190,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">&#10753; QUADRANT</button>
+<button id="btn-destruct" onclick="toggleDestructMode()" style="background:rgba(30,0,0,0.06);border:1px solid rgba(180,40,20,0.25);color:rgba(200,60,40,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">💥 DESTRUCTION</button>
+    <button id="btn-ghost" onclick="toggleGhostMode()" style="background:rgba(0,10,20,0.06);border:1px solid rgba(30,120,180,0.25);color:rgba(60,150,200,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 16px;pointer-events:all">👻 FANT&#212;ME</button>
   </div>
-  <div class="hint">SOLO : collecte max de diamants · DMG pas cher · pas de piques<br>PVP : 2 joueurs · P1=fleches, P2=ZQSD · F=activer · R=attaquer<br>Clic=activer · Clic droit=attaquer · ESC=annuler</div>
+  <!-- Option ULTIME + bouton RÈGLES -->
+  <div style="margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:14px">
+    <button id="btn-ultimate" onclick="toggleUltimateMode()" style="background:rgba(25,0,30,0.06);border:2px solid rgba(140,30,180,0.25);color:rgba(170,60,210,0.6);font-family:'Courier New',monospace;font-size:15px;letter-spacing:3px;cursor:pointer;border-radius:6px;transition:all .2s;padding:9px 30px;pointer-events:all">&#9889; ULTIME</button>
+    <button onclick="document.getElementById('rulesov').style.display='flex'" style="background:rgba(10,8,2,0.7);border:1px solid rgba(200,160,50,0.35);color:rgba(220,180,80,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all">? R&#200;GLES</button>
+  </div>
+
+  <!-- Slider volume -->
+  <div style="margin-top:6px;display:flex;align-items:center;gap:10px;font-family:'Courier New',monospace;font-size:11px;color:rgba(200,160,50,0.55);letter-spacing:2px">
+    <span>🔈</span>
+    <input id="vol-slider" type="range" min="0" max="1" step="0.05" value="0.7"
+      oninput="masterVolume=parseFloat(this.value);document.getElementById('vol-val').textContent=Math.round(this.value*100)+'%'"
+      style="width:110px;accent-color:rgba(200,160,50,0.7);cursor:pointer">
+    <span id="vol-val">70%</span>
+    <span>🔊</span>
+  </div>
+
+  <div class="hint">SOLO : collecte max de diamants · Foreuses = extraction auto<br>Clic=activer · Clic droit=attaquer · ESC=pause (1 fois/partie)</div>
 </div>
 
 <!-- PAUSE -->
 <div id="pauseov" style="position:fixed;inset:0;background:rgba(4,2,0,0.82);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:998;backdrop-filter:blur(2px)">
   <div style="font-size:42px;font-weight:bold;letter-spacing:10px;color:#d4a040;font-family:'Courier New',monospace;margin-bottom:8px;text-shadow:0 0 30px rgba(200,140,20,0.4)">PAUSE</div>
-  <div style="font-size:12px;opacity:0.4;letter-spacing:3px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:32px">ESPACE / CTRL pour reprendre</div>
+  <div style="font-size:12px;opacity:0.4;letter-spacing:3px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:4px">UTILISABLE UNE SEULE FOIS PAR PARTIE</div>
+  <div style="font-size:11px;opacity:0.35;letter-spacing:2px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:28px">ESPACE / ESC pour reprendre</div>
   <button class="btn" id="btnpauseresume" style="font-size:13px;padding:11px 32px;margin-bottom:12px">REPRENDRE</button>
   <button class="btn" id="btnpausemenu" style="font-size:11px;padding:8px 24px;opacity:0.7">MENU</button>
 </div>
@@ -76,7 +96,9 @@
 <div class="ovl" id="endov">
   <h1 class="title" id="endtitle"></h1>
   <div class="sub" id="endsub"></div>
-  <div id="endmode" style="font-size:11px;letter-spacing:3px;opacity:0.45;color:#c8a060;margin-bottom:16px;font-family:'Courier New',monospace"></div>
+  <div id="endmode" style="font-size:11px;letter-spacing:3px;opacity:0.45;color:#c8a060;margin-bottom:10px;font-family:'Courier New',monospace"></div>
+  <div id="endmapcode" onclick="copyMapCode()" title="Cliquer pour copier ce code" style="font-size:8px;color:rgba(200,160,50,0.5);font-family:'Courier New',monospace;margin-bottom:12px;cursor:pointer;word-break:break-all;max-width:440px;text-align:center;padding:4px 8px;border:1px solid rgba(200,160,50,0.15);border-radius:3px;transition:color .3s"></div>
+  <div style="font-size:9px;color:rgba(200,160,50,0.3);font-family:'Courier New',monospace;margin-bottom:12px;letter-spacing:1px">↑ Cliquer pour copier le code map (rejouer via le menu)</div>
   <button class="btn" id="btnreplay">REJOUER</button>
   <button class="btn" id="btnmenu" style="margin-top:10px;font-size:11px;padding:8px 24px">MENU</button>
 </div>
@@ -94,6 +116,7 @@
     </div>
   </div>
   <div id="ch">
+  <div id="gamemodedisp" style="font-size:17px;letter-spacing:4px;font-weight:bold;color:#f0c858;margin-bottom:2px;text-transform:uppercase;font-family:'Courier New',monospace;text-shadow:0 0 10px rgba(240,180,60,0.6)"></div>
   <div id="timer">00:00</div>
   <div id="phase">MENU</div>
 </div>
@@ -109,14 +132,67 @@
   </div>
 </div>
 
-<div id="placeind" style="display:none;position:fixed;top:88px;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.35);border-radius:6px;padding:6px 20px;z-index:50;font-family:'Courier New',monospace;font-size:13px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap"></div>
+<!-- Panel gauche : objectif roi, coûts aléatoires, pool ultime — empilés verticalement -->
+<div id="leftpanel" style="position:fixed;top:148px;left:12px;z-index:49;display:flex;flex-direction:column;gap:7px;pointer-events:none">
+  <div id="randomcostinfo" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(50,200,100,0.35);border-radius:5px;padding:6px 16px;font-family:'Courier New',monospace;font-size:14px;color:rgba(80,220,130,0.85);letter-spacing:1px;white-space:nowrap"></div>
+  <div id="ultimatehud" style="display:none;background:rgba(8,2,12,0.95);border:1px solid rgba(140,30,180,0.3);border-radius:6px;padding:10px 16px;font-family:'Courier New',monospace;letter-spacing:1px;min-width:160px"></div>
+</div>
+<div id="placeind" style="display:none;position:fixed;top:118px;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.35);border-radius:6px;padding:8px 24px;z-index:50;font-family:'Courier New',monospace;font-size:16px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap"></div>
+
+<!-- MODAL RÈGLES -->
+<div id="rulesov" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(4,2,0,0.96);z-index:1200;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:24px 16px">
+  <div style="max-width:700px;width:100%;font-family:'Courier New',monospace">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div style="font-size:28px;font-weight:bold;letter-spacing:8px;color:#d4a040">RÈGLES</div>
+      <button onclick="document.getElementById('rulesov').style.display='none'" style="background:none;border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:15px;cursor:pointer;border-radius:4px;padding:6px 18px">FERMER</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:18px;font-size:14px;line-height:1.8">
+
+      <div style="border:1px solid rgba(240,210,80,0.2);border-radius:6px;padding:14px 18px">
+        <div style="font-size:16px;font-weight:bold;color:#f0d060;letter-spacing:3px;margin-bottom:8px">500 / 1000 / 2000 / 3000</div>
+        <div style="color:#c0b080">Atteindre l'objectif de diamants (500, 1000, 2000 ou 3000) le plus vite possible. Le chrono monte et s'arrête quand l'objectif est atteint. Place tes foreuses pour extraire automatiquement les ressources. Meilleur score = temps le plus court.</div>
+      </div>
+
+      <div style="border:1px solid rgba(100,120,200,0.2);border-radius:6px;padding:14px 18px">
+        <div style="font-size:16px;font-weight:bold;color:rgba(120,140,220,0.9);letter-spacing:3px;margin-bottom:8px">🌙 NOCTURNE</div>
+        <div style="color:#c0b080">Brouillard de guerre : tu ne vois que 2,75 cases autour de toi. Toutes les 35 secondes un éclair illumine tout le terrain pendant 1,5 seconde.</div>
+      </div>
+
+      <div style="border:1px solid rgba(200,120,30,0.2);border-radius:6px;padding:14px 18px">
+        <div style="font-size:16px;font-weight:bold;color:rgba(200,140,60,0.9);letter-spacing:3px;margin-bottom:8px">⚡ DBL VITESSE</div>
+        <div style="color:#c0b080">Le temps s'écoule deux fois plus vite. Les foreuses extraient 2× plus rapidement, les météorites tombent 2× plus souvent. En mode ULTIME, cette option dure 2 minutes réelles (soit 4 minutes de jeu).</div>
+      </div>
+
+      <div style="border:1px solid rgba(130,50,170,0.2);border-radius:6px;padding:14px 18px">
+        <div style="font-size:16px;font-weight:bold;color:rgba(150,70,190,0.9);letter-spacing:3px;margin-bottom:8px">✦ QUADRANT</div>
+        <div style="color:#c0b080">Chaque minerai est divisé en 4 quadrants de types différents (charbon, or, diamant au hasard). Une foreuse collecte le type du quadrant vers lequel elle fait face.</div>
+      </div>
+
+      <div style="border:1px solid rgba(180,40,20,0.2);border-radius:6px;padding:14px 18px">
+        <div style="font-size:16px;font-weight:bold;color:rgba(200,60,40,0.9);letter-spacing:3px;margin-bottom:8px">💥 DESTRUCTION</div>
+        <div style="color:#c0b080">Toutes les 28 secondes, les déplacements sont gelés et tu dois cliquer un minerai ou une foreuse à détruire instantanément. Les cases sélectionnables sont entourées en rouge.</div>
+      </div>
+
+      <div style="border:1px solid rgba(30,120,180,0.2);border-radius:6px;padding:14px 18px">
+        <div style="font-size:16px;font-weight:bold;color:rgba(60,150,200,0.9);letter-spacing:3px;margin-bottom:8px">👻 FANTÔME</div>
+        <div style="color:#c0b080">Toutes les 28 secondes, les déplacements sont gelés et tu dois cliquer un minerai ou une foreuse à rendre traversable (semi-transparent). Les cases sélectionnables sont entourées en cyan.</div>
+      </div>
+
+      <div style="border:2px solid rgba(140,30,180,0.35);border-radius:6px;padding:14px 18px;background:rgba(25,0,30,0.3)">
+        <div style="font-size:16px;font-weight:bold;color:rgba(200,80,255,0.95);letter-spacing:3px;margin-bottom:8px">⚡ ULTIME</div>
+        <div style="color:#c0b080">Dès le début de la partie, une des options sélectionnées est tirée au hasard et activée. Toutes les 60 secondes l'option change aléatoirement (DBL VITESSE dure 2 minutes au lieu d'1). Le pool d'options actives est affiché à gauche. Compatible avec : NOCTURNE, DBL VITESSE, QUADRANT, DESTRUCTION, FANTÔME.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <div id="gamebtn">
   <button id="btnmidmenu" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all">&#8592; MENU</button>
   <button id="btnfinish" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,80,40,0.4);color:rgba(220,110,70,0.8);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all">&#10003; TERMINER</button>
 </div>
 <div id="mw"></div>
-<div id="log"><div class="le" id="l0"></div><div class="le" id="l1"></div><div class="le" id="l2"></div></div>
+<div id="log" style="display:none"><div class="le" id="l0"></div><div class="le" id="l1"></div><div class="le" id="l2"></div></div>
 
 <div id="pbar">
   <h4>PLACEMENT — <span id="pturn">Joueur</span></h4>
@@ -133,7 +209,7 @@
   <div id="shint">ESC pour fermer</div>
 </div>
 
-<div id="kh">P1:Fleches+Clic<br>P2:ZQSD+F+R<br>Clic=activer<br>Clic-droit=attaquer<br>ESC=annuler</div>
+<div id="kh">P1:Fleches+Clic<br>Clic=activer<br>Clic-droit=attaquer<br>ESC=pause</div>
 
 
 <script src="js/canvas.js"></script>
@@ -146,5 +222,6 @@
 <script src="js/ai.js"></script>
 <script src="js/render.js"></script>
 <script src="js/game.js"></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>

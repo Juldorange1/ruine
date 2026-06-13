@@ -85,10 +85,6 @@ function applyRockHit(rock){
     sfx('strike');
     bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
     if(bestTarget.hp<=0){G.blocks=G.blocks.filter(function(b){return b.id!==bestTarget.id;});}
-  } else if(bestType==='meteor'){
-    sfx('strike');
-    bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
-    if(bestTarget.hp<=0){bestTarget.fallen=true;bestTarget.cleanAt=G.time+0.1;setTimeout(function(){if(G&&G.phase==='combat')spawnMeteor();},1500);}
   }
 }
 
@@ -106,32 +102,9 @@ function updRocks(dt){
 }
 
 
-function updMetAtk(dt){
-  if(!metAtk||!metAtkPlayer)return;
-  var m=G.meteors.filter(function(mt){return !mt.fallen&&mt.gx===metAtk.gx&&mt.gy===metAtk.gy;})[0];
-  if(!m){metAtk=null;return;}
-  if(Math.hypot(metAtkPlayer.x-(m.gx+.5),metAtkPlayer.y-(m.gy+.5))>1.8){return;}
-  if((metAtkTimer-=dt)<=0){
-    metAtkTimer=0.35;m.hp-=metAtkPlayer.dmg*0.35;
-    if(m.hp<=0){
-      // Meteor destroyed — cancel it, spawn replacement on new cell
-      m.fallen=true; m.cleanAt=G.time+0.1; // remove immediately
-      metAtk=null;
-      log('Meteorite detruite ! Une nouvelle approche...');
-      sfx('impact');
-      // Spawn replacement meteor on a different free cell
-      setTimeout(function(){
-        if(!G||G.phase!=='combat')return;
-        spawnMeteor();
-      }, 1500);
-      return;}
-  }
-}
+function updMetAtk(dt){}
 
-var _drillSfxCd=0; // anti-cumul : un seul son de foreuse toutes les 0.6s
 function updDrills(dt){
-  _drillSfxCd=Math.max(0,_drillSfxCd-dt);
-  var drillSounded=false;
   G.buildings.forEach(function(bd){
     if(bd.type!=='drill'&&bd.type!=='drillfast')return;
     bd.drillTimer=(bd.drillTimer||0)+dt;
@@ -142,8 +115,17 @@ function updDrills(dt){
     var fy=bd.facing==='down'?1:bd.facing==='up'?-1:0;
     var res=G.blocks.filter(function(b){return b.gx===bd.gx+fx&&b.gy===bd.gy+fy;})[0];
     if(res){
-      bd.stored[res.type]=(bd.stored[res.type]||0)+1;
-      if(!drillSounded&&_drillSfxCd<=0){sfx('drill');drillSounded=true;_drillSfxCd=0.6;}
+      var collectType=res.type;
+      if(quadMineralMode&&res.quadTypes){
+        // La foreuse accède au côté du bloc qui lui fait face
+        // facing right → foreuse à gauche du bloc → côté ouest (index 3)
+        // facing left  → foreuse à droite du bloc → côté est  (index 1)
+        // facing down  → foreuse au-dessus du bloc → côté nord (index 0)
+        // facing up    → foreuse en-dessous du bloc → côté sud (index 2)
+        var sideIdx={right:3,left:1,down:0,up:2}[bd.facing];
+        if(sideIdx!==undefined)collectType=res.quadTypes[sideIdx];
+      }
+      bd.stored[collectType]=(bd.stored[collectType]||0)+1;
     }
   });
 }

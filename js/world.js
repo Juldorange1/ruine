@@ -20,26 +20,14 @@ function pushAway(p,gx,gy){
   }
 }
 
-/* METEORS */
+/* METEORS — plus de météorites, mais effets ambiants toutes les 18 secondes */
 function updMeteors(dt){
   G.meteorTimer-=dt;
-  if(G.meteorTimer<=0){G.meteorTimer=18;spawnMeteor();}
-  G.meteors.forEach(function(m){
-    if(!m.fallen){
-      m.timer-=dt;
-      // Emergency push: player on impact cell — push to nearest free cell
-      if(m.timer<1){
-        G.players.forEach(function(p){
-          if(p.dead)return;
-          if(Math.floor(p.x)===m.gx&&Math.floor(p.y)===m.gy){
-            pushAway(p,m.gx,m.gy);
-          }
-        });
-      }
-      if(m.timer<=0)impactMeteor(m);
-    }
-  });
-  G.meteors=G.meteors.filter(function(m){return!m.fallen||(m.cleanAt>G.time);});
+  if(G.meteorTimer<=0){
+    G.meteorTimer=18;
+    sfx('meteor');
+    setTimeout(function(){sfx('impact');},600);
+  }
 }
 
 function floodCheck(gx,gy,extra){

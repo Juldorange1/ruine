@@ -120,6 +120,7 @@ function addBd(type,gx,gy,owner){
   G.buildings.push(bd);return bd.id;
 }
 
+
 /* MOVEMENT */
 function moveP(p,dx,dy,dt){
   if(p.dead)return;
@@ -135,8 +136,8 @@ function moveP(p,dx,dy,dt){
       var gx2=Math.floor(cx),gy2=Math.floor(cy);
       if(isWall(gx2,gy2))return true;
       if(G.destroyed.some(function(d){return d.gx===gx2&&d.gy===gy2;}))return true;
-      if(G.blocks.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
-      if(G.buildings.some(function(b){return b.gx===gx2&&b.gy===gy2;}))return true;
+      if(G.blocks.some(function(b){return b.gx===gx2&&b.gy===gy2&&!b.ghost;}))return true;
+      if(G.buildings.some(function(b){return b.gx===gx2&&b.gy===gy2&&!b.ghost;}))return true;
       // météorites en vol = traversables (seuls les cratères bloquent)
     }
     return false;

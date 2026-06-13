@@ -1,24 +1,47 @@
-﻿/* CONSTANTS */
+/* CONSTANTS */
 var NAMES=['Juldorange','Kael','Vex','Mira','Zorn'];
 var PCOLORS=['#e08060','#6090d8','#80c858','#d8a040','#a060d0'];
 var SKINC=['#d4a080','#90b8c0','#a0c880','#c8a868','#b890c8'];
 var BD_HP={factory:99999,bank:99999,drill:200,drillfast:200,teleporter:150,meteor:300};
 var TEAM_COL=['#6090d0','#d06040'];
-var SOLO_DUR=10*60; // overridden by soloDur/coopDur at game start
+var SOLO_DUR=10*60;
 var gameNum=1;
 var gamePaused=false;
-var soloDur=10;
-var coopDur=10;
-var diamondRace=false;   // true = diamond race mode
-var diamondGoal=400;     // target diamonds (400 or 800)
-var nightMode=false;     // true = brouillard nuit, visibilité 3 cases
-var speedMode=false;     // true = jeu 2× plus vite
-var mineralQty=5; // 3, 5, or 7 minerals per type
-var soloMineralQty=5;
-var coopMineralQty=5;
-var seriesActive=false;  // true = playing 4-game series
-var seriesScores=[];     // diamond scores per game in series
-var seriesGame=0;        // current game in series (1-4)
+var soloDur=20;
+var coopDur=20;
+var diamondRace=false;
+var diamondGoal=500;
+var nightMode=false;
+var speedMode=false;
+var quadMineralMode=false;
+var randomCostMode=false;   // coûts aléatoires (foreuse/dégâts/vitesse/blocs)
+var ultimateMode=false;     // option ULTIME : change d'option chaque minute
+var _ultimatePool=[];       // options dans le pool ULTIME
+var _ultimateTimer=60;      // secondes avant prochain changement
+var _ultimateActiveOpt=null;// option actuellement active ('night','speed','quad','random')
+var destructMode=false;     // toutes les 20s: choisir un bloc/foreuse à détruire
+var ghostMode=false;        // toutes les 20s: choisir un bloc/foreuse à rendre traversable
+var _destructTimer=20;
+var _ghostTimer=20;
+var _destructPending=false;
+var _ghostPending=false;
+var _selectionPending=false;
+var _selectionDelay=0;
+var masterVolume=0.7;
+var mineralQty=6;
+var seriesActive=false;
+var seriesScores=[];
+var seriesGame=0;
+var lightningTimer=35;
+var lightningActive=false;
+var lightningEnd=0;
+var lightningDir=0;     // 0=haut, 1=droite, 2=bas, 3=gauche
+var lightningPos=0.5;   // position 0..1 sur le bord
+var lightningBolt=[];   // points du tracé de la foudre [{x,y},...]
+var _preloadedBlocks=null;
+
+// Types de minerai requis pour chaque achat (par défaut normaux, modifiés si randomCostMode)
+var costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
 
 /* STATE */
 var G=null,keys={},gameRunning=false,logLines=[];
