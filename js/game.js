@@ -64,8 +64,7 @@ function loop(ts){
     updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updRocks(dt);updAI(dt);aiAutoCollect();updPiques(dt);
     G.players.forEach(function(p){if(p&&!p.dead&&p.isHuman)p.atkCharge=Math.min(1,(p.atkCharge||0)+dt);});
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
-      var _wr=winResource==='gold';
-      var totalDia=_wr?((G.p1.gold||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.gold||0):0)):((G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0));
+      var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
       if(diamondRace){
         if(totalDia>=diamondGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
       } else if(!diamondRace&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
@@ -111,21 +110,19 @@ function showEnd(){
     if(seriesActive) seriesScores.push(diamondRace?Math.round(G.time):totalD);
     var isLastGame=seriesGame>=4;
     var title='';
-    var _sym=winResource==='gold'?'★':'◆';
-    var _symCol=winResource==='gold'?'#f0c030':'#80eeff';
-    if(diamondRace&&G.winner==='DIAMOND') title=diamondGoal+' '+_sym+' !';
+    if(diamondRace&&G.winner==='DIAMOND') title=diamondGoal+' ◆ !';
     else title=GAMEMODE==='coop'?'COOP TERMINÉE':'PARTIE TERMINÉE';
     document.getElementById('endtitle').textContent=title;
-    document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':_symCol;
+    document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
     var timeStr=document.getElementById('timer').textContent;
     var sub='';
-    var _p1res=winResource==='gold'?(G.p1.gold||0):(G.p1.diamond||0);
-    var _p2res=G.p2?(winResource==='gold'?(G.p2.gold||0):(G.p2.diamond||0)):0;
+    var _p1res=G.p1.diamond||0;
+    var _p2res=G.p2?(G.p2.diamond||0):0;
     if(GAMEMODE==='coop'){
-      sub='Total: '+totalD+' '+_sym+'  (P1: '+_p1res+' + P2: '+_p2res+')';
+      sub='Total: '+totalD+' ◆  (P1: '+_p1res+' + P2: '+_p2res+')';
       sub+='  —  '+timeStr;
     } else {
-      sub=_sym+' '+totalD;
+      sub='◆ '+totalD;
       if(diamondRace&&G.winner==='DIAMOND') sub+='  —  Temps: '+timeStr;
       else sub+='  —  '+timeStr;
     }
@@ -135,7 +132,7 @@ function showEnd(){
         var avg=Math.round(seriesScores.reduce(function(a,b){return a+b;},0)/seriesScores.length);
         function fmtSec(s2){return String(Math.floor(s2/60)).padStart(2,'0')+':'+String(s2%60).padStart(2,'0');}
         if(diamondRace){sub='<br>Temps: '+seriesScores.map(fmtSec).join(' / ')+'<br>Moyenne: '+fmtSec(avg);}
-        else{sub='<br>Scores: '+seriesScores.join(' / ')+'<br>Moyenne: '+avg+' '+_sym;}
+        else{sub='<br>Scores: '+seriesScores.join(' / ')+'<br>Moyenne: '+avg+' ◆';}
         document.getElementById('btnreplay').style.display='none';
       } else {
         document.getElementById('btnreplay').textContent='PARTIE SUIVANTE ('+(seriesGame+1)+'/4)';
@@ -146,9 +143,8 @@ function showEnd(){
   }
   var modeEl=document.getElementById('endmode');
   if(modeEl){
-    var _sym2=winResource==='gold'?'★':'◆';
-    var modeName=diamondRace?(diamondGoal+' '+_sym2):(GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':'COOP '+(SOLO_DUR/60|0)+'min');
-    modeEl.innerHTML='Mode : '+modeName+'  ·  '+mineralQty+'/type  ·  '+(totalD)+' '+_sym2;
+    var modeName=diamondRace?(diamondGoal+' ◆'):(GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':'COOP '+(SOLO_DUR/60|0)+'min');
+    modeEl.innerHTML='Mode : '+modeName+'  ·  '+mineralQty+'/type  ·  '+(totalD)+' ◆';
   }
   var codeEl=document.getElementById('endmapcode');
   if(codeEl&&G.mapCode){
@@ -504,8 +500,7 @@ function startGame(mode){
   var finEl=document.getElementById('btnfinish');
   if(finEl)finEl.style.display=(mode==='solo'||mode==='coop')?'block':'none';
   var modeLabel=mode==='solo'?'Solo':'Coop';
-  var _resSym=winResource==='gold'?'★':'◆';
-  var durLabel=isDiamondRace?diamondGoal+' '+_resSym:mode==='solo'?soloDur:coopDur;
+  var durLabel=isDiamondRace?diamondGoal+' ◆':mode==='solo'?soloDur:coopDur;
   if(seriesActive&&(mode==='solo'||mode==='coop'))
     log(modeLabel+' — Partie '+seriesGame+'/4 — '+(isDiamondRace?durLabel+' !':durLabel+' min !'));
   else
@@ -513,7 +508,7 @@ function startGame(mode){
   // Affichage du mode en haut de l'écran
   var _gmd=document.getElementById('gamemodedisp');
   if(_gmd){
-    var _mn=isDiamondRace?(diamondGoal+' '+(winResource==='gold'?'★':'◆')):(mode==='solo'?soloDur+' MIN':'COOP '+coopDur+' MIN');
+    var _mn=isDiamondRace?(diamondGoal+' ◆'):(mode==='solo'?soloDur+' MIN':'COOP '+coopDur+' MIN');
     _gmd.textContent=_mn;
   }
 
@@ -589,7 +584,7 @@ function goToMenu(){
   var gn2=document.getElementById('gamename');if(gn2)gn2.style.display='none';
   var rcm=document.getElementById('randomcostinfo');if(rcm)rcm.style.display='none';
   document.getElementById('ov').style.display='flex';
-  recSetDur(recDur);recSetRes(winResource);
+  recSetDur(recDur);
   var _mp2=document.getElementById('mob-pause');if(_mp2)_mp2.style.display='none';
   _touchMoveTarget=null;_touchActivateBd=null;_touchDragging=false;
 }
@@ -677,17 +672,11 @@ function _ultimateShuffleMinerals(){
   for(var _fi=free.length-1;_fi>0;_fi--){var _fj=Math.floor(Math.random()*(_fi+1));var _ft=free[_fi];free[_fi]=free[_fj];free[_fj]=_ft;}
   G.blocks.forEach(function(b,idx){if(idx<free.length){b.gx=free[idx].gx;b.gy=free[idx].gy;b.x=b.gx+.5;b.y=b.gy+.5;}});
 }
-function recSetRes(r){
-  winResource=r;
-  document.querySelectorAll('.rec-res').forEach(function(btn){
-    var active=btn.getAttribute('data-res')===r;
-    var isGold=btn.getAttribute('data-res')==='gold';
-    var col=isGold?'rgba(240,180,30,':'rgba(100,220,255,';
-    btn.style.background=active?(col+'0.2)'):(col+'0.04)');
-    btn.style.borderColor=active?(col+'0.8)'):(col+'0.3)');
-    btn.style.color=active?(col+'1)'):(col+'0.55)');
-    btn.style.fontWeight=active?'bold':'normal';
-  });
+function toggleRandomCostMode(){
+  randomCostMode=!randomCostMode;
+  _toggleOpt(randomCostMode,'btn-random',
+    ['rgba(0,50,30,0.38)','rgba(50,220,130,0.75)','rgba(80,255,160,0.95)'],
+    ['rgba(0,25,15,0.06)','rgba(30,150,80,0.25)','rgba(50,180,100,0.6)']);
 }
 /* MAP CODE */
 function loadMapCode(){
@@ -740,14 +729,14 @@ function copyMapCode(){
   else{var ta=document.createElement('textarea');ta.value=el.textContent;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);fn();}
 }
 
-window.recSetRes=recSetRes;
+window.toggleRandomCostMode=toggleRandomCostMode;
 window.loadMapCode=loadMapCode;
 window.copyMapCode=copyMapCode;
 window.recSetDur=recSetDur;
 window.buyBd=buyBd;window.buyUpg=buyUpg;window.closeShop=closeShop;
 
 requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
-recSetDur(recDur);recSetRes(winResource);
+recSetDur(recDur);
 
 /* MENU GEAR */
 (function(){

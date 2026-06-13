@@ -56,10 +56,9 @@
 
   </div>
 
-  <!-- Ressource cible : OR ou DIAMANT -->
+  <!-- Options -->
   <div style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-    <button class="rec-res" data-res="diamond" onclick="recSetRes('diamond')" style="background:rgba(100,220,255,0.2);border:1px solid rgba(100,220,255,0.8);color:rgba(100,220,255,1);font-weight:bold;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 20px;pointer-events:all">◆ DIAMANT</button>
-    <button class="rec-res" data-res="gold" onclick="recSetRes('gold')" style="background:rgba(240,180,30,0.04);border:1px solid rgba(240,180,30,0.3);color:rgba(240,180,30,0.55);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 20px;pointer-events:all">★ OR</button>
+    <button id="btn-random" onclick="toggleRandomCostMode()" style="background:rgba(0,25,15,0.06);border:1px solid rgba(30,150,80,0.25);color:rgba(50,180,100,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 20px;pointer-events:all">AL&#201;ATOIRE</button>
     <button onclick="document.getElementById('rulesov').style.display='flex'" style="background:rgba(10,8,2,0.7);border:1px solid rgba(200,160,50,0.35);color:rgba(220,180,80,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all">? R&#200;GLES</button>
   </div>
 
