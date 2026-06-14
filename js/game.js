@@ -149,7 +149,7 @@ function showEnd(){
     }
     document.getElementById('endsub').innerHTML=sub;
     // Enregistrement stats si victoire en diamondRace
-    if(diamondRace&&G.winner==='DIAMOND'&&!randomCostMode){
+    if(diamondRace&&G.winner==='DIAMOND'){
       var _sg=_loadStats(diamondGoal);
       _sg.wins=(_sg.wins||0)+1;
       var _elapsed=Math.round(G.time);
