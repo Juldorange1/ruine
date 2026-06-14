@@ -52,7 +52,8 @@ function initGame(){
         do{
           gx=1+Math.floor(rr()*(MAP-2));gy=1+Math.floor(rr()*(MAP-2));k=gx+','+gy;t++;
           var adjBlock=blocks.some(function(b){return Math.abs(b.gx-gx)+Math.abs(b.gy-gy)===1;});
-        }while((taken[k]||adjBlock)&&t<400);
+          var adjBuilding=(Math.abs(gx-6)+Math.abs(gy-6)<=1)||(Math.abs(gx-5)+Math.abs(gy-6)<=1);
+        }while((taken[k]||adjBlock||adjBuilding)&&t<400);
         taken[k]=true;
         var bhp=type==='diamond'?420:type==='gold'?280:210;
         var block={gx:gx,gy:gy,x:gx+.5,y:gy+.5,type:type,id:type+i,hp:bhp,maxHp:bhp};

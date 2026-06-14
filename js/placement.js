@@ -117,7 +117,18 @@ function addBd(type,gx,gy,owner){
     if(!best){G.blocks.forEach(function(bl){var d=Math.hypot(gx-bl.gx,gy-bl.gy);if(d<bD){bD=d;best=bl;}});}
     if(best){var ddx=best.gx-gx,ddy=best.gy-gy;bd.facing=Math.abs(ddx)>=Math.abs(ddy)?(ddx>0?'right':'left'):(ddy>0?'down':'up');}
   }
-  G.buildings.push(bd);return bd.id;
+  G.buildings.push(bd);
+  // Pousser tout joueur dont le hitbox chevauche le nouveau bâtiment
+  var R=0.3;
+  G.players.forEach(function(p){
+    if(p.dead)return;
+    var ox=p.x-(gx+0.5),oy=p.y-(gy+0.5);
+    if(Math.abs(ox)<0.5+R&&Math.abs(oy)<0.5+R){
+      if(Math.abs(ox)>=Math.abs(oy)){p.x=gx+0.5+(ox>=0?0.5+R:-(0.5+R));}
+      else{p.y=gy+0.5+(oy>=0?0.5+R:-(0.5+R));}
+    }
+  });
+  return bd.id;
 }
 
 
