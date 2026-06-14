@@ -15,6 +15,7 @@ var nightMode=false;
 var speedMode=false;
 var quadMineralMode=false;
 var randomCostMode=false;
+var winResource='diamond';  // 'coal'|'gold'|'diamond' — aléatoire si randomCostMode
 var ultimateMode=true;      // toujours actif
 var _ultimatePool=[];       // options dans le pool ULTIME
 var _ultimateTimer=60;      // secondes avant prochain changement

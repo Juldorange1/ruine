@@ -64,7 +64,7 @@ function loop(ts){
     updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updRocks(dt);updAI(dt);aiAutoCollect();updPiques(dt);
     G.players.forEach(function(p){if(p&&!p.dead&&p.isHuman)p.atkCharge=Math.min(1,(p.atkCharge||0)+dt);});
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
-      var totalDia=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
+      var totalDia=(G.p1[winResource]||0)+(G.p2&&GAMEMODE==='coop'?(G.p2[winResource]||0):0);
       if(diamondRace){
         if(totalDia>=diamondGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
       } else if(!diamondRace&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
@@ -109,20 +109,22 @@ function showEnd(){
   if(GAMEMODE==='solo'||GAMEMODE==='coop'){
     if(seriesActive) seriesScores.push(diamondRace?Math.round(G.time):totalD);
     var isLastGame=seriesGame>=4;
+    var _wsym={coal:'■',gold:'★',diamond:'◆'}[winResource]||'◆';
+    var _wcol={coal:'#a07840',gold:'#f0c030',diamond:'#80eeff'}[winResource]||'#80eeff';
     var title='';
-    if(diamondRace&&G.winner==='DIAMOND') title=diamondGoal+' ◆ !';
+    if(diamondRace&&G.winner==='DIAMOND') title=diamondGoal+' '+_wsym+' !';
     else title=GAMEMODE==='coop'?'COOP TERMINÉE':'PARTIE TERMINÉE';
     document.getElementById('endtitle').textContent=title;
-    document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':'#80eeff';
+    document.getElementById('endtitle').style.color=diamondRace&&G.winner==='DIAMOND'?'#f0d060':_wcol;
     var timeStr=document.getElementById('timer').textContent;
     var sub='';
-    var _p1res=G.p1.diamond||0;
-    var _p2res=G.p2?(G.p2.diamond||0):0;
+    var _p1res=G.p1[winResource]||0;
+    var _p2res=G.p2?(G.p2[winResource]||0):0;
     if(GAMEMODE==='coop'){
-      sub='Total: '+totalD+' ◆  (P1: '+_p1res+' + P2: '+_p2res+')';
+      sub='Total: '+totalD+' '+_wsym+'  (P1: '+_p1res+' + P2: '+_p2res+')';
       sub+='  —  '+timeStr;
     } else {
-      sub='◆ '+totalD;
+      sub=_wsym+' '+totalD;
       if(diamondRace&&G.winner==='DIAMOND') sub+='  —  Temps: '+timeStr;
       else sub+='  —  '+timeStr;
     }
@@ -132,7 +134,7 @@ function showEnd(){
         var avg=Math.round(seriesScores.reduce(function(a,b){return a+b;},0)/seriesScores.length);
         function fmtSec(s2){return String(Math.floor(s2/60)).padStart(2,'0')+':'+String(s2%60).padStart(2,'0');}
         if(diamondRace){sub='<br>Temps: '+seriesScores.map(fmtSec).join(' / ')+'<br>Moyenne: '+fmtSec(avg);}
-        else{sub='<br>Scores: '+seriesScores.join(' / ')+'<br>Moyenne: '+avg+' ◆';}
+        else{sub='<br>Scores: '+seriesScores.join(' / ')+'<br>Moyenne: '+avg+' '+_wsym;}
         document.getElementById('btnreplay').style.display='none';
       } else {
         document.getElementById('btnreplay').textContent='PARTIE SUIVANTE ('+(seriesGame+1)+'/4)';
@@ -143,8 +145,9 @@ function showEnd(){
   }
   var modeEl=document.getElementById('endmode');
   if(modeEl){
-    var modeName=diamondRace?(diamondGoal+' ◆'):(GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':'COOP '+(SOLO_DUR/60|0)+'min');
-    modeEl.innerHTML='Mode : '+modeName+'  ·  '+mineralQty+'/type  ·  '+(totalD)+' ◆';
+    var _wsym3={coal:'■',gold:'★',diamond:'◆'}[winResource]||'◆';
+    var modeName=diamondRace?(diamondGoal+' '+_wsym3):(GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':'COOP '+(SOLO_DUR/60|0)+'min');
+    modeEl.innerHTML='Mode : '+modeName+'  ·  '+mineralQty+'/type  ·  '+(totalD)+' '+_wsym3;
   }
   var codeEl=document.getElementById('endmapcode');
   if(codeEl&&G.mapCode){
@@ -415,8 +418,10 @@ function startGame(mode){
       spd:allRes[Math.floor(Math.random()*3)],
       block:allRes[Math.floor(Math.random()*3)]
     };
+    winResource=allRes[Math.floor(Math.random()*3)];
   } else {
     costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
+    winResource='diamond';
   }
 
   // ULTIME — pool fixe avec toutes les options, tirer la 1ère dès le début
@@ -508,7 +513,8 @@ function startGame(mode){
   // Affichage du mode en haut de l'écran
   var _gmd=document.getElementById('gamemodedisp');
   if(_gmd){
-    var _mn=isDiamondRace?(diamondGoal+' ◆'):(mode==='solo'?soloDur+' MIN':'COOP '+coopDur+' MIN');
+    var _gmdSym={coal:'■',gold:'★',diamond:'◆'}[winResource]||'◆';
+    var _mn=isDiamondRace?(diamondGoal+' '+_gmdSym):(mode==='solo'?soloDur+' MIN':'COOP '+coopDur+' MIN');
     _gmd.textContent=_mn;
   }
 
@@ -526,13 +532,15 @@ function _updateRandomCostDisplay(){
   if(!rc)return;
   if(randomCostMode&&gameRunning){
     var sym={coal:'■',gold:'★',diamond:'◆'};
-    var col={coal:'#c0a060',gold:'#f0c030',diamond:'#80eeff'};
+    var col={coal:'#7a5828',gold:'#f0c030',diamond:'#80eeff'};
     var kLabels={drill:'Foreuse',dmg:'Dégâts',spd:'Vitesse',block:'Blocs'};
     var lines=Object.keys(costTypes).map(function(k){
       var r=costTypes[k];
       return kLabels[k]+' <span style="color:'+col[r]+'">'+sym[r]+'</span>';
     });
-    rc.innerHTML='<div style="opacity:0.5;font-size:11px;margin-bottom:3px;letter-spacing:2px">COÛTS</div>'+lines.join('<br>');
+    var wr=winResource;
+    var winLine='Objectif <span style="color:'+col[wr]+'">'+sym[wr]+'</span>';
+    rc.innerHTML='<div style="opacity:0.5;font-size:11px;margin-bottom:3px;letter-spacing:2px">COÛTS</div>'+lines.join('<br>')+'<hr style="border-color:rgba(255,255,255,0.1);margin:4px 0">'+winLine;
     rc.style.display='block';
   } else {
     rc.style.display='none';
