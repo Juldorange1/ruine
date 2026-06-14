@@ -103,6 +103,27 @@ function loop(ts){
   if(G)draw();
 }
 
+/* STATS localStorage */
+function _statsKey(goal){return 'ruine_stats_'+goal;}
+function _loadStats(goal){
+  try{var s=JSON.parse(localStorage.getItem(_statsKey(goal)));return s||{wins:0,best:null};}
+  catch(e){return{wins:0,best:null};}
+}
+function _saveStats(goal,wins,best){
+  try{localStorage.setItem(_statsKey(goal),JSON.stringify({wins:wins,best:best}));}catch(e){}
+}
+function _fmtTime(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(Math.floor(sec%60)).padStart(2,'0');}
+function updateMenuStats(){
+  var goals=[500,1000,2000,3000];
+  goals.forEach(function(g){
+    var s=_loadStats(g);
+    var wEl=document.getElementById('stat-wins-'+g);
+    var bEl=document.getElementById('stat-best-'+g);
+    if(wEl)wEl.textContent=s.wins;
+    if(bEl)bEl.textContent=s.best!==null?_fmtTime(s.best):'—';
+  });
+}
+
 function showEnd(){
   var ov=document.getElementById('endov');
   var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
@@ -127,6 +148,15 @@ function showEnd(){
       else sub+='  —  '+timeStr;
     }
     document.getElementById('endsub').innerHTML=sub;
+    // Enregistrement stats si victoire en diamondRace
+    if(diamondRace&&G.winner==='DIAMOND'&&!randomCostMode){
+      var _sg=_loadStats(diamondGoal);
+      _sg.wins=(_sg.wins||0)+1;
+      var _elapsed=Math.round(G.time);
+      if(_sg.best===null||_elapsed<_sg.best)_sg.best=_elapsed;
+      _saveStats(diamondGoal,_sg.wins,_sg.best);
+      updateMenuStats();
+    }
   }
   var modeEl=document.getElementById('endmode');
   if(modeEl){
@@ -732,7 +762,7 @@ window.recSetDur=recSetDur;
 window.buyBd=buyBd;window.buyUpg=buyUpg;window.closeShop=closeShop;
 
 requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
-recSetDur(recDur);
+recSetDur(recDur);updateMenuStats();
 
 /* MENU GEAR */
 (function(){
