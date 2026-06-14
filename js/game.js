@@ -8,6 +8,11 @@ function loop(ts){
     G.time+=dt;
   }
   if(G&&gameRunning&&G.phase==='combat'&&!gamePaused){
+    // Auto-pause après 20s d'inactivité
+    if(Date.now()-_lastActivityTime>20000){
+      gamePaused=true;
+      document.getElementById('pauseov').style.display='flex';
+    }
     if(!drillingMode&&!_selectionPending){
       var dx=0,dy=0;
       if(keys['ArrowLeft'])dx-=1;if(keys['ArrowRight'])dx+=1;
@@ -151,9 +156,11 @@ function showEnd(){
     // Enregistrement stats si victoire en diamondRace
     if(diamondRace&&G.winner==='DIAMOND'){
       var _sg=_loadStats(diamondGoal);
-      _sg.wins=(_sg.wins||0)+1;
-      var _elapsed=Math.round(G.time);
-      if(_sg.best===null||_elapsed<_sg.best)_sg.best=_elapsed;
+      _sg.wins=Math.round(((_sg.wins||0)+(_gameUsedMapCode?0.5:1))*10)/10;
+      if(!_gameUsedMapCode){
+        var _elapsed=Math.round(G.time);
+        if(_sg.best===null||_elapsed<_sg.best)_sg.best=_elapsed;
+      }
       _saveStats(diamondGoal,_sg.wins,_sg.best);
       updateMenuStats();
     }
@@ -247,6 +254,11 @@ document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
   }
 });
 document.addEventListener('keyup',function(e){keys[e.key]=false;});
+// Reset inactivité sur toute action joueur
+function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTime=Date.now();}
+document.addEventListener('keydown',_resetActivity);
+document.addEventListener('mousedown',_resetActivity);
+document.addEventListener('touchstart',_resetActivity,{passive:true});
 document.addEventListener('click',resumeAudio); // déclenche la mélodie dès le premier clic
 
 function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();return{gx:Math.floor((e.clientX-r.left)/(r.width/CW)/TILE),gy:Math.floor((e.clientY-r.top)/(r.height/CH)/TILE)};}
@@ -455,7 +467,9 @@ function startGame(mode){
   // Reset destruct/ghost
   _destructTimer=28;_ghostTimer=28;_destructPending=false;_ghostPending=false;_selectionPending=false;
 
+  _gameUsedMapCode=!!_preloadedBlocks;
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
+  _lastActivityTime=Date.now();
   // ULTIME — tirer la première option dès le début de partie
   if(ultimateMode&&_ultimatePool.length){var _firstPool=randomCostMode?_ultimatePool.filter(function(o){return o!=='quad';}):_ultimatePool.slice();if(!_firstPool.length)_firstPool=_ultimatePool.slice();var _first=_firstPool[Math.floor(Math.random()*_firstPool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?120:60;}
   placeQueue=[];placePos=null;drillingMode=false;
@@ -635,6 +649,8 @@ document.getElementById('sclose').addEventListener('click',closeShop);
 
 // ── Record menu state ──
 var _lastMapCode=null; // dernier code de map utilisé pour relancer avec $
+var _gameUsedMapCode=false; // true si la partie en cours utilise un code de map
+var _lastActivityTime=0;   // Date.now() de la dernière action joueur
 var recDur='500d';
 function recSetDur(d){
   recDur=d;
