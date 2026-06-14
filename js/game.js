@@ -42,15 +42,15 @@ function loop(ts){
         _ultimateTimer=(_nextOpt==='speed')?120:60;
       }
     }
-    // DESTRUCTION — toutes les 28s, choisir un bloc ou foreuse à détruire
+    // DESTRUCTION — toutes les 26s, choisir un bloc ou foreuse à détruire
     if(destructMode&&!_selectionPending){
       _destructTimer-=dt;
-      if(_destructTimer<=0){_destructTimer=28;_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
+      if(_destructTimer<=0){_destructTimer=26;_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
     }
-    // FANTÔME — toutes les 28s, choisir un bloc ou foreuse à rendre traversable
+    // FANTÔME — toutes les 26s, choisir un bloc ou foreuse à rendre traversable
     if(ghostMode&&!_selectionPending){
       _ghostTimer-=dt;
-      if(_ghostTimer<=0){_ghostTimer=28;_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
+      if(_ghostTimer<=0){_ghostTimer=26;_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
     }
     // Mouvement tactile mobile
     if(_touchMoveTarget&&!_selectionPending&&!drillingMode){
@@ -441,13 +441,26 @@ function startGame(mode){
   // Coûts aléatoires
   if(randomCostMode){
     var allRes=['coal','gold','diamond'];
-    costTypes={
-      drill:allRes[Math.floor(Math.random()*3)],
-      dmg:allRes[Math.floor(Math.random()*3)],
-      spd:allRes[Math.floor(Math.random()*3)],
-      block:allRes[Math.floor(Math.random()*3)]
-    };
-    winResource=allRes[Math.floor(Math.random()*3)];
+    var _ct,_wr,_tries=0,_ok=false;
+    while(!_ok&&_tries<500){
+      _tries++;
+      _wr=allRes[Math.floor(Math.random()*3)];
+      _ct={
+        drill:allRes[Math.floor(Math.random()*3)],
+        dmg:allRes[Math.floor(Math.random()*3)],
+        spd:allRes[Math.floor(Math.random()*3)],
+        block:allRes[Math.floor(Math.random()*3)]
+      };
+      // Contrainte 1 : coût foreuse ≠ objectif
+      if(_ct.drill===_wr)continue;
+      // Contrainte 2 : aucun minerai n'est utilisé pour les 4 coûts à la fois
+      var _cnt={coal:0,gold:0,diamond:0};
+      ['drill','dmg','spd','block'].forEach(function(k){_cnt[_ct[k]]++;});
+      if(Math.max(_cnt.coal,_cnt.gold,_cnt.diamond)>3)continue;
+      _ok=true;
+    }
+    costTypes=_ct;
+    winResource=_wr;
   } else {
     costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
     winResource='diamond';
@@ -460,12 +473,12 @@ function startGame(mode){
   destructMode=false;ghostMode=false;
   if(ultimateMode){
     _ultimatePool=['night','speed','quad','destruct','ghost'];
-    _destructTimer=28;_ghostTimer=28;
+    _destructTimer=26;_ghostTimer=26;
     if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
     _ultimateTimer=60;
   }
   // Reset destruct/ghost
-  _destructTimer=28;_ghostTimer=28;_destructPending=false;_ghostPending=false;_selectionPending=false;
+  _destructTimer=26;_ghostTimer=26;_destructPending=false;_ghostPending=false;_selectionPending=false;
 
   _gameUsedMapCode=!!_preloadedBlocks;
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
@@ -700,8 +713,8 @@ function _ultimateActivate(opt){
     _updateRandomCostDisplay();
   }
   else if(opt==='shuffle') _ultimateShuffleMinerals();
-  else if(opt==='destruct'){destructMode=true;_destructTimer=28;}
-  else if(opt==='ghost'){ghostMode=true;_ghostTimer=28;}
+  else if(opt==='destruct'){destructMode=true;_destructTimer=26;}
+  else if(opt==='ghost'){ghostMode=true;_ghostTimer=26;}
 }
 function _ultimateShuffleMinerals(){
   if(!G||!G.blocks.length)return;
