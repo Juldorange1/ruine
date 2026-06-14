@@ -107,8 +107,6 @@ function showEnd(){
   var ov=document.getElementById('endov');
   var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
   if(GAMEMODE==='solo'||GAMEMODE==='coop'){
-    if(seriesActive) seriesScores.push(diamondRace?Math.round(G.time):totalD);
-    var isLastGame=seriesGame>=4;
     var _wsym={coal:'■',gold:'★',diamond:'◆'}[winResource]||'◆';
     var _wcol={coal:'#a07840',gold:'#f0c030',diamond:'#80eeff'}[winResource]||'#80eeff';
     var title='';
@@ -128,19 +126,6 @@ function showEnd(){
       if(diamondRace&&G.winner==='DIAMOND') sub+='  —  Temps: '+timeStr;
       else sub+='  —  '+timeStr;
     }
-    if(seriesActive){
-      sub+='  (Partie '+seriesGame+'/4)';
-      if(isLastGame){
-        var avg=Math.round(seriesScores.reduce(function(a,b){return a+b;},0)/seriesScores.length);
-        function fmtSec(s2){return String(Math.floor(s2/60)).padStart(2,'0')+':'+String(s2%60).padStart(2,'0');}
-        if(diamondRace){sub='<br>Temps: '+seriesScores.map(fmtSec).join(' / ')+'<br>Moyenne: '+fmtSec(avg);}
-        else{sub='<br>Scores: '+seriesScores.join(' / ')+'<br>Moyenne: '+avg+' '+_wsym;}
-        document.getElementById('btnreplay').style.display='none';
-      } else {
-        document.getElementById('btnreplay').textContent='PARTIE SUIVANTE ('+(seriesGame+1)+'/4)';
-        document.getElementById('btnreplay').style.display='';
-      }
-    }
     document.getElementById('endsub').innerHTML=sub;
   }
   var modeEl=document.getElementById('endmode');
@@ -157,6 +142,8 @@ function showEnd(){
   }
   sfx(G&&G.winner==='TIME'?'end':'win');
   ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
+  clearTimeout(window._autoMenuTimer);
+  window._autoMenuTimer=setTimeout(function(){goToMenu();},5000);
 }
 
 /* INPUT */
@@ -440,7 +427,7 @@ function startGame(mode){
 
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
   // ULTIME — tirer la première option dès le début de partie
-  if(ultimateMode&&_ultimatePool.length){var _first=_ultimatePool[Math.floor(Math.random()*_ultimatePool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?120:60;}
+  if(ultimateMode&&_ultimatePool.length){var _firstPool=randomCostMode?_ultimatePool.filter(function(o){return o!=='quad';}):_ultimatePool.slice();if(!_firstPool.length)_firstPool=_ultimatePool.slice();var _first=_firstPool[Math.floor(Math.random()*_firstPool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?120:60;}
   placeQueue=[];placePos=null;drillingMode=false;
   shopOpen=null;shopPlayer=null;piqueMode=false;piquePlayer=null;
   tpMode=false;tpSrc=null;tpPlayer=null;bdAtk=null;bdAtkTimer=0;bdAtkPlayer=null;
@@ -501,15 +488,12 @@ function startGame(mode){
   if(mode==='solo')SOLO_DUR=isDiamondRace?999999:soloDur*60;
   else if(mode==='coop')SOLO_DUR=isDiamondRace?999999:coopDur*60;
 
-  if((mode==='solo'||mode==='coop')&&seriesGame===0){seriesActive=true;seriesGame=1;seriesScores=[];}
+
   var finEl=document.getElementById('btnfinish');
   if(finEl)finEl.style.display=(mode==='solo'||mode==='coop')?'block':'none';
   var modeLabel=mode==='solo'?'Solo':'Coop';
   var durLabel=isDiamondRace?diamondGoal+' ◆':mode==='solo'?soloDur:coopDur;
-  if(seriesActive&&(mode==='solo'||mode==='coop'))
-    log(modeLabel+' — Partie '+seriesGame+'/4 — '+(isDiamondRace?durLabel+' !':durLabel+' min !'));
-  else
-    log(modeLabel+(isDiamondRace?' — '+durLabel+' !':' — '+durLabel+' min !'));
+  log(modeLabel+(isDiamondRace?' — '+durLabel+' !':' — '+durLabel+' min !'));
   // Affichage du mode en haut de l'écran
   var _gmd=document.getElementById('gamemodedisp');
   if(_gmd){
@@ -578,8 +562,8 @@ document.getElementById('btn-record-play').addEventListener('click',function(){
   }
 });
 document.getElementById('btnreplay').addEventListener('click',function(){
-  if(seriesActive&&seriesGame<4){seriesGame++;startGame(GAMEMODE);}
-  else{seriesGame=0;seriesActive=false;seriesScores=[];document.getElementById('btnreplay').textContent='REJOUER';document.getElementById('btnreplay').style.display='';startGame(GAMEMODE);}
+  clearTimeout(window._autoMenuTimer);
+  startGame(GAMEMODE);
 });
 function goToMenu(){
   gameRunning=false;G=null;
@@ -602,7 +586,7 @@ function goToMenu(){
 }
 document.getElementById('btnpauseresume').addEventListener('click',function(){gamePaused=false;document.getElementById('pauseov').style.display='none';});
 document.getElementById('btnpausemenu').addEventListener('click',function(){goToMenu();});
-document.getElementById('btnmenu').addEventListener('click',function(){gameRunning=false;document.getElementById('endov').style.display='none';document.getElementById('endov').style.opacity='0';document.getElementById('ov').style.display='flex';});
+document.getElementById('btnmenu').addEventListener('click',function(){clearTimeout(window._autoMenuTimer);gameRunning=false;document.getElementById('endov').style.display='none';document.getElementById('endov').style.opacity='0';document.getElementById('ov').style.display='flex';});
 document.getElementById('btnmidmenu').addEventListener('click',function(){
   if(confirm('Abandonner la partie et revenir au menu ?')){
     gameRunning=false;G=null;
