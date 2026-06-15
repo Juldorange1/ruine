@@ -118,6 +118,12 @@ function _saveStats(goal,wins,best){
   try{localStorage.setItem(_statsKey(goal),JSON.stringify({wins:wins,best:best}));}catch(e){}
 }
 function _fmtTime(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(Math.floor(sec%60)).padStart(2,'0');}
+function resetTableauDeJeu(){
+  [500,1000,2000,3000].forEach(function(g){
+    try{localStorage.removeItem(_statsKey(g));}catch(e){}
+  });
+  updateMenuStats();
+}
 function updateMenuStats(){
   var goals=[500,1000,2000,3000];
   goals.forEach(function(g){

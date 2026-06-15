@@ -41,7 +41,10 @@
 
     <!-- RECORD card (solo) -->
     <div class="mcard" style="min-width:260px">
-      <h2 id="record-title" style="color:#80eeff;margin-bottom:10px">RECORD</h2>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h2 id="record-title" style="color:#80eeff;margin:0">TABLEAU DE JEU</h2>
+        <button onclick="resetTableauDeJeu()" style="background:none;border:1px solid rgba(200,80,60,0.35);color:rgba(200,100,80,0.6);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:3px 8px;cursor:pointer;border-radius:3px" title="Réinitialiser le tableau">RESET</button>
+      </div>
 
       <!-- Colonnes : stat + bouton durée -->
       <div style="display:flex;gap:4px;margin-bottom:10px;justify-content:center;font-family:'Courier New',monospace">
