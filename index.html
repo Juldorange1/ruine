@@ -41,35 +41,36 @@
 
     <!-- RECORD card (solo) -->
     <div class="mcard" style="min-width:260px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <h2 id="record-title" style="color:#80eeff;margin:0">TABLEAU DE JEU</h2>
-        <button onclick="resetTableauDeJeu()" style="background:none;border:1px solid rgba(200,80,60,0.35);color:rgba(200,100,80,0.6);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:3px 8px;cursor:pointer;border-radius:3px" title="Réinitialiser le tableau">RESET</button>
-      </div>
+      <h2 id="record-title" style="color:#80eeff;margin-bottom:10px">RECORD</h2>
 
-      <!-- Colonnes : stat + bouton durée -->
+      <!-- Colonnes : stats + bouton durée -->
       <div style="display:flex;gap:4px;margin-bottom:10px;justify-content:center;font-family:'Courier New',monospace">
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-500" style="font-size:11px;color:#80eeff;letter-spacing:1px">—</div>
-          <div id="stat-wins-500" style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
+          <div id="stat-best-500"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
+          <div id="stat-bestr-500" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-wins-500"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="500d" onclick="recSetDur('500d')" style="background:rgba(240,210,80,0.2);border:1px solid rgba(240,210,80,0.7);color:#f0d250;font-weight:bold;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">500</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-1000" style="font-size:11px;color:#80eeff;letter-spacing:1px">—</div>
-          <div id="stat-wins-1000" style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
+          <div id="stat-best-1000"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
+          <div id="stat-bestr-1000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-wins-1000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="1000d" onclick="recSetDur('1000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">1000</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-2000" style="font-size:11px;color:#80eeff;letter-spacing:1px">—</div>
-          <div id="stat-wins-2000" style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
+          <div id="stat-best-2000"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
+          <div id="stat-bestr-2000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-wins-2000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="2000d" onclick="recSetDur('2000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">2000</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-3000" style="font-size:11px;color:#80eeff;letter-spacing:1px">—</div>
-          <div id="stat-wins-3000" style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
+          <div id="stat-best-3000"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
+          <div id="stat-bestr-3000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-wins-3000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="3000d" onclick="recSetDur('3000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">3000</button>
         </div>
 

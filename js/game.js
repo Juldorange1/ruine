@@ -111,27 +111,23 @@ function loop(ts){
 /* STATS localStorage */
 function _statsKey(goal){return 'ruine_stats_'+goal;}
 function _loadStats(goal){
-  try{var s=JSON.parse(localStorage.getItem(_statsKey(goal)));return s||{wins:0,best:null};}
-  catch(e){return{wins:0,best:null};}
+  try{var s=JSON.parse(localStorage.getItem(_statsKey(goal)));return s||{wins:0,best:null,bestRandom:null};}
+  catch(e){return{wins:0,best:null,bestRandom:null};}
 }
-function _saveStats(goal,wins,best){
-  try{localStorage.setItem(_statsKey(goal),JSON.stringify({wins:wins,best:best}));}catch(e){}
+function _saveStats(goal,wins,best,bestRandom){
+  try{localStorage.setItem(_statsKey(goal),JSON.stringify({wins:wins,best:best!==undefined?best:null,bestRandom:bestRandom!==undefined?bestRandom:null}));}catch(e){}
 }
 function _fmtTime(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(Math.floor(sec%60)).padStart(2,'0');}
-function resetTableauDeJeu(){
-  [500,1000,2000,3000].forEach(function(g){
-    try{localStorage.removeItem(_statsKey(g));}catch(e){}
-  });
-  updateMenuStats();
-}
 function updateMenuStats(){
   var goals=[500,1000,2000,3000];
   goals.forEach(function(g){
     var s=_loadStats(g);
     var wEl=document.getElementById('stat-wins-'+g);
     var bEl=document.getElementById('stat-best-'+g);
-    if(wEl)wEl.textContent=s.wins;
-    if(bEl)bEl.textContent=s.best!==null?_fmtTime(s.best):'—';
+    var brEl=document.getElementById('stat-bestr-'+g);
+    if(wEl)wEl.textContent=s.wins||0;
+    if(bEl)bEl.textContent=s.best!==null&&s.best!==undefined?_fmtTime(s.best):'—';
+    if(brEl)brEl.textContent=s.bestRandom!==null&&s.bestRandom!==undefined?_fmtTime(s.bestRandom):'—';
   });
 }
 
@@ -162,12 +158,18 @@ function showEnd(){
     // Enregistrement stats si victoire en diamondRace
     if(diamondRace&&G.winner==='DIAMOND'){
       var _sg=_loadStats(diamondGoal);
+      // Victoires : toujours comptées (+0.5 si code map)
       _sg.wins=Math.round(((_sg.wins||0)+(_gameUsedMapCode?0.5:1))*10)/10;
+      // Records de temps : séparés aléatoire / normal, jamais si code map
       if(!_gameUsedMapCode){
         var _elapsed=Math.round(G.time);
-        if(_sg.best===null||_elapsed<_sg.best)_sg.best=_elapsed;
+        if(randomCostMode){
+          if(_sg.bestRandom===null||_sg.bestRandom===undefined||_elapsed<_sg.bestRandom)_sg.bestRandom=_elapsed;
+        } else {
+          if(_sg.best===null||_sg.best===undefined||_elapsed<_sg.best)_sg.best=_elapsed;
+        }
       }
-      _saveStats(diamondGoal,_sg.wins,_sg.best);
+      _saveStats(diamondGoal,_sg.wins,_sg.best,_sg.bestRandom);
       updateMenuStats();
     }
   }
