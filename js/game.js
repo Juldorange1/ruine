@@ -119,6 +119,18 @@ function loop(ts){
 }
 
 /* STATS localStorage */
+// Incrémenter cette version efface automatiquement le tableau de jeu de tous les joueurs
+// (à faire à chaque changement de gameplay important affectant l'équilibrage des records)
+var STATS_VERSION=2;
+(function(){
+  try{
+    var v=localStorage.getItem('ruine_stats_version');
+    if(v!==String(STATS_VERSION)){
+      [500,1000,2000,3000].forEach(function(g){localStorage.removeItem('ruine_stats_'+g);});
+      localStorage.setItem('ruine_stats_version',String(STATS_VERSION));
+    }
+  }catch(e){}
+})();
 function _statsKey(goal){return 'ruine_stats_'+goal;}
 function _loadStats(goal){
   try{var s=JSON.parse(localStorage.getItem(_statsKey(goal)));return s||{wins:0,best:null,bestRandom:null};}
