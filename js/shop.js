@@ -57,6 +57,7 @@ function buyBlock(btype){
   if((p[bt]||0)<cost){log('Pas assez de '+_cNames[bt]+' ! ('+cost+' requis)');return;}
   p[bt]-=cost;p.blocksBought=(p.blocksBought||0)+1;sfx('buy');closeShop();
   drillingMode='block-'+btype;placePos=null;
+  _drillRefund={player:p,type:bt,amount:cost,blocksBought:true};
   _showPlaceInfo('BLOC '+{coal:'CHARBON',gold:'OR',diamond:'DIAMANT'}[btype]);
 }
 
@@ -69,6 +70,7 @@ function buyBd(type){
   if((p[dt]||0)<cost){log('Pas assez de '+_cNames[dt]+' !');return;}
   p[dt]-=cost;closeShop();
   drillingMode=type;placePos=null;
+  _drillRefund={player:p,type:dt,amount:cost};
   _showPlaceInfo('FOREUSE');
 }
 

@@ -26,11 +26,11 @@ function initGame(){
   for(var _wy=0;_wy<MAP;_wy++)for(var _wx=0;_wx<MAP;_wx++){
     if(isWall(_wx,_wy))taken[_wx+','+_wy]=true;
   }
-  // Usine + magazin : chacun sur une case libre totalement aléatoire (indépendante)
+  // Usine + magazin : chacun sur une case libre totalement aléatoire (indépendante), jamais sur le contour
   var _fGx,_fGy,_bGx,_bGy,_bt=0;
-  _fGx=1+Math.floor(rr()*(MAP-2));_fGy=1+Math.floor(rr()*(MAP-2));taken[_fGx+','+_fGy]=true;
+  _fGx=2+Math.floor(rr()*(MAP-4));_fGy=2+Math.floor(rr()*(MAP-4));taken[_fGx+','+_fGy]=true;
   do{
-    _bGx=1+Math.floor(rr()*(MAP-2));_bGy=1+Math.floor(rr()*(MAP-2));_bt++;
+    _bGx=2+Math.floor(rr()*(MAP-4));_bGy=2+Math.floor(rr()*(MAP-4));_bt++;
   }while(taken[_bGx+','+_bGy]&&_bt<400);
   taken[_bGx+','+_bGy]=true;
 

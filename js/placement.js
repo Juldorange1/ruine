@@ -63,13 +63,13 @@ function confirmDrill(){
     var bhp=btype==='diamond'?600:btype==='gold'?400:300;
     G.blocks.push({gx:placePos.gx,gy:placePos.gy,x:placePos.gx+.5,y:placePos.gy+.5,
       type:btype,id:btype+Date.now(),hp:bhp,maxHp:bhp});
-    drillingMode=false;placePos=null;
+    drillingMode=false;placePos=null;_drillRefund=null;
     _hidePlaceInfo();sfx('place');
     return;
   }
   var dtype=(drillingMode==='drillfast'?'drillfast':'drill');
   addBd(dtype,placePos.gx,placePos.gy,G.p1.team);
-  drillingMode=false;placePos=null;
+  drillingMode=false;placePos=null;_drillRefund=null;
   _hidePlaceInfo();sfx('buy');
 }
 

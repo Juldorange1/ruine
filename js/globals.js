@@ -61,6 +61,7 @@ var blkAtk=null,blkAtkTimer=0,blkAtkPlayer=null;
 var metAtk=null,metAtkTimer=0,metAtkPlayer=null;
 var piqueMode=false,piquePlayer=null;
 var drillingMode=false;
+var _drillRefund=null; // {player,type,amount,blocksBought} — remboursement si annulation (ESC)
 var lastTime=0;
 var mouseX=0,mouseY=0;
 document.addEventListener('mousemove',function(e){mouseX=e.clientX;mouseY=e.clientY;});

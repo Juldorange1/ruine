@@ -121,7 +121,7 @@ function loop(ts){
 /* STATS localStorage */
 // Incrémenter cette version efface automatiquement le tableau de jeu de tous les joueurs
 // (à faire à chaque changement de gameplay important affectant l'équilibrage des records)
-var STATS_VERSION=2;
+var STATS_VERSION=3;
 (function(){
   try{
     var v=localStorage.getItem('ruine_stats_version');
@@ -255,7 +255,16 @@ document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
     if(shopOpen||tpMode||drillingMode||piqueMode){
       closeShop();tpMode=false;tpSrc=null;tpPlayer=null;
       bdAtk=null;blkAtk=null;metAtk=null;
-      if(drillingMode){drillingMode=false;placePos=null;_hidePlaceInfo();}
+      if(drillingMode){
+        if(_drillRefund){
+          var _rf=_drillRefund;
+          _rf.player[_rf.type]=(_rf.player[_rf.type]||0)+_rf.amount;
+          if(_rf.blocksBought)_rf.player.blocksBought=Math.max(0,(_rf.player.blocksBought||0)-1);
+          log('Achat annulé, remboursé : '+_rf.amount+' '+_cNames[_rf.type]);
+          _drillRefund=null;
+        }
+        drillingMode=false;placePos=null;_hidePlaceInfo();
+      }
       piqueMode=false;piquePlayer=null;
       return;
     }
