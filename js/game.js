@@ -274,6 +274,15 @@ function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();
 C.addEventListener('click',function(e){
   if(!G)return;
   var pos=getGrid(e);
+  // PORTAIL : poser le portail sur une case libre
+  if(_portalPending&&_selectionDelay<=0){
+    if(cellFreePlace(pos.gx,pos.gy)){
+      var _pb=mkBd('portal',pos.gx,pos.gy,0);_pb.ghost=true;
+      G.buildings.push(_pb);
+      _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log('Portail posé !');
+    } else log('Case occupée !');
+    return;
+  }
   // DESTRUCTION : détruire le bloc/foreuse cliqué
   if(_destructPending&&_selectionDelay<=0){
     var _db=G.blocks.filter(function(b){return b.gx===pos.gx&&b.gy===pos.gy;})[0];
@@ -378,6 +387,16 @@ C.addEventListener('touchend',function(e){
   if(_touchDragging){_touchDragging=false;_touchMoveTarget=null;return;}
   if(!isTap)return;
 
+  // ─ Sélection PORTAIL (directement, sans faux clic souris)
+  if(_portalPending&&_selectionDelay<=0){
+    if(cellFreePlace(tg.igx,tg.igy)){
+      var _pb2=mkBd('portal',tg.igx,tg.igy,0);_pb2.ghost=true;
+      G.buildings.push(_pb2);
+      _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log('Portail posé !');
+    } else log('Case occupée !');
+    return;
+  }
+
   // ─ Sélection DESTRUCTION (directement, sans faux clic souris)
   if(_destructPending&&_selectionDelay<=0){
     var _db=G.blocks.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy;})[0];
@@ -477,10 +496,11 @@ function startGame(mode){
   // ULTIME — pool fixe avec toutes les options, tirer la 1ère dès le début
   _ultimateActiveOpt=null;
   _ultimatePool=[];
-  nightMode=false;speedMode=false;quadMineralMode=false;
+  nightMode=false;speedMode=false;teleportShopMode=false;
   destructMode=false;ghostMode=false;
+  _portalPending=false;
   if(ultimateMode){
-    _ultimatePool=['night','speed','quad','destruct','ghost'];
+    _ultimatePool=['night','speed','teleport','destruct','ghost'];
     _destructTimer=26;_ghostTimer=26;
     if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
     _ultimateTimer=60;
@@ -492,7 +512,7 @@ function startGame(mode){
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
   _lastActivityTime=Date.now();
   // ULTIME — tirer la première option dès le début de partie
-  if(ultimateMode&&_ultimatePool.length){var _firstPool=randomCostMode?_ultimatePool.filter(function(o){return o!=='quad';}):_ultimatePool.slice();if(!_firstPool.length)_firstPool=_ultimatePool.slice();var _first=_firstPool[Math.floor(Math.random()*_firstPool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?120:60;}
+  if(ultimateMode&&_ultimatePool.length){var _first=_ultimatePool[Math.floor(Math.random()*_ultimatePool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?120:60;}
   placeQueue=[];placePos=null;drillingMode=false;
   shopOpen=null;shopPlayer=null;piqueMode=false;piquePlayer=null;
   tpMode=false;tpSrc=null;tpPlayer=null;bdAtk=null;bdAtkTimer=0;bdAtkPlayer=null;
@@ -607,6 +627,7 @@ document.getElementById('shop').addEventListener('click',function(e){
   else if(a==='buy-diamond')buyBlock('diamond');
   else if(a==='dmg')buyUpg('dmg');
   else if(a==='spd')buyUpg('spd');
+  else if(a==='portal')buyPortal();
 });
 document.getElementById('btn-record-play').addEventListener('click',function(){
   mineralQty=6;
@@ -701,7 +722,7 @@ function _ultimateDeactivate(){
   _ultimateActiveOpt=null;
   if(opt==='night') nightMode=false;
   else if(opt==='speed') speedMode=false;
-  else if(opt==='quad'){quadMineralMode=false;if(G)G.blocks.forEach(function(b){delete b.quadTypes;});}
+  else if(opt==='teleport') teleportShopMode=false;
   else if(opt==='random'){randomCostMode=false;costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};_updateRandomCostDisplay();}
   else if(opt==='destruct') destructMode=false;
   else if(opt==='ghost') ghostMode=false;
@@ -710,10 +731,7 @@ function _ultimateActivate(opt){
   _ultimateActiveOpt=opt;
   if(opt==='night') nightMode=true;
   else if(opt==='speed') speedMode=true;
-  else if(opt==='quad'){
-    quadMineralMode=true;
-    if(G){var qt=['coal','gold','diamond'];G.blocks.forEach(function(b){if(!b.quadTypes)b.quadTypes=[0,1,2,3].map(function(){return qt[Math.floor(Math.random()*3)];});});}
-  }
+  else if(opt==='teleport') teleportShopMode=true;
   else if(opt==='random'){
     randomCostMode=true;
     var allRes=['coal','gold','diamond'];

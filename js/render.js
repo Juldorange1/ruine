@@ -46,73 +46,7 @@ function draw(){
   G.blocks.forEach(function(bl){
     var bx=bl.gx*TILE,by=bl.gy*TILE,cx=bx+TILE/2,cy=by+TILE/2;
     if(bl.ghost)X.globalAlpha=0.32;
-    if(quadMineralMode&&bl.quadTypes){
-      // Rendu quadrant : 4 mini-blocs (N haut, E droite, S bas, W gauche)
-      var H=TILE/2;
-      var qsubs=[
-        {t:bl.quadTypes[0],x:bx,    y:by,    w:TILE,h:H},   // N (haut)
-        {t:bl.quadTypes[2],x:bx,    y:by+H,  w:TILE,h:H},   // S (bas)
-      ];
-      // On dessine en 4 quarts : NW, NE, SW, SE
-      var qquads=[
-        {t:bl.quadTypes[3],x:bx,    y:by,    w:H,h:H},   // NW = W
-        {t:bl.quadTypes[1],x:bx+H,  y:by,    w:H,h:H},   // NE = E
-        {t:bl.quadTypes[3],x:bx,    y:by+H,  w:H,h:H},   // SW = W
-        {t:bl.quadTypes[1],x:bx+H,  y:by+H,  w:H,h:H},   // SE = E
-      ];
-      // Remplacer par 4 vrais quarts (N,E,S,W en triangles mais avec fond bloc)
-      // Fond global sombre
-      X.fillStyle='rgba(14,10,4,0.92)';X.fillRect(bx,by,TILE,TILE);
-      // Chaque quart = triangle avec fond coloré type bloc, puis mini-label
-      var _qbg={coal:'rgba(20,18,30,0.92)',gold:'rgba(28,20,6,0.92)',diamond:'rgba(6,10,20,0.92)'};
-      var _qborder={coal:'rgba(100,90,140,0.7)',gold:'rgba(200,155,20,0.8)',diamond:'rgba(80,200,255,0.7)'};
-      var _qtxt={coal:'#c8c0e8',gold:'#f5c830',diamond:'rgba(160,240,255,0.98)'};
-      var _qname={coal:'C',gold:'G',diamond:'D'};
-      var pulse2=0.5+0.5*Math.sin(G.time*2.5);
-      // 4 triangles avec clip pour chaque quadrant
-      var _qtriangles=[
-        {t:bl.quadTypes[0],pts:[[bx,by],[bx+TILE,by],[cx,cy]],lx:cx,ly:by+H*0.52},   // N
-        {t:bl.quadTypes[1],pts:[[bx+TILE,by],[bx+TILE,by+TILE],[cx,cy]],lx:bx+H*1.48,ly:cy}, // E
-        {t:bl.quadTypes[2],pts:[[bx+TILE,by+TILE],[bx,by+TILE],[cx,cy]],lx:cx,ly:by+H*1.48}, // S
-        {t:bl.quadTypes[3],pts:[[bx,by+TILE],[bx,by],[cx,cy]],lx:bx+H*0.52,ly:cy}    // W
-      ];
-      _qtriangles.forEach(function(q){
-        X.save();
-        X.beginPath();X.moveTo(q.pts[0][0],q.pts[0][1]);X.lineTo(q.pts[1][0],q.pts[1][1]);X.lineTo(q.pts[2][0],q.pts[2][1]);X.closePath();
-        X.clip();
-        // Fond coloré selon le type
-        X.fillStyle=_qbg[q.t]||'rgba(14,10,4,0.92)';X.fillRect(bx,by,TILE,TILE);
-        // Lueur centrale
-        if(q.t==='diamond'){
-          var _dq=X.createRadialGradient(q.lx,q.ly,1,q.lx,q.ly,H*0.7);
-          _dq.addColorStop(0,'rgba(100,220,255,'+(0.25+pulse2*.15)+')');_dq.addColorStop(1,'rgba(40,150,220,0)');
-          X.fillStyle=_dq;X.fillRect(bx,by,TILE,TILE);
-        } else if(q.t==='gold'){
-          var _gq=X.createRadialGradient(q.lx,q.ly,1,q.lx,q.ly,H*0.6);
-          _gq.addColorStop(0,'rgba(255,210,50,0.35)');_gq.addColorStop(1,'rgba(180,130,10,0)');
-          X.fillStyle=_gq;X.fillRect(bx,by,TILE,TILE);
-        }
-        // Texture grain (quelques points sombres)
-        X.fillStyle='rgba(0,0,0,0.12)';
-        for(var _gi=0;_gi<4;_gi++){X.beginPath();X.arc(q.lx+(_gi-1.5)*7,q.ly+(_gi%2-0.5)*5,1.5,0,Math.PI*2);X.fill();}
-        X.restore();
-        // Bordure du triangle
-        X.save();
-        X.beginPath();X.moveTo(q.pts[0][0],q.pts[0][1]);X.lineTo(q.pts[1][0],q.pts[1][1]);X.lineTo(q.pts[2][0],q.pts[2][1]);X.closePath();
-        var _bc=q.t==='diamond'?'rgba(80,200,255,'+(0.4+pulse2*.2)+')':_qborder[q.t]||'rgba(150,120,60,0.5)';
-        X.strokeStyle=_bc;X.lineWidth=1;X.stroke();
-        X.restore();
-        // Label
-        X.font='bold 11px Courier New';X.textAlign='center';X.textBaseline='middle';
-        X.fillStyle='rgba(0,0,0,0.55)';X.fillText(_qname[q.t]||'?',q.lx+1,q.ly+1);
-        X.fillStyle=_qtxt[q.t]||'#fff';X.fillText(_qname[q.t]||'?',q.lx,q.ly);
-      });
-      // Séparateur croix centrale
-      X.strokeStyle='rgba(0,0,0,0.45)';X.lineWidth=1.5;
-      X.beginPath();X.moveTo(cx,by);X.lineTo(cx,by+TILE);X.moveTo(bx,cy);X.lineTo(bx+TILE,cy);X.stroke();
-      // Bordure extérieure
-      X.strokeStyle='rgba(120,100,60,0.45)';X.lineWidth=1.5;X.strokeRect(bx+1,by+1,TILE-2,TILE-2);
-    } else if(bl.type==='coal'){
+    if(bl.type==='coal'){
       X.fillStyle='rgba(20,18,30,0.82)';X.fillRect(bx+4,by+6,TILE-8,TILE-12);
       X.strokeStyle='rgba(100,90,140,0.6)';X.lineWidth=1.5;X.strokeRect(bx+4,by+6,TILE-8,TILE-12);
       X.fillStyle='#c8c0e8';X.font='bold 12px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('CHARBON',cx,cy);
@@ -339,6 +273,15 @@ function drawBd(bd){
     X.fillStyle=tpg;X.beginPath();X.arc(0,0,15,0,Math.PI*2);X.fill();
     X.strokeStyle='rgba(178,148,78,'+(0.38+tp*.28)+')';X.lineWidth=2;X.beginPath();for(var n2i=0;n2i<6;n2i++){var an2=n2i*Math.PI/3;if(n2i===0)X.moveTo(Math.cos(an2)*24,Math.sin(an2)*24);else X.lineTo(Math.cos(an2)*24,Math.sin(an2)*24);}X.closePath();X.stroke();
     X.fillStyle='rgba(198,228,255,'+(0.68+tp*.24)+')';X.font='bold 9px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('TP',0,0);
+  } else if(bd.type==='portal'){
+    var pp=0.5+0.5*Math.sin(G.time*3);
+    var pg=X.createRadialGradient(0,0,2,0,0,20);
+    pg.addColorStop(0,'rgba(220,120,255,'+(0.5+pp*.4)+')');pg.addColorStop(1,'rgba(140,30,200,0)');
+    X.fillStyle=pg;X.beginPath();X.arc(0,0,20,0,Math.PI*2);X.fill();
+    X.strokeStyle='rgba(220,140,255,'+(0.55+pp*.35)+')';X.lineWidth=2.5;
+    X.beginPath();X.ellipse(0,0,13,17,0,0,Math.PI*2);X.stroke();
+    X.strokeStyle='rgba(255,210,255,'+(0.3+pp*.3)+')';X.lineWidth=1.5;
+    X.beginPath();X.ellipse(0,0,8,11,0,0,Math.PI*2);X.stroke();
   }
   X.restore();
   if(bd.type!=='factory'&&bd.type!=='bank'&&bd.hp<bd.maxHp){
@@ -438,7 +381,7 @@ function updateHUD(){
   var _uhud=document.getElementById('ultimatehud');
   if(_uhud){
     if(ultimateMode&&gameRunning&&G&&_ultimatePool.length){
-      var _uNames={night:'NOCTURNE',speed:'DBL VITESSE',quad:'QUADRANT',random:'ALÉATOIRE',destruct:'DESTRUCTION',ghost:'FANTÔME'};
+      var _uNames={night:'NOCTURNE',speed:'DBL VITESSE',teleport:'TÉLÉPORTEUR',random:'ALÉATOIRE',destruct:'DESTRUCTION',ghost:'FANTÔME'};
       var _uc=Math.ceil(Math.max(0,_ultimateTimer));
       var _uhtml='<div style="font-size:13px;letter-spacing:2px;color:rgba(200,60,255,0.7);margin-bottom:6px;border-bottom:1px solid rgba(140,30,180,0.35);padding-bottom:4px;font-weight:bold">&#9889; ULTIME</div>';
       _ultimatePool.forEach(function(opt){

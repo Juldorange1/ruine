@@ -14,7 +14,7 @@ function mkPlayer(name,ci,x,y,team,isHuman){
 }
 
 function mkBd(type,gx,gy,owner){
-  var lbl={factory:'USINE',bank:'MAGAZIN',drill:'FOREUSE',drillfast:'FOREUSE+',teleporter:'TP'};
+  var lbl={factory:'USINE',bank:'MAGAZIN',drill:'FOREUSE',drillfast:'FOREUSE+',teleporter:'TP',portal:'PORTAIL'};
   return{id:type+'_'+(Date.now()*Math.random()|0),type:type,gx:gx,gy:gy,x:gx+.5,y:gy+.5,
     owner:owner,label:lbl[type]||type,hp:BD_HP[type]||200,maxHp:BD_HP[type]||200,
     stored:{coal:0,gold:0,diamond:0},drillTimer:0,facing:'down'};
@@ -26,7 +26,12 @@ function initGame(){
   for(var _wy=0;_wy<MAP;_wy++)for(var _wx=0;_wx<MAP;_wx++){
     if(isWall(_wx,_wy))taken[_wx+','+_wy]=true;
   }
-  [[6,6],[5,6]].forEach(function(p){taken[p[0]+','+p[1]]=true;}); // bâtiments initiaux
+  // Usine + magazin : position aléatoire (adjacents l'un à l'autre)
+  var _fGx=2+Math.floor(rr()*(MAP-4)),_fGy=2+Math.floor(rr()*(MAP-4));
+  var _bDirs=[{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+  var _bDir=_bDirs[Math.floor(rr()*4)];
+  var _bGx=_fGx+_bDir.dx,_bGy=_fGy+_bDir.dy;
+  [[_fGx,_fGy],[_bGx,_bGy]].forEach(function(p){taken[p[0]+','+p[1]]=true;}); // bâtiments initiaux
 
   var blocks=[];
 
@@ -37,29 +42,21 @@ function initGame(){
       taken[b.gx+','+b.gy]=true;
       var block={gx:b.gx,gy:b.gy,x:b.gx+.5,y:b.gy+.5,type:b.type,
         id:b.type+(Date.now()*Math.random()|0),hp:bhp,maxHp:bhp};
-      if(quadMineralMode){
-        var qt=['coal','gold','diamond'];
-        block.quadTypes=[0,1,2,3].map(function(){return qt[Math.floor(rr()*3)];});
-      }
       blocks.push(block);
     });
     _preloadedBlocks=null;
   } else {
     function placeRes(type,n){
-      var qt=['coal','gold','diamond'];
       for(var i=0;i<n;i++){
         var gx,gy,k,t=0;
         do{
           gx=1+Math.floor(rr()*(MAP-2));gy=1+Math.floor(rr()*(MAP-2));k=gx+','+gy;t++;
           var adjBlock=blocks.some(function(b){return Math.abs(b.gx-gx)+Math.abs(b.gy-gy)===1;});
-          var adjBuilding=(Math.abs(gx-6)+Math.abs(gy-6)<=1)||(Math.abs(gx-5)+Math.abs(gy-6)<=1);
+          var adjBuilding=(Math.abs(gx-_fGx)+Math.abs(gy-_fGy)<=1)||(Math.abs(gx-_bGx)+Math.abs(gy-_bGy)<=1);
         }while((taken[k]||adjBlock||adjBuilding)&&t<400);
         taken[k]=true;
         var bhp=type==='diamond'?420:type==='gold'?280:210;
         var block={gx:gx,gy:gy,x:gx+.5,y:gy+.5,type:type,id:type+i,hp:bhp,maxHp:bhp};
-        if(quadMineralMode){
-          block.quadTypes=[0,1,2,3].map(function(){return qt[Math.floor(rr()*3)];});
-        }
         blocks.push(block);
       }
     }
@@ -102,7 +99,7 @@ function initGame(){
     p2=mkPlayer('Joueur 2',ci2,s2.x,s2.y,1,true);
     p2.isHuman=true;p2.hp=100;p2.maxHp=100;p2.dmg=10;p2.speed=1.68;p2.regen=4;
   }
-  var buildings=[mkBd('bank',5,6,0),mkBd('factory',6,6,0)];
+  var buildings=[mkBd('bank',_bGx,_bGy,0),mkBd('factory',_fGx,_fGy,0)];
 
   // Code map : positions normalisées [0-120] empaquetées 2 par 2 en 3 chars base-36
   // (gx-1)*11+(gy-1) → valeur 0-120 ; paire → v=p1*121+p2 ≤ 14640 < 36^3=46656

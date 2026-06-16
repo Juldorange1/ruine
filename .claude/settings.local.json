@@ -1,5 +1,14 @@
 {
   "permissions": {
-    "allow": []
+    "allow": [
+      "Bash(git commit -m ' *)",
+      "Bash(node -e ' *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(gh auth *)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
+    ]
   }
 }

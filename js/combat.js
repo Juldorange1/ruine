@@ -115,17 +115,7 @@ function updDrills(dt){
     var fy=bd.facing==='down'?1:bd.facing==='up'?-1:0;
     var res=G.blocks.filter(function(b){return b.gx===bd.gx+fx&&b.gy===bd.gy+fy;})[0];
     if(res){
-      var collectType=res.type;
-      if(quadMineralMode&&res.quadTypes){
-        // La foreuse accède au côté du bloc qui lui fait face
-        // facing right → foreuse à gauche du bloc → côté ouest (index 3)
-        // facing left  → foreuse à droite du bloc → côté est  (index 1)
-        // facing down  → foreuse au-dessus du bloc → côté nord (index 0)
-        // facing up    → foreuse en-dessous du bloc → côté sud (index 2)
-        var sideIdx={right:3,left:1,down:0,up:2}[bd.facing];
-        if(sideIdx!==undefined)collectType=res.quadTypes[sideIdx];
-      }
-      bd.stored[collectType]=(bd.stored[collectType]||0)+1;
+      bd.stored[res.type]=(bd.stored[res.type]||0)+1;
     }
   });
 }
@@ -145,5 +135,8 @@ function activateBd(bd,p){
     if(tps.length<2){log('Il faut 2 teleporteurs !');return;}
     tpMode=true;tpSrc=bd;tpPlayer=p;
     log('TP actif (cout: 1 diamant) - clic sur autre TP');
+  }
+  else if(bd.type==='portal'){
+    p.x=bd.x;p.y=bd.y;sfx('tp');log(p.name+' téléporté au portail !');
   }
 }
