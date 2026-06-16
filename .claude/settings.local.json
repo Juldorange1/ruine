@@ -8,7 +8,12 @@
       "mcp__Claude_in_Chrome__tabs_context_mcp",
       "Bash(gh auth *)",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(node -c js/game.js)",
+      "Bash(node -c js/init.js)",
+      "Bash(node -c js/shop.js)",
+      "Bash(node -c js/render.js)",
+      "Bash(node -c js/globals.js)"
     ]
   }
 }

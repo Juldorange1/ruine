@@ -289,7 +289,9 @@ function drawBd(bd){
     X.fillStyle='rgba(0,0,0,0.52)';X.fillRect(bx+6,by+TILE-7,bwb,5);
     X.fillStyle=hpP2>0.55?'rgba(78,198,58,0.9)':hpP2>0.25?'rgba(218,148,28,0.9)':'rgba(208,38,28,0.9)';X.fillRect(bx+6,by+TILE-7,bwb*hpP2,5);
   }
-  X.fillStyle='rgba(255,240,180,0.97)';X.font='bold 14px Courier New';X.textAlign='center';X.textBaseline='bottom';X.fillText(bd.label,cx,by+TILE-5);
+  if(bd.type!=='portal'){
+    X.fillStyle='rgba(255,240,180,0.97)';X.font='bold 14px Courier New';X.textAlign='center';X.textBaseline='bottom';X.fillText(bd.label,cx,by+TILE-5);
+  }
 }
 
 function drawPlayer(p){
@@ -348,7 +350,6 @@ function drawPlayer(p){
   X.restore();
   var bw=38,bh=5,hpX=px-bw/2,hpY=py-sz*.8-4;
   if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'){X.fillStyle='rgba(0,0,0,0.58)';X.fillRect(hpX-1,hpY-1,bw+2,bh+2);X.fillStyle=p.hp/p.maxHp>0.55?'rgba(78,208,58,0.95)':p.hp/p.maxHp>0.25?'rgba(218,148,28,0.95)':'rgba(208,38,28,0.95)';X.fillRect(hpX,hpY,bw*(p.hp/p.maxHp),bh);}
-  X.fillStyle='rgba(255,238,188,0.95)';X.font='bold 14px Courier New';X.textAlign='center';X.textBaseline='bottom';X.fillText(p.name,px,hpY-2);
   if(p.inCombat&&(p.spearSwing||0)>0.1){var cf=0.5+0.5*Math.sin(G.time*20);X.strokeStyle='rgba(255,80,20,'+cf+')';X.lineWidth=2.5;X.beginPath();X.arc(px,py,sz*.65,0,Math.PI*2);X.stroke();}
 }
 
@@ -381,7 +382,7 @@ function updateHUD(){
   var _uhud=document.getElementById('ultimatehud');
   if(_uhud){
     if(ultimateMode&&gameRunning&&G&&_ultimatePool.length){
-      var _uNames={night:'NOCTURNE',speed:'DBL VITESSE',teleport:'TÉLÉPORTEUR',random:'ALÉATOIRE',destruct:'DESTRUCTION',ghost:'FANTÔME'};
+      var _uNames={night:'NOCTURNE',speed:'DBL VITESSE',teleport:'TÉLÉPORTEUR',random:'ALÉATOIRE',destruct:'DESTRUCTION',ghost:'FANTÔME',inversion:'INVERSION'};
       var _uc=Math.ceil(Math.max(0,_ultimateTimer));
       var _uhtml='<div style="font-size:13px;letter-spacing:2px;color:rgba(200,60,255,0.7);margin-bottom:6px;border-bottom:1px solid rgba(140,30,180,0.35);padding-bottom:4px;font-weight:bold">&#9889; ULTIME</div>';
       _ultimatePool.forEach(function(opt){

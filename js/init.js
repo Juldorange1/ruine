@@ -26,12 +26,13 @@ function initGame(){
   for(var _wy=0;_wy<MAP;_wy++)for(var _wx=0;_wx<MAP;_wx++){
     if(isWall(_wx,_wy))taken[_wx+','+_wy]=true;
   }
-  // Usine + magazin : position aléatoire (adjacents l'un à l'autre)
-  var _fGx=2+Math.floor(rr()*(MAP-4)),_fGy=2+Math.floor(rr()*(MAP-4));
-  var _bDirs=[{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
-  var _bDir=_bDirs[Math.floor(rr()*4)];
-  var _bGx=_fGx+_bDir.dx,_bGy=_fGy+_bDir.dy;
-  [[_fGx,_fGy],[_bGx,_bGy]].forEach(function(p){taken[p[0]+','+p[1]]=true;}); // bâtiments initiaux
+  // Usine + magazin : chacun sur une case libre totalement aléatoire (indépendante)
+  var _fGx,_fGy,_bGx,_bGy,_bt=0;
+  _fGx=1+Math.floor(rr()*(MAP-2));_fGy=1+Math.floor(rr()*(MAP-2));taken[_fGx+','+_fGy]=true;
+  do{
+    _bGx=1+Math.floor(rr()*(MAP-2));_bGy=1+Math.floor(rr()*(MAP-2));_bt++;
+  }while(taken[_bGx+','+_bGy]&&_bt<400);
+  taken[_bGx+','+_bGy]=true;
 
   var blocks=[];
 

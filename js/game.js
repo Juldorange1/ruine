@@ -52,6 +52,16 @@ function loop(ts){
       _ghostTimer-=dt;
       if(_ghostTimer<=0){_ghostTimer=26;_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
     }
+    // TÉLÉPORTEUR — toutes les 26s, poser 1 portail
+    if(teleportMode&&!_selectionPending){
+      _teleportTimer-=dt;
+      if(_teleportTimer<=0){_teleportTimer=26;_portalPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('PORTAIL : cliquer une case libre');}
+    }
+    // INVERSION — toutes les 26s, choisir 2 minerais/foreuses et inverser leur position
+    if(inversionMode&&!_selectionPending){
+      _inversionTimer-=dt;
+      if(_inversionTimer<=0){_inversionTimer=26;_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('INVERSION : cliquer 2 minerais ou foreuses');}
+    }
     // Mouvement tactile mobile
     if(_touchMoveTarget&&!_selectionPending&&!drillingMode){
       var _tdx=_touchMoveTarget.gx-G.p1.x,_tdy=_touchMoveTarget.gy-G.p1.y;
@@ -271,6 +281,23 @@ document.addEventListener('click',resumeAudio); // déclenche la mélodie dès l
 
 function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();return{gx:Math.floor((e.clientX-r.left)/(r.width/CW)/TILE),gy:Math.floor((e.clientY-r.top)/(r.height/CH)/TILE)};}
 
+function _inversionPick(gx,gy){
+  var blk=G.blocks.filter(function(b){return b.gx===gx&&b.gy===gy;})[0];
+  if(blk)return blk;
+  return G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast')&&b.gx===gx&&b.gy===gy;})[0]||null;
+}
+function _inversionTrySelect(gx,gy){
+  var tgt=_inversionPick(gx,gy);
+  if(!tgt)return;
+  if(!_inversionFirst){_inversionFirst=tgt;_showPlaceInfo('INVERSION : cliquer la 2e case');}
+  else if(tgt!==_inversionFirst){
+    var t1gx=_inversionFirst.gx,t1gy=_inversionFirst.gy,t1x=_inversionFirst.x,t1y=_inversionFirst.y;
+    _inversionFirst.gx=tgt.gx;_inversionFirst.gy=tgt.gy;_inversionFirst.x=tgt.x;_inversionFirst.y=tgt.y;
+    tgt.gx=t1gx;tgt.gy=t1gy;tgt.x=t1x;tgt.y=t1y;
+    _inversionPending=false;_inversionFirst=null;_selectionPending=false;_hidePlaceInfo();sfx('tp');log('Inversion !');
+  }
+}
+
 C.addEventListener('click',function(e){
   if(!G)return;
   var pos=getGrid(e);
@@ -281,6 +308,11 @@ C.addEventListener('click',function(e){
       G.buildings.push(_pb);
       _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log('Portail posé !');
     } else log('Case occupée !');
+    return;
+  }
+  // INVERSION : sélectionner 2 minerais/foreuses et les échanger
+  if(_inversionPending&&_selectionDelay<=0){
+    _inversionTrySelect(pos.gx,pos.gy);
     return;
   }
   // DESTRUCTION : détruire le bloc/foreuse cliqué
@@ -397,6 +429,12 @@ C.addEventListener('touchend',function(e){
     return;
   }
 
+  // ─ Sélection INVERSION (directement, sans faux clic souris)
+  if(_inversionPending&&_selectionDelay<=0){
+    _inversionTrySelect(tg.igx,tg.igy);
+    return;
+  }
+
   // ─ Sélection DESTRUCTION (directement, sans faux clic souris)
   if(_destructPending&&_selectionDelay<=0){
     var _db=G.blocks.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy;})[0];
@@ -496,17 +534,18 @@ function startGame(mode){
   // ULTIME — pool fixe avec toutes les options, tirer la 1ère dès le début
   _ultimateActiveOpt=null;
   _ultimatePool=[];
-  nightMode=false;speedMode=false;teleportShopMode=false;
+  nightMode=false;speedMode=false;teleportMode=false;inversionMode=false;
   destructMode=false;ghostMode=false;
-  _portalPending=false;
+  _portalPending=false;_inversionPending=false;_inversionFirst=null;
   if(ultimateMode){
-    _ultimatePool=['night','speed','teleport','destruct','ghost'];
-    _destructTimer=26;_ghostTimer=26;
+    _ultimatePool=['night','speed','teleport','destruct','ghost','inversion'];
+    _destructTimer=26;_ghostTimer=26;_teleportTimer=26;_inversionTimer=26;
     if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
     _ultimateTimer=60;
   }
-  // Reset destruct/ghost
-  _destructTimer=26;_ghostTimer=26;_destructPending=false;_ghostPending=false;_selectionPending=false;
+  // Reset destruct/ghost/teleport/inversion
+  _destructTimer=26;_ghostTimer=26;_teleportTimer=26;_inversionTimer=26;
+  _destructPending=false;_ghostPending=false;_portalPending=false;_inversionPending=false;_inversionFirst=null;_selectionPending=false;
 
   _gameUsedMapCode=!!_preloadedBlocks;
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
@@ -627,7 +666,6 @@ document.getElementById('shop').addEventListener('click',function(e){
   else if(a==='buy-diamond')buyBlock('diamond');
   else if(a==='dmg')buyUpg('dmg');
   else if(a==='spd')buyUpg('spd');
-  else if(a==='portal')buyPortal();
 });
 document.getElementById('btn-record-play').addEventListener('click',function(){
   mineralQty=6;
@@ -722,7 +760,8 @@ function _ultimateDeactivate(){
   _ultimateActiveOpt=null;
   if(opt==='night') nightMode=false;
   else if(opt==='speed') speedMode=false;
-  else if(opt==='teleport') teleportShopMode=false;
+  else if(opt==='teleport'){teleportMode=false;_portalPending=false;}
+  else if(opt==='inversion'){inversionMode=false;_inversionPending=false;_inversionFirst=null;}
   else if(opt==='random'){randomCostMode=false;costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};_updateRandomCostDisplay();}
   else if(opt==='destruct') destructMode=false;
   else if(opt==='ghost') ghostMode=false;
@@ -731,7 +770,8 @@ function _ultimateActivate(opt){
   _ultimateActiveOpt=opt;
   if(opt==='night') nightMode=true;
   else if(opt==='speed') speedMode=true;
-  else if(opt==='teleport') teleportShopMode=true;
+  else if(opt==='teleport'){teleportMode=true;_teleportTimer=26;}
+  else if(opt==='inversion'){inversionMode=true;_inversionTimer=26;}
   else if(opt==='random'){
     randomCostMode=true;
     var allRes=['coal','gold','diamond'];

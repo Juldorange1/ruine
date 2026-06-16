@@ -31,11 +31,6 @@ function renderShop(){
     bLabel+='<button data-action="buy-diamond" style="'+bs+(okB?'color:#80eeff"':'color:#444;cursor:not-allowed"')+'>Diamant</button>';
     bLabel+='</div>';
     html+='<div class="si" style="padding:10px 14px">'+bLabel+'</div>';
-
-    if(teleportShopMode){
-      var okTp=(p.coal||0)>=5&&(p.gold||0)>=5&&(p.diamond||0)>=5;
-      html+=sItem(okTp,'PORTAIL','5 Charbon + 5 Or + 5 Diamant','Pose un portail de téléportation','portal');
-    }
   } else {
     var dt2=costTypes.dmg,dmgCost=2,okDmg=(p[dt2]||0)>=dmgCost;
     html+=sItem(okDmg,'+2 Dégâts/s',dmgCost+' '+_cNames[dt2],'Actuel : '+p.dmg+' dég/s','dmg');
@@ -52,7 +47,7 @@ function sItem(ok,name,cost,eff,action){
     '<div style="font-size:15px;font-weight:bold;margin-bottom:2px">'+name+'</div>'+
     '<div class="co">'+cost+'</div>'+
     '<div class="ef">'+eff+'</div>'+
-    '<div class="'+(ok?'ok':'ko')+'">'+(ok?'ACHETER':'Ressources insuffisantes')+'</div></div>';
+    (ok?'<div class="ok">ACHETER</div>':'')+'</div>';
 }
 
 function buyBlock(btype){
@@ -87,14 +82,6 @@ function buyUpg(t){
   if(t==='dmg'){p.dmg+=2;log('Dégâts +2 → '+p.dmg);}
   else{p.speed+=0.2;p.spdUpg=(p.spdUpg||0)+1;log('Vitesse +0.2 → '+p.speed.toFixed(1));}
   renderShop();
-}
-
-function buyPortal(){
-  var p=shopPlayer;if(!p||!G)return;
-  if((p.coal||0)<5||(p.gold||0)<5||(p.diamond||0)<5){log('Pas assez de minerai pour le portail !');return;}
-  p.coal-=5;p.gold-=5;p.diamond-=5;sfx('buy');closeShop();
-  _portalPending=true;_selectionPending=true;_selectionDelay=0.5;
-  _showPlaceInfo('PORTAIL : cliquer une case libre');
 }
 
 /* TELEPORT */
