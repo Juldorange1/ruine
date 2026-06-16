@@ -121,7 +121,7 @@ function loop(ts){
 /* STATS localStorage */
 // Incrémenter cette version efface automatiquement le tableau de jeu de tous les joueurs
 // (à faire à chaque changement de gameplay important affectant l'équilibrage des records)
-var STATS_VERSION=3;
+var STATS_VERSION=4;
 (function(){
   try{
     var v=localStorage.getItem('ruine_stats_version');
@@ -180,16 +180,14 @@ function showEnd(){
     // Enregistrement stats si victoire en diamondRace
     if(diamondRace&&G.winner==='DIAMOND'){
       var _sg=_loadStats(diamondGoal);
-      // Victoires : toujours comptées (+0.5 si code map)
+      // Victoires : toujours comptées (+0.5 si code map, +1 sinon)
       _sg.wins=Math.round(((_sg.wins||0)+(_gameUsedMapCode?0.5:1))*10)/10;
-      // Records de temps : séparés aléatoire / normal, jamais si code map
-      if(!_gameUsedMapCode){
-        var _elapsed=Math.round(G.time);
-        if(randomCostMode){
-          if(_sg.bestRandom===null||_sg.bestRandom===undefined||_elapsed<_sg.bestRandom)_sg.bestRandom=_elapsed;
-        } else {
-          if(_sg.best===null||_sg.best===undefined||_elapsed<_sg.best)_sg.best=_elapsed;
-        }
+      // Records de temps : séparés aléatoire / normal — le code map n'impacte pas le record
+      var _elapsed=Math.round(G.time);
+      if(randomCostMode){
+        if(_sg.bestRandom===null||_sg.bestRandom===undefined||_elapsed<_sg.bestRandom)_sg.bestRandom=_elapsed;
+      } else {
+        if(_sg.best===null||_sg.best===undefined||_elapsed<_sg.best)_sg.best=_elapsed;
       }
       _saveStats(diamondGoal,_sg.wins,_sg.best,_sg.bestRandom);
       updateMenuStats();
