@@ -617,6 +617,10 @@ function startGame(mode){
   document.getElementById('shop').style.display='none';
   document.getElementById('pbar').style.display='none';
   var _cwEl2=document.getElementById('cw');if(_cwEl2)_cwEl2.style.visibility='';
+  var _hudS=document.querySelector('.hud');if(_hudS)_hudS.style.visibility='';
+  var _lpS=document.getElementById('leftpanel');if(_lpS)_lpS.style.visibility='';
+  var _logS=document.getElementById('log');if(_logS)_logS.style.display='';
+  var _khS=document.getElementById('kh');if(_khS)_khS.style.visibility='';
   document.getElementById('ov').style.display='none';
   document.getElementById('endov').style.display='none';
   document.getElementById('endov').style.opacity='0';
@@ -979,6 +983,10 @@ function goToMenu(){
   var gn2=document.getElementById('gamename');if(gn2)gn2.style.display='none';
   var rcm=document.getElementById('randomcostinfo');if(rcm)rcm.style.display='none';
   var _cwEl=document.getElementById('cw');if(_cwEl)_cwEl.style.visibility='hidden';
+  var _hudH=document.querySelector('.hud');if(_hudH)_hudH.style.visibility='hidden';
+  var _lpH=document.getElementById('leftpanel');if(_lpH)_lpH.style.visibility='hidden';
+  var _logH=document.getElementById('log');if(_logH)_logH.style.display='none';
+  var _khH=document.getElementById('kh');if(_khH)_khH.style.visibility='hidden';
   document.getElementById('ov').style.display='flex';
   recSetDur(recDur);
   var _mp2=document.getElementById('mob-pause');if(_mp2)_mp2.style.display='none';
