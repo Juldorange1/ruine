@@ -45,7 +45,6 @@
     <div class="mcard" style="min-width:260px">
       <h2 id="record-title" style="color:#80eeff;margin-bottom:10px">RECORD</h2>
 
-      <div style="font-size:10px;color:#50c870;letter-spacing:1px;margin-bottom:6px;text-align:center;font-family:'Courier New',monospace">🎲 record = mode ALÉATOIRE uniquement</div>
       <!-- Colonnes : stats + bouton durée -->
       <div style="display:flex;gap:4px;margin-bottom:10px;justify-content:center;font-family:'Courier New',monospace">
 
@@ -256,12 +255,6 @@
         <div>Des météores tombent aléatoirement sur le terrain toutes les ~12 secondes. Un avertissement visuel (cible rouge) apparaît 2 secondes avant l'impact. Le météore détruit le premier bâtiment ou bloc qui se trouve sur sa case. Tu peux détruire un météore en vol avec ta lance-pierre avant qu'il ne touche le sol.</div>
       </div>
 
-      <!-- COMBAT -->
-      <div style="border:1px solid rgba(200,50,50,0.2);border-radius:8px;padding:16px 20px;background:rgba(25,5,5,0.3)">
-        <div style="font-size:15px;font-weight:bold;color:#e05050;letter-spacing:4px;margin-bottom:10px">⚔ COMBAT (PvP uniquement)</div>
-        <div>Clic droit lance une pierre en direction du clic. Portée : 1,3 cases. Dégâts de base : 10, améliorables à l'usine. La récupération HP commence 0,5 s après avoir cessé de combattre. Les foreuses et blocs ennemis peuvent aussi être attaqués — l'usine et les portails sont indestructibles.</div>
-      </div>
-
       <!-- PIQUES -->
       <div style="border:1px solid rgba(200,60,80,0.18);border-radius:8px;padding:16px 20px;background:rgba(22,5,8,0.3)">
         <div style="font-size:15px;font-weight:bold;color:#d84060;letter-spacing:4px;margin-bottom:10px">🔺 PIQUES</div>
@@ -277,7 +270,13 @@
       <!-- ALÉATOIRE -->
       <div style="border:1px solid rgba(50,200,100,0.2);border-radius:8px;padding:16px 20px;background:rgba(5,20,10,0.3)">
         <div style="font-size:15px;font-weight:bold;color:#40d870;letter-spacing:4px;margin-bottom:10px">🎲 MODE ALÉATOIRE</div>
-        <div>Activé via le bouton ALÉATOIRE du menu. Les coûts de chaque achat (foreuse, bloc, dégâts, vitesse) sont tirés au sort parmi les ressources disponibles avant la partie. Contrainte : chaque type de minerai doit permettre d'acheter au moins 1 type d'objet. <b style="color:#50d888">Les records de temps ne sont enregistrés qu'en mode ALÉATOIRE</b> — une partie sans ce mode ne compte pas pour le tableau de records (mais les victoires sont toujours comptées).</div>
+        <div>Activé via le bouton ALÉATOIRE du menu. Les coûts de chaque achat (foreuse, bloc, dégâts, vitesse) sont tirés au sort parmi les ressources disponibles avant la partie. Contrainte : chaque type de minerai doit permettre d'acheter au moins 1 type d'objet.</div>
+      </div>
+
+      <!-- RECORDS -->
+      <div style="border:1px solid rgba(80,210,130,0.25);border-radius:8px;padding:16px 20px;background:rgba(5,18,10,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#50d888;letter-spacing:4px;margin-bottom:10px">🏆 RECORDS</div>
+        <div><b style="color:#50d888">Les records de temps ne sont enregistrés et affichés que si le mode ALÉATOIRE était actif pendant la partie.</b> Une partie jouée sans ce mode ne compte pas pour le tableau de records. Les victoires (nombre de parties gagnées) sont toujours comptées, quel que soit le mode.</div>
       </div>
 
       <!-- ULTIME -->

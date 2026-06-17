@@ -618,44 +618,65 @@ function startGame(mode){
     _bg.addColorStop(0.6,'#ceaa42');_bg.addColorStop(1,'#b8903a');
     fc2.fillStyle=_bg;fc2.fillRect(0,0,CW,CH);
 
-    /* Taches de couleur légères (variation naturelle du sable) */
-    for(var _ci=0;_ci<28;_ci++){
-      var _cpx=TILE+(_ci*179.3)%(CW-2*TILE),_cpy=TILE+(_ci*241.7)%(CH-2*TILE);
-      var _cr=35+(_ci*37)%65,_ca=0.045+(_ci*0.011)%0.055;
+    var _h=function(n){var x=Math.sin(n+13.753)*48271.8;return x-Math.floor(x);};
+
+    /* ── ZONES DE COULEUR VARIÉES (sable clair, foncé, ocre, rougeâtre) ── */
+    var _sandPalette=[
+      'rgba(245,210,110,{a})','rgba(130,88,18,{a})','rgba(195,148,50,{a})',
+      'rgba(210,160,55,{a})','rgba(100,68,14,{a})','rgba(228,185,80,{a})',
+      'rgba(158,112,30,{a})','rgba(185,135,42,{a})'
+    ];
+    for(var _ci=0;_ci<48;_ci++){
+      var _cpx=TILE+_h(_ci*179.3+5)*(CW-2*TILE),_cpy=TILE+_h(_ci*241.7+7)*(CH-2*TILE);
+      var _cr=18+_h(_ci*37.1)*68,_ca=0.055+_h(_ci*13.7)*0.08;
+      var _cpal=_sandPalette[_ci%_sandPalette.length].replace('{a}',_ca.toFixed(3));
       var _cg=fc2.createRadialGradient(_cpx,_cpy,0,_cpx,_cpy,_cr);
-      _cg.addColorStop(0,(_ci%2===0)?'rgba(215,178,82,'+_ca+')':'rgba(155,108,28,'+_ca+')');
-      _cg.addColorStop(1,'rgba(0,0,0,0)');
+      _cg.addColorStop(0,_cpal);_cg.addColorStop(1,'rgba(0,0,0,0)');
       fc2.fillStyle=_cg;fc2.fillRect(_cpx-_cr,_cpy-_cr,_cr*2,_cr*2);
     }
 
-    /* ── GRAIN DE SABLE (stippling) ── */
-    var _h=function(n){var x=Math.sin(n+13.753)*48271.8;return x-Math.floor(x);};
-    for(var _gi=0;_gi<5200;_gi++){
+    /* ── GRAIN DE SABLE (stippling dense) ── */
+    for(var _gi=0;_gi<6500;_gi++){
       var _gx=TILE+_h(_gi*1.618)*(CW-2*TILE);
       var _gy=TILE+_h(_gi*2.718)*(CH-2*TILE);
-      var _ga=_h(_gi*3.14)*0.12+0.025;
-      var _gsz=_h(_gi*1.41)*1.9+0.35;
-      if(_gi%3===0)fc2.fillStyle='rgba(252,218,128,'+_ga+')';
-      else if(_gi%3===1)fc2.fillStyle='rgba(128,82,18,'+(_ga*0.55)+')';
-      else fc2.fillStyle='rgba(195,158,72,'+(_ga*0.45)+')';
-      fc2.beginPath();fc2.ellipse(_gx,_gy,_gsz,_gsz*0.52,_h(_gi*2.2)*Math.PI,0,Math.PI*2);fc2.fill();
+      var _ga=_h(_gi*3.14)*0.14+0.03;
+      var _gsz=_h(_gi*1.41)*2.1+0.3;
+      if(_gi%4===0)fc2.fillStyle='rgba(255,222,130,'+_ga+')';
+      else if(_gi%4===1)fc2.fillStyle='rgba(118,74,14,'+(_ga*0.6)+')';
+      else if(_gi%4===2)fc2.fillStyle='rgba(195,155,68,'+(_ga*0.5)+')';
+      else fc2.fillStyle='rgba(82,54,10,'+(_ga*0.4)+')';
+      fc2.beginPath();fc2.ellipse(_gx,_gy,_gsz,_gsz*0.5,_h(_gi*2.2)*Math.PI,0,Math.PI*2);fc2.fill();
+    }
+
+    /* ── TRACES ET ÉRAFLURES (marques du vent / débris anciens) ── */
+    for(var _ti=0;_ti<30;_ti++){
+      var _tx=TILE+_h(_ti*113.7+3)*(CW-2*TILE),_ty=TILE+_h(_ti*97.3+5)*(CH-2*TILE);
+      var _tl=12+_h(_ti*43.1)*28,_tang=_h(_ti*67.3)*Math.PI;
+      var _tc=_ti%3===0?'rgba(92,58,10,':'rgba(240,200,100,';
+      var _ta=0.06+_h(_ti*31.9)*0.07;
+      fc2.strokeStyle=_tc+_ta+')';fc2.lineWidth=0.8+_h(_ti*19.7)*0.6;
+      fc2.beginPath();
+      fc2.moveTo(_tx,_ty);
+      fc2.lineTo(_tx+Math.cos(_tang)*_tl,_ty+Math.sin(_tang)*_tl);
+      fc2.stroke();
     }
 
     /* ── RIDES DE DUNES (courants de vent) ── */
-    for(var _di=0;_di<10;_di++){
-      var _dby=TILE+(_di*(CH-2*TILE)/10);
-      fc2.strokeStyle='rgba(155,115,38,'+(0.042+_di*0.0025)+')';
-      fc2.lineWidth=1.2;fc2.beginPath();
+    for(var _di=0;_di<13;_di++){
+      var _dby=TILE+(_di*(CH-2*TILE)/13)+_h(_di*47.3)*18-9;
+      var _damp=8+_h(_di*31.1)*10,_dfreq=0.018+_h(_di*23.7)*0.02;
+      fc2.strokeStyle='rgba(148,108,34,'+(0.04+_h(_di*17.3)*0.05)+')';
+      fc2.lineWidth=0.9+_h(_di*53.7)*0.7;fc2.beginPath();
       for(var _ddx=TILE;_ddx<=CW-TILE;_ddx+=2){
-        var _ddy=_dby+Math.sin(_ddx*0.027+_di*1.35)*13+Math.sin(_ddx*0.016+_di*2.2)*6;
+        var _ddy=_dby+Math.sin(_ddx*_dfreq+_di*1.35)*_damp+Math.sin(_ddx*(_dfreq*0.6)+_di*2.2)*(_damp*0.45);
         if(_ddx===TILE)fc2.moveTo(_ddx,_ddy);else fc2.lineTo(_ddx,_ddy);
       }
       fc2.stroke();
-      /* ombre sous chaque ride */
-      fc2.strokeStyle='rgba(75,50,12,'+((0.042+_di*0.0025)*0.45)+')';
-      fc2.lineWidth=1;fc2.beginPath();
+      /* ombre */
+      fc2.strokeStyle='rgba(68,42,8,'+((0.04+_h(_di*17.3)*0.05)*0.4)+')';
+      fc2.lineWidth=0.7;fc2.beginPath();
       for(var _ddx2=TILE;_ddx2<=CW-TILE;_ddx2+=2){
-        var _ddy2=_dby+Math.sin(_ddx2*0.027+_di*1.35)*13+Math.sin(_ddx2*0.016+_di*2.2)*6+2.5;
+        var _ddy2=_dby+Math.sin(_ddx2*_dfreq+_di*1.35)*_damp+Math.sin(_ddx2*(_dfreq*0.6)+_di*2.2)*(_damp*0.45)+2.5;
         if(_ddx2===TILE)fc2.moveTo(_ddx2,_ddy2);else fc2.lineTo(_ddx2,_ddy2);
       }
       fc2.stroke();
