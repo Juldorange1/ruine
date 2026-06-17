@@ -47,20 +47,70 @@ function draw(){
     var bx=bl.gx*TILE,by=bl.gy*TILE,cx=bx+TILE/2,cy=by+TILE/2;
     if(bl.ghost)X.globalAlpha=0.32;
     if(bl.type==='coal'){
-      X.fillStyle='rgba(20,18,30,0.82)';X.fillRect(bx+4,by+6,TILE-8,TILE-12);
-      X.strokeStyle='rgba(100,90,140,0.6)';X.lineWidth=1.5;X.strokeRect(bx+4,by+6,TILE-8,TILE-12);
-      X.fillStyle='#c8c0e8';X.font='bold 12px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('CHARBON',cx,cy);
+      // Roche de charbon : masse sombre avec reflets anthracite
+      X.fillStyle='rgba(12,10,18,0.88)';X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.fill();
+      // Facettes brillantes
+      X.fillStyle='rgba(58,52,80,0.7)';X.beginPath();X.moveTo(bx+10,by+12);X.lineTo(bx+28,by+9);X.lineTo(bx+38,by+18);X.lineTo(bx+22,by+22);X.closePath();X.fill();
+      X.fillStyle='rgba(80,70,110,0.5)';X.beginPath();X.moveTo(bx+22,by+22);X.lineTo(bx+42,by+16);X.lineTo(bx+52,by+30);X.lineTo(bx+30,by+36);X.closePath();X.fill();
+      X.fillStyle='rgba(140,130,175,0.35)';X.beginPath();X.moveTo(bx+12,by+28);X.lineTo(bx+26,by+24);X.lineTo(bx+30,by+36);X.lineTo(bx+14,by+42);X.closePath();X.fill();
+      // Éclat spéculaire
+      X.fillStyle='rgba(200,190,230,0.22)';X.beginPath();X.ellipse(bx+18,by+14,7,3,0.4,0,Math.PI*2);X.fill();
+      X.strokeStyle='rgba(90,80,130,0.55)';X.lineWidth=1.5;X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.stroke();
+      X.fillStyle='rgba(190,180,220,0.9)';X.font='bold 10px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('CHARBON',cx,cy+6);
     } else if(bl.type==='gold'){
-      X.fillStyle='rgba(28,20,6,0.82)';X.fillRect(bx+4,by+6,TILE-8,TILE-12);
-      X.strokeStyle='rgba(200,155,20,0.7)';X.lineWidth=1.5;X.strokeRect(bx+4,by+6,TILE-8,TILE-12);
-      var gg=X.createRadialGradient(cx,cy,2,cx,cy,10);gg.addColorStop(0,'rgba(255,210,50,0.8)');gg.addColorStop(1,'rgba(180,130,10,0)');X.fillStyle=gg;X.fillRect(cx-8,cy-5,16,10);
-      X.fillStyle='#f5c830';X.font='bold 13px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('OR',cx,cy);
+      // Filon d'or : roche brune avec veinures dorées
+      X.fillStyle='rgba(30,18,4,0.88)';X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.fill();
+      // Veinures dorées
+      X.strokeStyle='rgba(220,170,20,0.7)';X.lineWidth=2.5;
+      X.beginPath();X.moveTo(bx+8,by+28);X.bezierCurveTo(bx+20,by+18,bx+36,by+32,bx+56,by+24);X.stroke();
+      X.strokeStyle='rgba(255,200,40,0.5)';X.lineWidth=1.5;
+      X.beginPath();X.moveTo(bx+14,by+36);X.bezierCurveTo(bx+28,by+26,bx+42,by+38,bx+54,by+34);X.stroke();
+      X.beginPath();X.moveTo(bx+10,by+18);X.bezierCurveTo(bx+22,by+14,bx+30,by+22,bx+40,by+16);X.stroke();
+      // Pépites
+      var _gPos=[[cx-10,cy-4],[cx+6,cy+6],[cx-2,cy+8]];
+      _gPos.forEach(function(gp){
+        var _gnug=X.createRadialGradient(gp[0]-2,gp[1]-2,0,gp[0],gp[1],6);
+        _gnug.addColorStop(0,'rgba(255,225,80,0.95)');_gnug.addColorStop(1,'rgba(180,120,10,0.6)');
+        X.fillStyle=_gnug;X.beginPath();X.ellipse(gp[0],gp[1],6,4,0.3,0,Math.PI*2);X.fill();
+      });
+      X.strokeStyle='rgba(195,148,18,0.5)';X.lineWidth=1.5;X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.stroke();
+      X.fillStyle='rgba(255,218,60,0.95)';X.font='bold 12px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('OR',cx,cy-6);
     } else {
+      // Cristal de diamant : gem facettée pulsante
       var pulse=0.5+0.5*Math.sin(G.time*2.5);
-      X.fillStyle='rgba(6,10,20,0.85)';X.fillRect(bx+4,by+6,TILE-8,TILE-12);
-      X.strokeStyle='rgba(80,200,255,'+(0.5+pulse*.3)+')';X.lineWidth=1.5;X.strokeRect(bx+4,by+6,TILE-8,TILE-12);
-      var dg=X.createRadialGradient(cx,cy,2,cx,cy,12);dg.addColorStop(0,'rgba(100,220,255,'+(0.4+pulse*.3)+')');dg.addColorStop(1,'rgba(40,150,220,0)');X.fillStyle=dg;X.beginPath();X.arc(cx,cy,12,0,Math.PI*2);X.fill();
-      X.fillStyle='rgba(160,240,255,0.98)';X.font='bold 12px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('DIAMANT',cx,cy);
+      X.fillStyle='rgba(4,8,20,0.88)';X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.fill();
+      // Forme hexagonale du cristal
+      X.save();X.translate(cx,cy);
+      var _dfaces=[
+        [[0,-20],[14,-10],[14,10]],
+        [[0,-20],[-14,-10],[0,0]],
+        [[14,-10],[14,10],[0,20],[0,0]],
+        [[-14,-10],[0,0],[0,20],[-14,10]],
+        [[0,0],[14,10],[0,20],[-14,10]]
+      ];
+      var _dcols=['rgba(120,220,255,0.55)','rgba(80,180,240,0.45)','rgba(160,240,255,0.65)','rgba(60,160,220,0.45)','rgba(100,210,255,0.35)'];
+      _dfaces.forEach(function(pts,fi){
+        X.fillStyle=_dcols[fi];X.beginPath();X.moveTo(pts[0][0],pts[0][1]);
+        for(var pi2=1;pi2<pts.length;pi2++)X.lineTo(pts[pi2][0],pts[pi2][1]);
+        X.closePath();X.fill();
+      });
+      // Arêtes
+      X.strokeStyle='rgba(180,240,255,'+(0.5+pulse*0.3)+')';X.lineWidth=1.2;
+      [[0,-20],[14,-10],[14,10],[0,20],[-14,10],[-14,-10],[0,-20]].forEach(function(pt,idx,arr){
+        if(idx===0)X.beginPath(),X.moveTo(pt[0],pt[1]);else X.lineTo(pt[0],pt[1]);
+      });X.closePath();X.stroke();
+      X.beginPath();X.moveTo(0,-20);X.lineTo(0,0);X.moveTo(14,-10);X.lineTo(0,0);X.moveTo(-14,-10);X.lineTo(0,0);X.moveTo(14,10);X.lineTo(0,20);X.moveTo(-14,10);X.lineTo(0,20);X.stroke();
+      // Reflet interne
+      var _dg2=X.createRadialGradient(-4,-10,0,-4,-10,10);
+      _dg2.addColorStop(0,'rgba(255,255,255,'+(0.25+pulse*0.2)+')');_dg2.addColorStop(1,'rgba(120,220,255,0)');
+      X.fillStyle=_dg2;X.beginPath();X.arc(-4,-10,10,0,Math.PI*2);X.fill();
+      X.restore();
+      // Halo pulsant
+      var _dh=X.createRadialGradient(cx,cy,8,cx,cy,TILE*.45);
+      _dh.addColorStop(0,'rgba(80,200,255,'+(0.08+pulse*0.1)+')');_dh.addColorStop(1,'rgba(40,150,220,0)');
+      X.fillStyle=_dh;X.fillRect(bx,by,TILE,TILE);
+      X.strokeStyle='rgba(100,210,255,'+(0.4+pulse*0.3)+')';X.lineWidth=1.5;X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.stroke();
+      X.fillStyle='rgba(190,245,255,0.97)';X.font='bold 10px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('DIAMANT',cx,cy+14);
     }
     if(bl.hp<bl.maxHp){var bw3=TILE-10;X.fillStyle='rgba(0,0,0,0.5)';X.fillRect(bx+5,by+TILE-6,bw3,4);X.fillStyle=bl.hp/bl.maxHp>0.5?'#70b038':'#d07020';X.fillRect(bx+5,by+TILE-6,bw3*(bl.hp/bl.maxHp),4);}
     X.globalAlpha=1;

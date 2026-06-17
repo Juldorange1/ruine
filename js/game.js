@@ -654,26 +654,6 @@ function startGame(mode){
       fc2.stroke();
     }
 
-    /* ── CAILLOUX ÉPARS ── */
-    for(var _pi=0;_pi<60;_pi++){
-      var _ppx=TILE*1.4+(_pi*173.1)%(CW-2.8*TILE);
-      var _ppy=TILE*1.4+(_pi*267.9)%(CH-2.8*TILE);
-      var _ppr=1.6+(_pi*11.3)%3.8;
-      var _ppa=(_pi*0.54)%Math.PI;
-      var _ppc=38+(_pi*7)%32;
-      /* ombre portée */
-      fc2.fillStyle='rgba(0,0,0,0.24)';
-      fc2.beginPath();fc2.ellipse(_ppx+1.2,_ppy+2,_ppr*1.15,_ppr*0.52,_ppa,0,Math.PI*2);fc2.fill();
-      /* corps du caillou */
-      var _pg=fc2.createRadialGradient(_ppx-_ppr*0.3,_ppy-_ppr*0.3,0,_ppx,_ppy,_ppr);
-      _pg.addColorStop(0,'rgba('+(80+_ppc)+','+(58+Math.round(_ppc*0.7))+','+(30+Math.round(_ppc*0.4))+',0.88)');
-      _pg.addColorStop(1,'rgba('+(38+_ppc)+','+(26+Math.round(_ppc*0.6))+','+(12+Math.round(_ppc*0.3))+',0.72)');
-      fc2.fillStyle=_pg;
-      fc2.beginPath();fc2.ellipse(_ppx,_ppy,_ppr,_ppr*0.64,_ppa,0,Math.PI*2);fc2.fill();
-      /* éclat */
-      fc2.fillStyle='rgba(230,195,130,0.28)';
-      fc2.beginPath();fc2.ellipse(_ppx-_ppr*0.28,_ppy-_ppr*0.22,_ppr*0.42,_ppr*0.28,_ppa,0,Math.PI*2);fc2.fill();
-    }
 
     /* ── MURS (pierres taillées anciennes) ── */
     for(var _wy=0;_wy<MAP;_wy++)for(var _wx=0;_wx<MAP;_wx++){
