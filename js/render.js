@@ -47,70 +47,36 @@ function draw(){
     var bx=bl.gx*TILE,by=bl.gy*TILE,cx=bx+TILE/2,cy=by+TILE/2;
     if(bl.ghost)X.globalAlpha=0.32;
     if(bl.type==='coal'){
-      // Roche de charbon : masse sombre avec reflets anthracite
-      X.fillStyle='rgba(12,10,18,0.88)';X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.fill();
-      // Facettes brillantes
-      X.fillStyle='rgba(58,52,80,0.7)';X.beginPath();X.moveTo(bx+10,by+12);X.lineTo(bx+28,by+9);X.lineTo(bx+38,by+18);X.lineTo(bx+22,by+22);X.closePath();X.fill();
-      X.fillStyle='rgba(80,70,110,0.5)';X.beginPath();X.moveTo(bx+22,by+22);X.lineTo(bx+42,by+16);X.lineTo(bx+52,by+30);X.lineTo(bx+30,by+36);X.closePath();X.fill();
-      X.fillStyle='rgba(140,130,175,0.35)';X.beginPath();X.moveTo(bx+12,by+28);X.lineTo(bx+26,by+24);X.lineTo(bx+30,by+36);X.lineTo(bx+14,by+42);X.closePath();X.fill();
-      // Éclat spéculaire
-      X.fillStyle='rgba(200,190,230,0.22)';X.beginPath();X.ellipse(bx+18,by+14,7,3,0.4,0,Math.PI*2);X.fill();
-      X.strokeStyle='rgba(90,80,130,0.55)';X.lineWidth=1.5;X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.stroke();
-      X.fillStyle='rgba(190,180,220,0.9)';X.font='bold 10px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('CHARBON',cx,cy+6);
+      // Fond noir anthracite avec bordure violette marquée
+      X.fillStyle='rgba(10,8,16,0.95)';X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.fill();
+      X.strokeStyle='rgba(140,120,190,0.85)';X.lineWidth=2.5;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.stroke();
+      // Grand C centré très lisible
+      X.fillStyle='rgba(190,175,225,0.97)';X.font='bold 34px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('C',cx,cy-4);
+      // Petit label
+      X.fillStyle='rgba(140,125,175,0.85)';X.font='bold 9px Courier New';X.fillText('CHARBON',cx,cy+18);
     } else if(bl.type==='gold'){
-      // Filon d'or : roche brune avec veinures dorées
-      X.fillStyle='rgba(30,18,4,0.88)';X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.fill();
-      // Veinures dorées
-      X.strokeStyle='rgba(220,170,20,0.7)';X.lineWidth=2.5;
-      X.beginPath();X.moveTo(bx+8,by+28);X.bezierCurveTo(bx+20,by+18,bx+36,by+32,bx+56,by+24);X.stroke();
-      X.strokeStyle='rgba(255,200,40,0.5)';X.lineWidth=1.5;
-      X.beginPath();X.moveTo(bx+14,by+36);X.bezierCurveTo(bx+28,by+26,bx+42,by+38,bx+54,by+34);X.stroke();
-      X.beginPath();X.moveTo(bx+10,by+18);X.bezierCurveTo(bx+22,by+14,bx+30,by+22,bx+40,by+16);X.stroke();
-      // Pépites
-      var _gPos=[[cx-10,cy-4],[cx+6,cy+6],[cx-2,cy+8]];
-      _gPos.forEach(function(gp){
-        var _gnug=X.createRadialGradient(gp[0]-2,gp[1]-2,0,gp[0],gp[1],6);
-        _gnug.addColorStop(0,'rgba(255,225,80,0.95)');_gnug.addColorStop(1,'rgba(180,120,10,0.6)');
-        X.fillStyle=_gnug;X.beginPath();X.ellipse(gp[0],gp[1],6,4,0.3,0,Math.PI*2);X.fill();
-      });
-      X.strokeStyle='rgba(195,148,18,0.5)';X.lineWidth=1.5;X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.stroke();
-      X.fillStyle='rgba(255,218,60,0.95)';X.font='bold 12px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('OR',cx,cy-6);
+      // Fond brun-doré avec bordure or vive
+      X.fillStyle='rgba(38,22,2,0.95)';X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.fill();
+      // Halo doré rayonnant
+      var _gh=X.createRadialGradient(cx,cy,0,cx,cy,TILE*.4);
+      _gh.addColorStop(0,'rgba(255,195,20,0.25)');_gh.addColorStop(1,'rgba(200,130,0,0)');
+      X.fillStyle=_gh;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.fill();
+      X.strokeStyle='rgba(235,175,15,0.9)';X.lineWidth=2.5;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.stroke();
+      // Grand G doré
+      X.fillStyle='rgba(255,210,30,0.98)';X.font='bold 34px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('G',cx,cy-4);
+      X.fillStyle='rgba(220,170,20,0.85)';X.font='bold 9px Courier New';X.fillText('OR',cx,cy+18);
     } else {
-      // Cristal de diamant : gem facettée pulsante
+      // Fond bleu nuit avec bordure cyan lumineuse
       var pulse=0.5+0.5*Math.sin(G.time*2.5);
-      X.fillStyle='rgba(4,8,20,0.88)';X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.fill();
-      // Forme hexagonale du cristal
-      X.save();X.translate(cx,cy);
-      var _dfaces=[
-        [[0,-20],[14,-10],[14,10]],
-        [[0,-20],[-14,-10],[0,0]],
-        [[14,-10],[14,10],[0,20],[0,0]],
-        [[-14,-10],[0,0],[0,20],[-14,10]],
-        [[0,0],[14,10],[0,20],[-14,10]]
-      ];
-      var _dcols=['rgba(120,220,255,0.55)','rgba(80,180,240,0.45)','rgba(160,240,255,0.65)','rgba(60,160,220,0.45)','rgba(100,210,255,0.35)'];
-      _dfaces.forEach(function(pts,fi){
-        X.fillStyle=_dcols[fi];X.beginPath();X.moveTo(pts[0][0],pts[0][1]);
-        for(var pi2=1;pi2<pts.length;pi2++)X.lineTo(pts[pi2][0],pts[pi2][1]);
-        X.closePath();X.fill();
-      });
-      // Arêtes
-      X.strokeStyle='rgba(180,240,255,'+(0.5+pulse*0.3)+')';X.lineWidth=1.2;
-      [[0,-20],[14,-10],[14,10],[0,20],[-14,10],[-14,-10],[0,-20]].forEach(function(pt,idx,arr){
-        if(idx===0)X.beginPath(),X.moveTo(pt[0],pt[1]);else X.lineTo(pt[0],pt[1]);
-      });X.closePath();X.stroke();
-      X.beginPath();X.moveTo(0,-20);X.lineTo(0,0);X.moveTo(14,-10);X.lineTo(0,0);X.moveTo(-14,-10);X.lineTo(0,0);X.moveTo(14,10);X.lineTo(0,20);X.moveTo(-14,10);X.lineTo(0,20);X.stroke();
-      // Reflet interne
-      var _dg2=X.createRadialGradient(-4,-10,0,-4,-10,10);
-      _dg2.addColorStop(0,'rgba(255,255,255,'+(0.25+pulse*0.2)+')');_dg2.addColorStop(1,'rgba(120,220,255,0)');
-      X.fillStyle=_dg2;X.beginPath();X.arc(-4,-10,10,0,Math.PI*2);X.fill();
-      X.restore();
-      // Halo pulsant
-      var _dh=X.createRadialGradient(cx,cy,8,cx,cy,TILE*.45);
-      _dh.addColorStop(0,'rgba(80,200,255,'+(0.08+pulse*0.1)+')');_dh.addColorStop(1,'rgba(40,150,220,0)');
-      X.fillStyle=_dh;X.fillRect(bx,by,TILE,TILE);
-      X.strokeStyle='rgba(100,210,255,'+(0.4+pulse*0.3)+')';X.lineWidth=1.5;X.beginPath();X.roundRect(bx+5,by+7,TILE-10,TILE-14,4);X.stroke();
-      X.fillStyle='rgba(190,245,255,0.97)';X.font='bold 10px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('DIAMANT',cx,cy+14);
+      X.fillStyle='rgba(3,8,28,0.95)';X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.fill();
+      // Halo bleu pulsant
+      var _dh2=X.createRadialGradient(cx,cy,0,cx,cy,TILE*.4);
+      _dh2.addColorStop(0,'rgba(50,190,255,'+(0.18+pulse*0.12)+')');_dh2.addColorStop(1,'rgba(20,100,200,0)');
+      X.fillStyle=_dh2;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.fill();
+      X.strokeStyle='rgba(60,210,255,'+(0.7+pulse*0.3)+')';X.lineWidth=2.5;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,6);X.stroke();
+      // Grand ◆ cyan pulsant
+      X.fillStyle='rgba(80,225,255,'+(0.90+pulse*0.1)+')';X.font='bold 32px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('◆',cx,cy-4);
+      X.fillStyle='rgba(60,190,230,0.88)';X.font='bold 9px Courier New';X.fillText('DIAMANT',cx,cy+18);
     }
     if(bl.hp<bl.maxHp){var bw3=TILE-10;X.fillStyle='rgba(0,0,0,0.5)';X.fillRect(bx+5,by+TILE-6,bw3,4);X.fillStyle=bl.hp/bl.maxHp>0.5?'#70b038':'#d07020';X.fillRect(bx+5,by+TILE-6,bw3*(bl.hp/bl.maxHp),4);}
     X.globalAlpha=1;
@@ -318,13 +284,26 @@ function drawBd(bd){
     X.fillStyle='rgba(198,228,255,'+(0.68+tp*.24)+')';X.font='bold 9px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('TP',0,0);
   } else if(bd.type==='portal'){
     var pp=0.5+0.5*Math.sin(G.time*3);
-    var pg=X.createRadialGradient(0,0,2,0,0,20);
-    pg.addColorStop(0,'rgba(220,120,255,'+(0.5+pp*.4)+')');pg.addColorStop(1,'rgba(140,30,200,0)');
-    X.fillStyle=pg;X.beginPath();X.arc(0,0,20,0,Math.PI*2);X.fill();
-    X.strokeStyle='rgba(220,140,255,'+(0.55+pp*.35)+')';X.lineWidth=2.5;
-    X.beginPath();X.ellipse(0,0,13,17,0,0,Math.PI*2);X.stroke();
-    X.strokeStyle='rgba(255,210,255,'+(0.3+pp*.3)+')';X.lineWidth=1.5;
-    X.beginPath();X.ellipse(0,0,8,11,0,0,Math.PI*2);X.stroke();
+    // Fond sombre
+    X.fillStyle='rgba(20,4,38,0.92)';X.beginPath();X.arc(0,0,28,0,Math.PI*2);X.fill();
+    // Anneau externe très lumineux
+    X.strokeStyle='rgba(230,80,255,'+(0.75+pp*.25)+')';X.lineWidth=4;
+    X.beginPath();X.arc(0,0,26,0,Math.PI*2);X.stroke();
+    // Halo violet rayonnant
+    var pg=X.createRadialGradient(0,0,4,0,0,22);
+    pg.addColorStop(0,'rgba(220,100,255,'+(0.55+pp*.35)+')');pg.addColorStop(0.6,'rgba(140,30,200,0.3)');pg.addColorStop(1,'rgba(80,10,140,0)');
+    X.fillStyle=pg;X.beginPath();X.arc(0,0,22,0,Math.PI*2);X.fill();
+    // Ellipses de distorsion
+    X.strokeStyle='rgba(240,160,255,'+(0.5+pp*.35)+')';X.lineWidth=2;
+    X.beginPath();X.ellipse(0,0,10,16,0,0,Math.PI*2);X.stroke();
+    X.strokeStyle='rgba(255,200,255,'+(0.3+pp*.25)+')';X.lineWidth=1.2;
+    X.beginPath();X.ellipse(0,0,6,10,0,0,Math.PI*2);X.stroke();
+    // Étincelles orbitales
+    for(var _psi=0;_psi<8;_psi++){var _psA=(_psi/8)*Math.PI*2+G.time*1.8;var _psR=20+pp*3;
+      X.fillStyle='rgba(255,160,255,'+(0.4+pp*0.5)+')';
+      X.beginPath();X.arc(Math.cos(_psA)*_psR,Math.sin(_psA)*_psR,2.5,0,Math.PI*2);X.fill();}
+    // Label PORTAIL
+    X.fillStyle='rgba(255,230,255,0.97)';X.font='bold 9px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('PORTAIL',0,0);
   }
   X.restore();
   if(bd.type!=='factory'&&bd.type!=='bank'&&bd.hp<bd.maxHp){

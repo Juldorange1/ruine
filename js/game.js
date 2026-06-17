@@ -171,12 +171,10 @@ function showEnd(){
       var _sg=_loadStats(diamondGoal);
       // Victoires : toujours comptées (+0.5 si code map, +1 sinon)
       _sg.wins=Math.round(((_sg.wins||0)+(_gameUsedMapCode?0.5:1))*10)/10;
-      // Records de temps : séparés aléatoire / normal — le code map n'impacte pas le record
+      // Record de temps : enregistré uniquement en mode ALÉATOIRE
       var _elapsed=Math.round(G.time);
       if(randomCostMode){
         if(_sg.bestRandom===null||_sg.bestRandom===undefined||_elapsed<_sg.bestRandom)_sg.bestRandom=_elapsed;
-      } else {
-        if(_sg.best===null||_sg.best===undefined||_elapsed<_sg.best)_sg.best=_elapsed;
       }
       _saveStats(diamondGoal,_sg.wins,_sg.best,_sg.bestRandom);
       updateMenuStats();
@@ -255,6 +253,14 @@ document.addEventListener('keydown',function(e){keys[e.key]=true;
       piqueMode=false;piquePlayer=null;
       return;
     }
+    // ESC annule aussi les sélections d'Ultime en cours (déblocage du joueur)
+    if(_selectionPending){
+      _destructPending=false;_ghostPending=false;_portalPending=false;
+      _inversionPending=false;_inversionFirst=null;_selectionPending=false;
+      _ultimateSwitchPending=true;
+      _hidePlaceInfo();
+      return;
+    }
     if(G&&gameRunning&&G.phase==='combat'){
       gamePaused=!gamePaused;
       document.getElementById('pauseov').style.display=gamePaused?'flex':'none';
@@ -280,6 +286,7 @@ document.addEventListener('keydown',function(e){keys[e.key]=true;
   }
 });
 document.addEventListener('keyup',function(e){keys[e.key]=false;});
+window.addEventListener('blur',function(){keys={};});
 // Reset inactivité sur toute action joueur
 function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTime=Date.now();}
 document.addEventListener('keydown',_resetActivity);

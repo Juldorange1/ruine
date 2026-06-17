@@ -45,33 +45,30 @@
     <div class="mcard" style="min-width:260px">
       <h2 id="record-title" style="color:#80eeff;margin-bottom:10px">RECORD</h2>
 
+      <div style="font-size:10px;color:#50c870;letter-spacing:1px;margin-bottom:6px;text-align:center;font-family:'Courier New',monospace">🎲 record = mode ALÉATOIRE uniquement</div>
       <!-- Colonnes : stats + bouton durée -->
       <div style="display:flex;gap:4px;margin-bottom:10px;justify-content:center;font-family:'Courier New',monospace">
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-500"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
-          <div id="stat-bestr-500" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-bestr-500" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
           <div id="stat-wins-500"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="500d" onclick="recSetDur('500d')" style="background:rgba(240,210,80,0.2);border:1px solid rgba(240,210,80,0.7);color:#f0d250;font-weight:bold;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">500</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-1000"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
-          <div id="stat-bestr-1000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-bestr-1000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
           <div id="stat-wins-1000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="1000d" onclick="recSetDur('1000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">1000</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-2000"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
-          <div id="stat-bestr-2000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-bestr-2000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
           <div id="stat-wins-2000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="2000d" onclick="recSetDur('2000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">2000</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-best-3000"  style="font-size:11px;color:#80eeff;letter-spacing:1px" title="Record sans aléatoire">—</div>
-          <div id="stat-bestr-3000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record avec aléatoire">—</div>
+          <div id="stat-bestr-3000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
           <div id="stat-wins-3000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="3000d" onclick="recSetDur('3000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">3000</button>
         </div>
@@ -196,14 +193,14 @@
             <div style="color:#888;font-size:10px;margin-top:2px">objectif + blocs</div>
           </div>
         </div>
-        <div>La carte contient des blocs de minerai (charbon, or, diamant) en quantité aléatoire entre 3 et 7 par type. La ressource à collecter in fine est toujours le <span style="color:#80eeff">diamant</span>. En mode <span style="color:#50d888">ALÉATOIRE</span>, les coûts de chaque achat sont tirés au hasard avant la partie.</div>
+        <div>La carte contient des blocs de minerai (charbon ■, or ★, diamant ◆) en quantité fixe de 6 par type. La ressource à collecter est toujours le <span style="color:#80eeff">diamant</span>. En mode <span style="color:#50d888">ALÉATOIRE</span>, les coûts de chaque achat sont tirés au hasard avant la partie.</div>
       </div>
 
       <!-- PHASES -->
       <div style="border:1px solid rgba(200,140,50,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,12,0,0.35)">
         <div style="font-size:15px;font-weight:bold;color:#e0a840;letter-spacing:4px;margin-bottom:10px">⏱ DÉROULEMENT</div>
         <div style="display:flex;flex-direction:column;gap:7px">
-          <div><b style="color:#f0d060">1. PLACEMENT (20 s)</b> — Tu places tes bâtiments de départ : 1 foreuse + 1 bloc de ressource. Les bâtiments ne peuvent pas être placés sur le contour ni à 1 case d'une usine. Confirme chaque placement.</div>
+          <div><b style="color:#f0d060">1. PLACEMENT</b> — Tu places tes 4 foreuses de départ. Chaque foreuse doit être adjacente à un bloc de minerai. Les bâtiments ne peuvent pas être placés sur le contour ni sur un bloc occupé. Confirme chaque placement en cliquant la case.</div>
           <div><b style="color:#f0d060">2. COMBAT</b> — Le chrono démarre. Tu te déplaces, collectes, construis et améliores. La partie se termine quand tu atteins l'objectif en diamants.</div>
           <div><b style="color:#f0d060">PAUSE</b> — Utilisable <b>une seule fois</b> par partie (touche P). Idéal pour souffler un instant.</div>
         </div>
@@ -280,7 +277,7 @@
       <!-- ALÉATOIRE -->
       <div style="border:1px solid rgba(50,200,100,0.2);border-radius:8px;padding:16px 20px;background:rgba(5,20,10,0.3)">
         <div style="font-size:15px;font-weight:bold;color:#40d870;letter-spacing:4px;margin-bottom:10px">🎲 MODE ALÉATOIRE</div>
-        <div>Activé via le bouton ALÉATOIRE du menu. Les coûts de chaque achat (foreuse, bloc, dégâts, vitesse) sont tirés au sort parmi les ressources disponibles avant la partie. Contrainte : chaque type de minerai (charbon, or, diamant) doit permettre d'acheter au moins 1 type d'objet. Les records en mode aléatoire sont séparés des records normaux (affichés en vert dans le menu).</div>
+        <div>Activé via le bouton ALÉATOIRE du menu. Les coûts de chaque achat (foreuse, bloc, dégâts, vitesse) sont tirés au sort parmi les ressources disponibles avant la partie. Contrainte : chaque type de minerai doit permettre d'acheter au moins 1 type d'objet. <b style="color:#50d888">Les records de temps ne sont enregistrés qu'en mode ALÉATOIRE</b> — une partie sans ce mode ne compte pas pour le tableau de records (mais les victoires sont toujours comptées).</div>
       </div>
 
       <!-- ULTIME -->
