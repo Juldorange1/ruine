@@ -39,18 +39,18 @@ function loop(ts){
         var _up=_ultimatePool.length>1&&_prevOpt?_ultimatePool.filter(function(p){return p!==_prevOpt;}):_ultimatePool.slice();
         var _nextOpt=_up[Math.floor(Math.random()*_up.length)];
         _ultimateActivate(_nextOpt);
-        _ultimateTimer=(_nextOpt==='speed')?120:60;
+        _ultimateTimer=(_nextOpt==='speed')?60:30;
       }
     }
     // DESTRUCTION — toutes les 26s, choisir un bloc ou foreuse à détruire
     if(destructMode&&!_selectionPending){
       _destructTimer-=dt;
-      if(_destructTimer<=0){_destructTimer=26;_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
+      if(_destructTimer<=0){_destructTimer=30;_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
     }
     // FANTÔME — toutes les 26s, choisir un bloc ou foreuse à rendre traversable
     if(ghostMode&&!_selectionPending){
       _ghostTimer-=dt;
-      if(_ghostTimer<=0){_ghostTimer=26;_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
+      if(_ghostTimer<=0){_ghostTimer=30;_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
     }
     // TÉLÉPORTEUR — toutes les 26s, poser 1 portail
     if(teleportMode&&!_selectionPending){
@@ -60,7 +60,7 @@ function loop(ts){
     // INVERSION — toutes les 26s, choisir 2 minerais/foreuses et inverser leur position
     if(inversionMode&&!_selectionPending){
       _inversionTimer-=dt;
-      if(_inversionTimer<=0){_inversionTimer=26;_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('INVERSION : cliquer 2 minerais ou foreuses');}
+      if(_inversionTimer<=0){_inversionTimer=30;_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('INVERSION : cliquer 2 minerais ou foreuses');}
     }
     // Mouvement tactile mobile
     if(_touchMoveTarget&&!_selectionPending&&!drillingMode){
@@ -121,7 +121,7 @@ function loop(ts){
 /* STATS localStorage */
 // Incrémenter cette version efface automatiquement le tableau de jeu de tous les joueurs
 // (à faire à chaque changement de gameplay important affectant l'équilibrage des records)
-var STATS_VERSION=4;
+var STATS_VERSION=5;
 (function(){
   try{
     var v=localStorage.getItem('ruine_stats_version');
@@ -540,7 +540,7 @@ function startGame(mode){
       // Contrainte 2 : aucun minerai n'est utilisé pour les 4 coûts à la fois
       var _cnt={coal:0,gold:0,diamond:0};
       ['drill','dmg','spd','block'].forEach(function(k){_cnt[_ct[k]]++;});
-      if(Math.max(_cnt.coal,_cnt.gold,_cnt.diamond)>3)continue;
+      if(_cnt.coal<1||_cnt.gold<1||_cnt.diamond<1)continue;
       _ok=true;
     }
     costTypes=_ct;
@@ -558,19 +558,19 @@ function startGame(mode){
   _portalPending=false;_inversionPending=false;_inversionFirst=null;
   if(ultimateMode){
     _ultimatePool=['night','speed','teleport','destruct','ghost','inversion'];
-    _destructTimer=26;_ghostTimer=26;_teleportTimer=26;_inversionTimer=26;
+    _destructTimer=30;_ghostTimer=30;_teleportTimer=26;_inversionTimer=30;
     if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
-    _ultimateTimer=60;
+    _ultimateTimer=30;
   }
   // Reset destruct/ghost/teleport/inversion
-  _destructTimer=26;_ghostTimer=26;_teleportTimer=26;_inversionTimer=26;
+  _destructTimer=30;_ghostTimer=30;_teleportTimer=26;_inversionTimer=30;
   _destructPending=false;_ghostPending=false;_portalPending=false;_inversionPending=false;_inversionFirst=null;_selectionPending=false;
 
   _gameUsedMapCode=!!_preloadedBlocks;
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
   _lastActivityTime=Date.now();
   // ULTIME — tirer la première option dès le début de partie
-  if(ultimateMode&&_ultimatePool.length){var _first=_ultimatePool[Math.floor(Math.random()*_ultimatePool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?120:60;}
+  if(ultimateMode&&_ultimatePool.length){var _first=_ultimatePool[Math.floor(Math.random()*_ultimatePool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?60:30;}
   placeQueue=[];placePos=null;drillingMode=false;
   shopOpen=null;shopPlayer=null;piqueMode=false;piquePlayer=null;
   tpMode=false;tpSrc=null;tpPlayer=null;bdAtk=null;bdAtkTimer=0;bdAtkPlayer=null;
@@ -798,8 +798,8 @@ function _ultimateActivate(opt){
     _updateRandomCostDisplay();
   }
   else if(opt==='shuffle') _ultimateShuffleMinerals();
-  else if(opt==='destruct'){destructMode=true;_destructTimer=26;}
-  else if(opt==='ghost'){ghostMode=true;_ghostTimer=26;}
+  else if(opt==='destruct'){destructMode=true;_destructTimer=30;}
+  else if(opt==='ghost'){ghostMode=true;_ghostTimer=30;}
 }
 function _ultimateShuffleMinerals(){
   if(!G||!G.blocks.length)return;

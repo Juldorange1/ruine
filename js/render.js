@@ -133,17 +133,10 @@ function draw(){
       X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
     });
   }
-  // Compteurs Destruction / Fantôme sur le canvas
-  if(G.phase==='combat'){
-    var _yOff=CH-10;
-    if(ghostMode&&!_ghostPending){
-      X.fillStyle='rgba(80,200,255,0.88)';X.font='bold 16px Courier New';X.textAlign='right';X.textBaseline='bottom';
-      X.fillText('👻 '+Math.ceil(_ghostTimer)+'s',CW-10,_yOff);_yOff-=22;
-    }
-    if(destructMode&&!_destructPending){
-      X.fillStyle='rgba(255,80,60,0.88)';X.font='bold 16px Courier New';X.textAlign='right';X.textBaseline='bottom';
-      X.fillText('💥 '+Math.ceil(_destructTimer)+'s',CW-10,_yOff);
-    }
+  // Surbrillance INVERSION — 1er élément sélectionné en rouge
+  if(_inversionPending&&_inversionFirst){
+    X.strokeStyle='rgba(255,30,30,0.95)';X.lineWidth=3;X.setLineDash([4,3]);
+    X.strokeRect(_inversionFirst.gx*TILE+2,_inversionFirst.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
   }
 
   // Players

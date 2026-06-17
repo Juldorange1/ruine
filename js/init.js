@@ -31,7 +31,7 @@ function initGame(){
   _fGx=2+Math.floor(rr()*(MAP-4));_fGy=2+Math.floor(rr()*(MAP-4));taken[_fGx+','+_fGy]=true;
   do{
     _bGx=2+Math.floor(rr()*(MAP-4));_bGy=2+Math.floor(rr()*(MAP-4));_bt++;
-  }while(taken[_bGx+','+_bGy]&&_bt<400);
+  }while((taken[_bGx+','+_bGy]||Math.abs(_bGx-_fGx)+Math.abs(_bGy-_fGy)>4)&&_bt<400);
   taken[_bGx+','+_bGy]=true;
 
   var blocks=[];
