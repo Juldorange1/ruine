@@ -62,9 +62,9 @@ function nextPlace(){
   var cur=placeQueue[0];
   var total=(GAMEMODE==='solo'?4:4);
   var placed=total-placeQueue.length;
-  var lbl=cur.type==='drill'?'FOREUSE':'TÉLÉPORTEUR';
+  var lbl=cur.type==='drill'?t('drill'):cur.type==='drillfast'?t('drillfast'):t('tp');
   var who=(GAMEMODE!=='solo'&&cur.who==='p2')?'J2':'J1';
-  var txt=(GAMEMODE!=='solo'?who+' — ':'')+lbl+' ('+(placed+1)+'/'+total+') — cliquer une case';
+  var txt=(GAMEMODE!=='solo'?who+' — ':'')+lbl+' ('+(placed+1)+'/'+total+') — '+t('clic_case');
   _showPlaceInfo(txt);
 }
 

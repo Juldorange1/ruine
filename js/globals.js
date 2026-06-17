@@ -67,3 +67,103 @@ var _drillRefund=null; // {player,type,amount,blocksBought} — remboursement si
 var lastTime=0;
 var mouseX=0,mouseY=0;
 document.addEventListener('mousemove',function(e){mouseX=e.clientX;mouseY=e.clientY;});
+
+/* ── PARAMÈTRES ── */
+var playerNickname='';
+var gameLanguage='fr';
+var p1Keys={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
+var _capturingKey=null;
+
+/* ── I18N ── */
+var I18N={
+  fr:{
+    placement:'PLACEMENT',combat:'COMBAT',
+    ultime:'⚡ ULTIME',
+    night:'NOCTURNE',speed:'FRÉNÉSIE',teleport:'TÉLÉPORTEUR',
+    random_opt:'ALÉATOIRE',destruct:'DESTRUCTION',ghost:'FANTÔME',inversion:'INVERSION',
+    drill:'FOREUSE',drillfast:'FOREUSE+',tp:'TÉLÉPORTEUR',
+    placer:'PLACER',clic_case:'cliquer une case',
+    msg_detruire:'DÉTRUIRE : cliquer un minerai ou foreuse',
+    msg_fantome:'FANTÔME : cliquer un minerai ou foreuse',
+    msg_inversion:'INVERSION : cliquer 2 minerais ou foreuses',
+    msg_portail:'PORTAIL : cliquer une case libre',
+    dmg_label:'DMG',spd_label:'DPL',
+    log_place:'Posé',log_cancel:'Achat annulé, remboursé :',
+    log_inversion:'Inversion !',log_portail:'Portail posé !',log_occ:'Case occupée !',
+    params_title:'PARAMÈTRES',lang_title:'LANGUE / LANGUAGE',
+    nick_title:'PSEUDONYME',nick_ph:'Ton nom (affiché en jeu)...',
+    save_btn:'ENREGISTRER',saved_msg:'✓ Enregistré !',
+    keys_title:'TOUCHES DE DÉPLACEMENT',
+    key_up:'↑ HAUT',key_down:'↓ BAS',key_left:'← GAUCHE',key_right:'→ DROITE',
+    key_capture:'Appuie sur une touche...',
+    close_x:'FERMER ✕',close:'FERMER',
+    rules_title:'RÈGLES DU JEU',
+    choose_mode:'CHOISISSEZ UN MODE',
+    btn_rules:'? RÈGLES',btn_params:'⚙ PARAMÈTRES'
+  },
+  en:{
+    placement:'PLACEMENT',combat:'COMBAT',
+    ultime:'⚡ ULTIMATE',
+    night:'NIGHT',speed:'FRENZY',teleport:'TELEPORTER',
+    random_opt:'RANDOM',destruct:'DESTRUCTION',ghost:'GHOST',inversion:'SWAP',
+    drill:'DRILL',drillfast:'DRILL+',tp:'TELEPORTER',
+    placer:'PLACE',clic_case:'click a tile',
+    msg_detruire:'DESTROY: click a mineral or drill',
+    msg_fantome:'GHOST: click a mineral or drill',
+    msg_inversion:'SWAP: click 2 minerals or drills',
+    msg_portail:'PORTAL: click an empty tile',
+    dmg_label:'DMG',spd_label:'SPD',
+    log_place:'Placed',log_cancel:'Purchase cancelled, refunded:',
+    log_inversion:'Swapped!',log_portail:'Portal placed!',log_occ:'Tile occupied!',
+    params_title:'SETTINGS',lang_title:'LANGUAGE',
+    nick_title:'NICKNAME',nick_ph:'Your name (shown in game)...',
+    save_btn:'SAVE',saved_msg:'✓ Saved!',
+    keys_title:'MOVEMENT KEYS',
+    key_up:'↑ UP',key_down:'↓ DOWN',key_left:'← LEFT',key_right:'→ RIGHT',
+    key_capture:'Press a key...',
+    close_x:'CLOSE ✕',close:'CLOSE',
+    rules_title:'GAME RULES',
+    choose_mode:'CHOOSE A MODE',
+    btn_rules:'? RULES',btn_params:'⚙ SETTINGS'
+  }
+};
+function t(k){return(I18N[gameLanguage]||I18N.fr)[k]||k;}
+function _keyLabel(k){var m={'ArrowUp':'↑','ArrowDown':'↓','ArrowLeft':'←','ArrowRight':'→',' ':'SPC','Shift':'SHIFT','Control':'CTRL','Alt':'ALT','Tab':'TAB','Enter':'ENTER'};return m[k]||(k.length===1?k.toUpperCase():k.slice(0,5));}
+function applyLanguage(){
+  document.querySelectorAll('[data-i18n]').forEach(function(el){el.textContent=t(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('[data-i18n-ph]').forEach(function(el){el.placeholder=t(el.getAttribute('data-i18n-ph'));});
+  var fr=document.getElementById('rules-fr'),en=document.getElementById('rules-en');
+  if(fr)fr.style.display=gameLanguage==='fr'?'flex':'none';
+  if(en)en.style.display=gameLanguage==='en'?'flex':'none';
+  ['fr','en'].forEach(function(l){
+    var b=document.getElementById('langbtn-'+l);
+    if(b){b.style.opacity=gameLanguage===l?'1':'0.38';b.style.borderColor=gameLanguage===l?'rgba(220,170,80,0.85)':'rgba(200,160,50,0.25)';}
+  });
+  document.documentElement.lang=gameLanguage;
+  _updateKeyDisplay();
+}
+function _updateKeyDisplay(){
+  ['up','down','left','right'].forEach(function(d){
+    var b=document.getElementById('keybtn-'+d);if(!b)return;
+    var kv=b.querySelector('.kv');if(kv)kv.textContent=_keyLabel(p1Keys[d]);
+    b.style.background=(_capturingKey===d)?'rgba(220,170,30,0.22)':'rgba(8,5,2,0.7)';
+    b.style.borderColor=(_capturingKey===d)?'rgba(220,170,80,0.9)':'rgba(200,160,50,0.3)';
+  });
+  var cm=document.getElementById('key-capture-msg');
+  if(cm){cm.style.display=_capturingKey?'block':'none';if(_capturingKey)cm.textContent=t('key_capture');}
+}
+function captureKey(dir){_capturingKey=dir;_updateKeyDisplay();}
+function setLanguage(lang){gameLanguage=lang;try{localStorage.setItem('ruine_lang',lang);}catch(e){}applyLanguage();}
+function saveNickname(){
+  playerNickname=(document.getElementById('nick-input').value||'').trim().slice(0,16);
+  try{localStorage.setItem('ruine_nick',playerNickname);}catch(e){}
+  if(typeof G!=='undefined'&&G&&G.p1)G.p1.name=playerNickname;
+  var ms=document.getElementById('nick-saved-msg');
+  if(ms){ms.style.display='block';setTimeout(function(){ms.style.display='none';},1500);}
+}
+function openParams(){
+  document.getElementById('paramsov').style.display='flex';
+  document.getElementById('nick-input').value=playerNickname;
+  applyLanguage();
+}
+function closeParams(){document.getElementById('paramsov').style.display='none';_capturingKey=null;_updateKeyDisplay();}

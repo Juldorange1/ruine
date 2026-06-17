@@ -151,6 +151,7 @@ function draw(){
     });
     G.buildings.forEach(function(b){
       if(b.type!=='drill'&&b.type!=='drillfast'&&b.type!=='factory')return;
+      if(_destructPending&&b.type==='factory')return;
       if(_ghostPending&&b.ghost)return;
       X.strokeStyle='rgba('+_sCol+','+(0.45+_sPulse*0.45)+')';X.lineWidth=2.5;X.setLineDash([5,3]);
       X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
@@ -385,7 +386,7 @@ function updateHUD(){
   var pairs=[[G.p1,'p1']];if(G.p2&&!isRec)pairs.push([G.p2,'p2']);
   pairs.forEach(function(pr){
     var p=pr[0],pfx=pr[1];
-    document.getElementById(pfx+'nm').textContent=p.name;
+    document.getElementById(pfx+'nm').textContent=pfx==='p1'?playerNickname:(p.name||'');
     if(!isRec){
       var pct=p.hp/p.maxHp*100,hf=document.getElementById(pfx+'hf');
       if(hf){hf.style.width=pct+'%';hf.className='hf'+(pct<30?' low':pct<60?' med':'');}
@@ -394,6 +395,7 @@ function updateHUD(){
     document.getElementById(pfx+'co').textContent='C '+p.coal;
     document.getElementById(pfx+'go').textContent='G '+p.gold;
     var di=document.getElementById(pfx+'di');if(di)di.textContent='D '+(p.diamond||0);
+    var sr=document.getElementById(pfx+'sr');if(sr)sr.textContent=t('dmg_label')+' '+Math.round(p.dmg||10)+'  '+t('spd_label')+' '+(p.speed||1.68).toFixed(1);
   });
   var s;
   if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!diamondRace){var rem=Math.max(0,SOLO_DUR-G.time);s=Math.floor(rem);}
@@ -401,17 +403,17 @@ function updateHUD(){
   document.getElementById('timer').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
   // Indicateur de phase
   var phEl=document.getElementById('phase');
-  if(G.phase==='placement'){phEl.textContent='PLACEMENT';}
-  else if(G.phase==='combat'){phEl.textContent='COMBAT';}
+  if(G.phase==='placement'){phEl.textContent=t('placement');}
+  else if(G.phase==='combat'){phEl.textContent=t('combat');}
   // Coûts aléatoires
   if(typeof _updateRandomCostDisplay==='function')_updateRandomCostDisplay();
   // Panneau ULTIME — gauche de l'écran (dans #leftpanel)
   var _uhud=document.getElementById('ultimatehud');
   if(_uhud){
     if(ultimateMode&&gameRunning&&G&&_ultimatePool.length){
-      var _uNames={night:'NOCTURNE',speed:'DBL VITESSE',teleport:'TÉLÉPORTEUR',random:'ALÉATOIRE',destruct:'DESTRUCTION',ghost:'FANTÔME',inversion:'INVERSION'};
+      var _uNames={night:t('night'),speed:t('speed'),teleport:t('teleport'),random:t('random_opt'),destruct:t('destruct'),ghost:t('ghost'),inversion:t('inversion')};
       var _uc=Math.ceil(Math.max(0,_ultimateTimer));
-      var _uhtml='<div style="font-size:13px;letter-spacing:2px;color:rgba(200,60,255,0.7);margin-bottom:6px;border-bottom:1px solid rgba(140,30,180,0.35);padding-bottom:4px;font-weight:bold">&#9889; ULTIME</div>';
+      var _uhtml='<div style="font-size:13px;letter-spacing:2px;color:rgba(200,60,255,0.7);margin-bottom:6px;border-bottom:1px solid rgba(140,30,180,0.35);padding-bottom:4px;font-weight:bold">'+t('ultime')+'</div>';
       _ultimatePool.forEach(function(opt){
         var _act=opt===_ultimateActiveOpt;
         var _c=_act?'rgba(230,120,255,0.98)':'rgba(150,60,180,0.5)';

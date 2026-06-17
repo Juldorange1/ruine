@@ -2,7 +2,7 @@
 function loop(ts){
   requestAnimationFrame(loop);
   var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
-  if(speedMode)dt*=2;
+  if(speedMode)dt*=1.75;
   var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
   if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
     G.time+=dt;
@@ -15,8 +15,8 @@ function loop(ts){
     }
     if(!drillingMode&&!_selectionPending){
       var dx=0,dy=0;
-      if(keys['ArrowLeft'])dx-=1;if(keys['ArrowRight'])dx+=1;
-      if(keys['ArrowUp'])dy-=1;if(keys['ArrowDown'])dy+=1;
+      if(keys[p1Keys.left])dx-=1;if(keys[p1Keys.right])dx+=1;
+      if(keys[p1Keys.up])dy-=1;if(keys[p1Keys.down])dy+=1;
       if(keys['\xe9']||keys['\xc9'])dy-=1;
       if(keys['a']||keys['A'])dx-=1;
       if(keys['u']||keys['U'])dy+=1;
@@ -36,10 +36,10 @@ function loop(ts){
       if(_ultimateTimer<=0&&!_ultimateSwitchPending){
         _ultimateSwitchPending=true;
         var _cur=_ultimateActiveOpt;
-        if(_cur==='destruct'&&!_destructPending){_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
-        else if(_cur==='ghost'&&!_ghostPending){_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
-        else if(_cur==='inversion'&&!_inversionPending){_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('INVERSION : cliquer 2 minerais ou foreuses');}
-        else if(_cur==='teleport'&&!_portalPending){_portalPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('PORTAIL : cliquer une case libre');}
+        if(_cur==='destruct'&&!_destructPending){_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_detruire'));}
+        else if(_cur==='ghost'&&!_ghostPending){_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_fantome'));}
+        else if(_cur==='inversion'&&!_inversionPending){_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_inversion'));}
+        else if(_cur==='teleport'&&!_portalPending){_portalPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_portail'));}
       }
       if(_ultimateSwitchPending&&!_selectionPending){
         _ultimateSwitchPending=false;
@@ -199,7 +199,13 @@ function showEnd(){
 }
 
 /* INPUT */
-document.addEventListener('keydown',function(e){keys[e.key]=true;
+document.addEventListener('keydown',function(e){
+  if(_capturingKey){
+    p1Keys[_capturingKey]=e.key;
+    try{localStorage.setItem('ruine_keys',JSON.stringify(p1Keys));}catch(ex){}
+    _updateKeyDisplay();_capturingKey=null;e.preventDefault();return;
+  }
+  keys[e.key]=true;
   // Entrée dans le menu = JOUER
   if(e.key==='Enter'&&(!G||!gameRunning)){
     var ov=document.getElementById('ov');
@@ -289,6 +295,16 @@ document.addEventListener('keyup',function(e){keys[e.key]=false;});
 window.addEventListener('blur',function(){keys={};});
 // Reset inactivité sur toute action joueur
 function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTime=Date.now();}
+
+/* Chargement des paramètres sauvegardés */
+(function(){
+  try{
+    var _l=localStorage.getItem('ruine_lang');if(_l)gameLanguage=_l;
+    var _n=localStorage.getItem('ruine_nick');if(_n!==null)playerNickname=_n;
+    var _k=localStorage.getItem('ruine_keys');if(_k){var _pk=JSON.parse(_k);if(_pk&&_pk.up)p1Keys=_pk;}
+  }catch(e){}
+  applyLanguage();
+})();
 document.addEventListener('keydown',_resetActivity);
 document.addEventListener('mousedown',_resetActivity);
 document.addEventListener('touchstart',_resetActivity,{passive:true});
@@ -308,7 +324,7 @@ function _inversionTrySelect(gx,gy){
     var t1gx=_inversionFirst.gx,t1gy=_inversionFirst.gy,t1x=_inversionFirst.x,t1y=_inversionFirst.y;
     _inversionFirst.gx=tgt.gx;_inversionFirst.gy=tgt.gy;_inversionFirst.x=tgt.x;_inversionFirst.y=tgt.y;
     tgt.gx=t1gx;tgt.gy=t1gy;tgt.x=t1x;tgt.y=t1y;
-    _inversionPending=false;_inversionFirst=null;_selectionPending=false;_hidePlaceInfo();sfx('tp');log('Inversion !');
+    _inversionPending=false;_inversionFirst=null;_selectionPending=false;_hidePlaceInfo();sfx('tp');log(t('log_inversion'));
   }
 }
 
@@ -346,8 +362,8 @@ document.addEventListener('click',function(e){
     if(cellFreePlace(pos.gx,pos.gy)){
       var _pb=mkBd('portal',pos.gx,pos.gy,0);_pb.ghost=true;
       G.buildings.push(_pb);
-      _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log('Portail posé !');
-    } else log('Case occupée !');
+      _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log(t('log_portail'));
+    } else log(t('log_occ'));
     return;
   }
   // INVERSION : sélectionner 2 minerais/foreuses et les échanger
@@ -464,8 +480,8 @@ C.addEventListener('touchend',function(e){
     if(cellFreePlace(tg.igx,tg.igy)){
       var _pb2=mkBd('portal',tg.igx,tg.igy,0);_pb2.ghost=true;
       G.buildings.push(_pb2);
-      _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log('Portail posé !');
-    } else log('Case occupée !');
+      _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log(t('log_portail'));
+    } else log(t('log_occ'));
     return;
   }
 
@@ -590,6 +606,7 @@ function startGame(mode){
   _startDrillsPlaced=false;
   _gameUsedMapCode=!!_preloadedBlocks;
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
+  if(G.p1)G.p1.name=playerNickname;
   _lastActivityTime=Date.now();
   // ULTIME — la première option se déclenche après le placement des 4 foreuses (dans nextPlace)
   placeQueue=[];placePos=null;drillingMode=false;
@@ -614,69 +631,71 @@ function startGame(mode){
 
     /* ── SABLE DE BASE ── */
     var _bg=fc2.createLinearGradient(TILE,TILE,CW-TILE,CH-TILE);
-    _bg.addColorStop(0,'#d2aa48');_bg.addColorStop(0.28,'#c8a03c');
-    _bg.addColorStop(0.6,'#ceaa42');_bg.addColorStop(1,'#b8903a');
+    _bg.addColorStop(0,'#d8b04a');_bg.addColorStop(0.3,'#c49838');
+    _bg.addColorStop(0.65,'#d0a83e');_bg.addColorStop(1,'#a87830');
     fc2.fillStyle=_bg;fc2.fillRect(0,0,CW,CH);
 
     var _h=function(n){var x=Math.sin(n+13.753)*48271.8;return x-Math.floor(x);};
 
-    /* ── ZONES DE COULEUR VARIÉES (sable clair, foncé, ocre, rougeâtre) ── */
-    var _sandPalette=[
-      'rgba(245,210,110,{a})','rgba(130,88,18,{a})','rgba(195,148,50,{a})',
-      'rgba(210,160,55,{a})','rgba(100,68,14,{a})','rgba(228,185,80,{a})',
-      'rgba(158,112,30,{a})','rgba(185,135,42,{a})'
+    /* ── GRANDES PLAQUES DE SABLE (zones claires / sombres bien distinctes) ── */
+    var _patchCols=[
+      [252,225,120],[90,55,8],[215,170,65],[160,100,18],
+      [238,195,85],[75,45,5],[200,145,40],[240,200,95]
     ];
-    for(var _ci=0;_ci<48;_ci++){
-      var _cpx=TILE+_h(_ci*179.3+5)*(CW-2*TILE),_cpy=TILE+_h(_ci*241.7+7)*(CH-2*TILE);
-      var _cr=18+_h(_ci*37.1)*68,_ca=0.055+_h(_ci*13.7)*0.08;
-      var _cpal=_sandPalette[_ci%_sandPalette.length].replace('{a}',_ca.toFixed(3));
-      var _cg=fc2.createRadialGradient(_cpx,_cpy,0,_cpx,_cpy,_cr);
-      _cg.addColorStop(0,_cpal);_cg.addColorStop(1,'rgba(0,0,0,0)');
-      fc2.fillStyle=_cg;fc2.fillRect(_cpx-_cr,_cpy-_cr,_cr*2,_cr*2);
+    for(var _pi=0;_pi<32;_pi++){
+      var _ppx=TILE+_h(_pi*211.3+3)*(CW-2*TILE),_ppy=TILE+_h(_pi*317.7+9)*(CH-2*TILE);
+      var _pr=40+_h(_pi*53.1)*110,_pa=0.18+_h(_pi*19.7)*0.28;
+      var _pc=_patchCols[_pi%_patchCols.length];
+      var _pg=fc2.createRadialGradient(_ppx,_ppy,0,_ppx,_ppy,_pr);
+      _pg.addColorStop(0,'rgba('+_pc[0]+','+_pc[1]+','+_pc[2]+','+_pa.toFixed(2)+')');
+      _pg.addColorStop(0.55,'rgba('+_pc[0]+','+_pc[1]+','+_pc[2]+','+(_pa*0.35).toFixed(2)+')');
+      _pg.addColorStop(1,'rgba(0,0,0,0)');
+      fc2.fillStyle=_pg;fc2.fillRect(_ppx-_pr,_ppy-_pr,_pr*2,_pr*2);
     }
 
-    /* ── GRAIN DE SABLE (stippling dense) ── */
-    for(var _gi=0;_gi<6500;_gi++){
+    /* ── GRAIN DE SABLE (stippling dense et contrasté) ── */
+    for(var _gi=0;_gi<9000;_gi++){
       var _gx=TILE+_h(_gi*1.618)*(CW-2*TILE);
       var _gy=TILE+_h(_gi*2.718)*(CH-2*TILE);
-      var _ga=_h(_gi*3.14)*0.14+0.03;
-      var _gsz=_h(_gi*1.41)*2.1+0.3;
-      if(_gi%4===0)fc2.fillStyle='rgba(255,222,130,'+_ga+')';
-      else if(_gi%4===1)fc2.fillStyle='rgba(118,74,14,'+(_ga*0.6)+')';
-      else if(_gi%4===2)fc2.fillStyle='rgba(195,155,68,'+(_ga*0.5)+')';
-      else fc2.fillStyle='rgba(82,54,10,'+(_ga*0.4)+')';
-      fc2.beginPath();fc2.ellipse(_gx,_gy,_gsz,_gsz*0.5,_h(_gi*2.2)*Math.PI,0,Math.PI*2);fc2.fill();
+      var _ga=_h(_gi*3.14)*0.28+0.06;
+      var _gsz=_h(_gi*1.41)*2.8+0.4;
+      if(_gi%5===0)fc2.fillStyle='rgba(255,230,140,'+_ga+')';
+      else if(_gi%5===1)fc2.fillStyle='rgba(90,52,6,'+(_ga*0.85)+')';
+      else if(_gi%5===2)fc2.fillStyle='rgba(200,158,52,'+(_ga*0.65)+')';
+      else if(_gi%5===3)fc2.fillStyle='rgba(58,34,4,'+(_ga*0.7)+')';
+      else fc2.fillStyle='rgba(245,215,100,'+(_ga*0.55)+')';
+      fc2.beginPath();fc2.ellipse(_gx,_gy,_gsz,_gsz*0.48,_h(_gi*2.2)*Math.PI,0,Math.PI*2);fc2.fill();
     }
 
-    /* ── TRACES ET ÉRAFLURES (marques du vent / débris anciens) ── */
-    for(var _ti=0;_ti<30;_ti++){
+    /* ── TRACES ET ÉRAFLURES DU VENT ── */
+    for(var _ti=0;_ti<55;_ti++){
       var _tx=TILE+_h(_ti*113.7+3)*(CW-2*TILE),_ty=TILE+_h(_ti*97.3+5)*(CH-2*TILE);
-      var _tl=12+_h(_ti*43.1)*28,_tang=_h(_ti*67.3)*Math.PI;
-      var _tc=_ti%3===0?'rgba(92,58,10,':'rgba(240,200,100,';
-      var _ta=0.06+_h(_ti*31.9)*0.07;
-      fc2.strokeStyle=_tc+_ta+')';fc2.lineWidth=0.8+_h(_ti*19.7)*0.6;
-      fc2.beginPath();
-      fc2.moveTo(_tx,_ty);
+      var _tl=18+_h(_ti*43.1)*48,_tang=_h(_ti*67.3)*Math.PI*0.6+0.1;
+      var _tc=_ti%3===0?'rgba(72,42,6,':'rgba(252,215,95,';
+      var _ta=0.12+_h(_ti*31.9)*0.18;
+      fc2.strokeStyle=_tc+_ta+')';fc2.lineWidth=0.7+_h(_ti*19.7)*1.4;
+      fc2.beginPath();fc2.moveTo(_tx,_ty);
       fc2.lineTo(_tx+Math.cos(_tang)*_tl,_ty+Math.sin(_tang)*_tl);
       fc2.stroke();
     }
 
-    /* ── RIDES DE DUNES (courants de vent) ── */
-    for(var _di=0;_di<13;_di++){
-      var _dby=TILE+(_di*(CH-2*TILE)/13)+_h(_di*47.3)*18-9;
-      var _damp=8+_h(_di*31.1)*10,_dfreq=0.018+_h(_di*23.7)*0.02;
-      fc2.strokeStyle='rgba(148,108,34,'+(0.04+_h(_di*17.3)*0.05)+')';
-      fc2.lineWidth=0.9+_h(_di*53.7)*0.7;fc2.beginPath();
+    /* ── RIDES DE DUNES (nettement visibles) ── */
+    for(var _di=0;_di<22;_di++){
+      var _dby=TILE+(_di*(CH-2*TILE)/22)+_h(_di*47.3)*24-12;
+      var _damp=14+_h(_di*31.1)*18,_dfreq=0.014+_h(_di*23.7)*0.018;
+      var _dvis=0.18+_h(_di*17.3)*0.22;
+      fc2.strokeStyle='rgba(100,62,10,'+_dvis+')';
+      fc2.lineWidth=1.2+_h(_di*53.7)*1.4;fc2.beginPath();
       for(var _ddx=TILE;_ddx<=CW-TILE;_ddx+=2){
-        var _ddy=_dby+Math.sin(_ddx*_dfreq+_di*1.35)*_damp+Math.sin(_ddx*(_dfreq*0.6)+_di*2.2)*(_damp*0.45);
+        var _ddy=_dby+Math.sin(_ddx*_dfreq+_di*1.35)*_damp+Math.sin(_ddx*(_dfreq*0.6)+_di*2.2)*(_damp*0.42);
         if(_ddx===TILE)fc2.moveTo(_ddx,_ddy);else fc2.lineTo(_ddx,_ddy);
       }
       fc2.stroke();
-      /* ombre */
-      fc2.strokeStyle='rgba(68,42,8,'+((0.04+_h(_di*17.3)*0.05)*0.4)+')';
-      fc2.lineWidth=0.7;fc2.beginPath();
+      /* crête lumineuse */
+      fc2.strokeStyle='rgba(252,215,90,'+(_dvis*0.55)+')';
+      fc2.lineWidth=0.8;fc2.beginPath();
       for(var _ddx2=TILE;_ddx2<=CW-TILE;_ddx2+=2){
-        var _ddy2=_dby+Math.sin(_ddx2*_dfreq+_di*1.35)*_damp+Math.sin(_ddx2*(_dfreq*0.6)+_di*2.2)*(_damp*0.45)+2.5;
+        var _ddy2=_dby+Math.sin(_ddx2*_dfreq+_di*1.35)*_damp+Math.sin(_ddx2*(_dfreq*0.6)+_di*2.2)*(_damp*0.42)-2;
         if(_ddx2===TILE)fc2.moveTo(_ddx2,_ddy2);else fc2.lineTo(_ddx2,_ddy2);
       }
       fc2.stroke();
