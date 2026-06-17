@@ -291,26 +291,22 @@ function drawBd(bd){
     X.fillStyle='rgba(198,228,255,'+(0.68+tp*.24)+')';X.font='bold 9px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('TP',0,0);
   } else if(bd.type==='portal'){
     var pp=0.5+0.5*Math.sin(G.time*3);
-    // Fond sombre
-    X.fillStyle='rgba(20,4,38,0.92)';X.beginPath();X.arc(0,0,28,0,Math.PI*2);X.fill();
-    // Anneau externe très lumineux
-    X.strokeStyle='rgba(230,80,255,'+(0.75+pp*.25)+')';X.lineWidth=4;
-    X.beginPath();X.arc(0,0,26,0,Math.PI*2);X.stroke();
-    // Halo violet rayonnant
-    var pg=X.createRadialGradient(0,0,4,0,0,22);
-    pg.addColorStop(0,'rgba(220,100,255,'+(0.55+pp*.35)+')');pg.addColorStop(0.6,'rgba(140,30,200,0.3)');pg.addColorStop(1,'rgba(80,10,140,0)');
-    X.fillStyle=pg;X.beginPath();X.arc(0,0,22,0,Math.PI*2);X.fill();
-    // Ellipses de distorsion
-    X.strokeStyle='rgba(240,160,255,'+(0.5+pp*.35)+')';X.lineWidth=2;
-    X.beginPath();X.ellipse(0,0,10,16,0,0,Math.PI*2);X.stroke();
-    X.strokeStyle='rgba(255,200,255,'+(0.3+pp*.25)+')';X.lineWidth=1.2;
-    X.beginPath();X.ellipse(0,0,6,10,0,0,Math.PI*2);X.stroke();
-    // Étincelles orbitales
-    for(var _psi=0;_psi<8;_psi++){var _psA=(_psi/8)*Math.PI*2+G.time*1.8;var _psR=20+pp*3;
-      X.fillStyle='rgba(255,160,255,'+(0.4+pp*0.5)+')';
-      X.beginPath();X.arc(Math.cos(_psA)*_psR,Math.sin(_psA)*_psR,2.5,0,Math.PI*2);X.fill();}
-    // Label PORTAIL
-    X.fillStyle='rgba(255,230,255,0.97)';X.font='bold 9px Courier New';X.textAlign='center';X.textBaseline='middle';X.fillText('PORTAIL',0,0);
+    // Fond sombre compact
+    X.fillStyle='rgba(20,4,38,0.9)';X.beginPath();X.arc(0,0,16,0,Math.PI*2);X.fill();
+    // Anneau externe lumineux
+    X.strokeStyle='rgba(230,80,255,'+(0.8+pp*.2)+')';X.lineWidth=3;
+    X.beginPath();X.arc(0,0,15,0,Math.PI*2);X.stroke();
+    // Halo violet
+    var pg=X.createRadialGradient(0,0,2,0,0,13);
+    pg.addColorStop(0,'rgba(220,100,255,'+(0.6+pp*.3)+')');pg.addColorStop(1,'rgba(80,10,140,0)');
+    X.fillStyle=pg;X.beginPath();X.arc(0,0,13,0,Math.PI*2);X.fill();
+    // Ellipse de distorsion
+    X.strokeStyle='rgba(240,160,255,'+(0.55+pp*.3)+')';X.lineWidth=1.5;
+    X.beginPath();X.ellipse(0,0,6,9,0,0,Math.PI*2);X.stroke();
+    // Étincelles orbitales (6, rayon réduit)
+    for(var _psi=0;_psi<6;_psi++){var _psA=(_psi/6)*Math.PI*2+G.time*2;
+      X.fillStyle='rgba(255,160,255,'+(0.5+pp*0.4)+')';
+      X.beginPath();X.arc(Math.cos(_psA)*12,Math.sin(_psA)*12,1.8,0,Math.PI*2);X.fill();}
   }
   X.restore();
   if(bd.type!=='factory'&&bd.type!=='bank'&&bd.hp<bd.maxHp){

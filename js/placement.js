@@ -25,7 +25,19 @@ function startPlacement(){
 
 function _showPlaceInfo(txt){
   var el=document.getElementById('placeind');
-  if(el){el.textContent='PLACER : '+txt;el.style.display='block';}
+  if(!el)return;
+  el.textContent='▶ PLACER : '+txt;
+  // Positionner sous le canvas, jamais par-dessus
+  var cwr=document.getElementById('cw').getBoundingClientRect();
+  var spaceBelow=window.innerHeight-cwr.bottom;
+  if(spaceBelow>=32){
+    el.style.top='';el.style.bottom=(spaceBelow/2-14)+'px';
+  } else {
+    // Pas assez de place en bas : au-dessus du canvas
+    el.style.bottom='';el.style.top=Math.max(4,cwr.top/2-14)+'px';
+  }
+  el.style.left='50%';el.style.transform='translateX(-50%)';
+  el.style.display='block';
 }
 function _hidePlaceInfo(){
   var el=document.getElementById('placeind');if(el)el.style.display='none';

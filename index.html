@@ -95,13 +95,12 @@
     <span>🔊</span>
   </div>
 
-  <div class="hint">SOLO : collecte max de diamants · Foreuses = extraction auto<br>Clic=activer · Clic droit=attaquer · ESC=pause (1 fois/partie)</div>
+  <div class="hint">SOLO : collecte max de diamants · Foreuses = extraction auto<br>Clic=activer · Clic droit=attaquer · ESC=pause · P=pause</div>
 </div>
 
 <!-- PAUSE -->
 <div id="pauseov" style="position:fixed;inset:0;background:rgba(4,2,0,0.82);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:998;backdrop-filter:blur(2px)">
   <div style="font-size:42px;font-weight:bold;letter-spacing:10px;color:#d4a040;font-family:'Courier New',monospace;margin-bottom:8px;text-shadow:0 0 30px rgba(200,140,20,0.4)">PAUSE</div>
-  <div style="font-size:12px;opacity:0.4;letter-spacing:3px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:4px">UTILISABLE UNE SEULE FOIS PAR PARTIE</div>
   <div style="font-size:11px;opacity:0.35;letter-spacing:2px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:28px">ESPACE / ESC pour reprendre</div>
   <button class="btn" id="btnpauseresume" style="font-size:13px;padding:11px 32px;margin-bottom:12px">REPRENDRE</button>
   <button class="btn" id="btnpausemenu" style="font-size:11px;padding:8px 24px;opacity:0.7">MENU</button>
@@ -152,7 +151,7 @@
   <div id="randomcostinfo" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(50,200,100,0.35);border-radius:5px;padding:6px 16px;font-family:'Courier New',monospace;font-size:14px;color:rgba(80,220,130,0.85);letter-spacing:1px;white-space:nowrap"></div>
   <div id="ultimatehud" style="display:none;background:rgba(8,2,12,0.95);border:1px solid rgba(140,30,180,0.3);border-radius:6px;padding:10px 16px;font-family:'Courier New',monospace;letter-spacing:1px;min-width:160px"></div>
 </div>
-<div id="placeind" style="display:none;position:fixed;top:118px;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.35);border-radius:6px;padding:8px 24px;z-index:50;font-family:'Courier New',monospace;font-size:16px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap"></div>
+<div id="placeind" style="display:none;position:fixed;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.5);border-radius:6px;padding:9px 28px;z-index:50;font-family:'Courier New',monospace;font-size:15px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap;box-shadow:0 0 18px rgba(200,140,20,0.25)"></div>
 
 <!-- MODAL RÈGLES -->
 <div id="rulesov" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(4,2,0,0.97);z-index:1200;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:28px 16px">
@@ -201,7 +200,7 @@
         <div style="display:flex;flex-direction:column;gap:7px">
           <div><b style="color:#f0d060">1. PLACEMENT</b> — Tu places tes 4 foreuses de départ. Chaque foreuse doit être adjacente à un bloc de minerai. Les bâtiments ne peuvent pas être placés sur le contour ni sur un bloc occupé. Confirme chaque placement en cliquant la case.</div>
           <div><b style="color:#f0d060">2. COMBAT</b> — Le chrono démarre. Tu te déplaces, collectes, construis et améliores. La partie se termine quand tu atteins l'objectif en diamants.</div>
-          <div><b style="color:#f0d060">PAUSE</b> — Utilisable <b>une seule fois</b> par partie (touche P). Idéal pour souffler un instant.</div>
+          <div><b style="color:#f0d060">PAUSE</b> — Touches P ou ESC. Utilise-la quand tu as besoin de souffler.</div>
         </div>
       </div>
 
