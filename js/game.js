@@ -201,7 +201,7 @@ function showEnd(){
 }
 
 /* INPUT */
-document.addEventListener('keydown',function(e){resumeAudio();keys[e.key]=true;
+document.addEventListener('keydown',function(e){keys[e.key]=true;
   // Entrée dans le menu = JOUER
   if(e.key==='Enter'&&(!G||!gameRunning)){
     var ov=document.getElementById('ov');
@@ -285,7 +285,6 @@ function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTim
 document.addEventListener('keydown',_resetActivity);
 document.addEventListener('mousedown',_resetActivity);
 document.addEventListener('touchstart',_resetActivity,{passive:true});
-document.addEventListener('click',resumeAudio); // déclenche la mélodie dès le premier clic
 
 function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();return{gx:Math.floor((e.clientX-r.left)/(r.width/CW)/TILE),gy:Math.floor((e.clientY-r.top)/(r.height/CH)/TILE)};}
 
@@ -316,7 +315,11 @@ C.addEventListener('mousemove',function(e){
 });
 
 document.addEventListener('click',function(e){
-  if(!G)return;
+  if(!G||!gameRunning)return;
+  // Ignorer les clics sur les éléments d'interface (boutons, overlays, shop…)
+  if(e.target&&e.target.closest){
+    if(e.target.closest('.ovl,#shop,#pbar,#pauseov,#gamebtn,#mob-pause,#rulesov'))return;
+  }
   // Ne traiter que les clics dans la zone du canvas
   var _cr=document.getElementById('cw').getBoundingClientRect();
   if(e.clientX<_cr.left||e.clientX>_cr.right||e.clientY<_cr.top||e.clientY>_cr.bottom)return;
