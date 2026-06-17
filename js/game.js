@@ -986,7 +986,7 @@ function goToMenu(){
 }
 document.getElementById('btnpauseresume').addEventListener('click',function(){gamePaused=false;document.getElementById('pauseov').style.display='none';});
 document.getElementById('btnpausemenu').addEventListener('click',function(){goToMenu();});
-document.getElementById('btnmenu').addEventListener('click',function(){clearTimeout(window._autoMenuTimer);gameRunning=false;document.getElementById('endov').style.display='none';document.getElementById('endov').style.opacity='0';document.getElementById('ov').style.display='flex';});
+document.getElementById('btnmenu').addEventListener('click',function(){clearTimeout(window._autoMenuTimer);document.getElementById('endov').style.display='none';document.getElementById('endov').style.opacity='0';goToMenu();});
 document.getElementById('btnmidmenu').addEventListener('click',function(){
   if(confirm(t('confirm_abandon'))){
     gameRunning=false;G=null;
