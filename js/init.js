@@ -26,13 +26,9 @@ function initGame(){
   for(var _wy=0;_wy<MAP;_wy++)for(var _wx=0;_wx<MAP;_wx++){
     if(isWall(_wx,_wy))taken[_wx+','+_wy]=true;
   }
-  // Usine + magazin : chacun sur une case libre totalement aléatoire (indépendante), jamais sur le contour
-  var _fGx,_fGy,_bGx,_bGy,_bt=0;
+  // Usine : une case libre aléatoire, jamais sur le contour
+  var _fGx,_fGy;
   _fGx=2+Math.floor(rr()*(MAP-4));_fGy=2+Math.floor(rr()*(MAP-4));taken[_fGx+','+_fGy]=true;
-  do{
-    _bGx=2+Math.floor(rr()*(MAP-4));_bGy=2+Math.floor(rr()*(MAP-4));_bt++;
-  }while((taken[_bGx+','+_bGy]||Math.abs(_bGx-_fGx)+Math.abs(_bGy-_fGy)>4)&&_bt<400);
-  taken[_bGx+','+_bGy]=true;
 
   var blocks=[];
 
@@ -53,7 +49,7 @@ function initGame(){
         do{
           gx=1+Math.floor(rr()*(MAP-2));gy=1+Math.floor(rr()*(MAP-2));k=gx+','+gy;t++;
           var adjBlock=blocks.some(function(b){return Math.abs(b.gx-gx)+Math.abs(b.gy-gy)===1;});
-          var adjBuilding=(Math.abs(gx-_fGx)+Math.abs(gy-_fGy)<=1)||(Math.abs(gx-_bGx)+Math.abs(gy-_bGy)<=1);
+          var adjBuilding=(Math.abs(gx-_fGx)+Math.abs(gy-_fGy)<=1);
         }while((taken[k]||adjBlock||adjBuilding)&&t<400);
         taken[k]=true;
         var bhp=type==='diamond'?420:type==='gold'?280:210;
@@ -100,7 +96,7 @@ function initGame(){
     p2=mkPlayer('Joueur 2',ci2,s2.x,s2.y,1,true);
     p2.isHuman=true;p2.hp=100;p2.maxHp=100;p2.dmg=10;p2.speed=1.68;p2.regen=4;
   }
-  var buildings=[mkBd('bank',_bGx,_bGy,0),mkBd('factory',_fGx,_fGy,0)];
+  var buildings=[mkBd('factory',_fGx,_fGy,0)];
 
   // Code map : positions normalisées [0-120] empaquetées 2 par 2 en 3 chars base-36
   // (gx-1)*11+(gy-1) → valeur 0-120 ; paire → v=p1*121+p2 ≤ 14640 < 36^3=46656

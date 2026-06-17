@@ -127,7 +127,7 @@ function draw(){
       X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
     });
     G.buildings.forEach(function(b){
-      if(b.type!=='drill'&&b.type!=='drillfast')return;
+      if(b.type!=='drill'&&b.type!=='drillfast'&&b.type!=='factory')return;
       if(_ghostPending&&b.ghost)return;
       X.strokeStyle='rgba('+_sCol+','+(0.45+_sPulse*0.45)+')';X.lineWidth=2.5;X.setLineDash([5,3]);
       X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
@@ -282,7 +282,7 @@ function drawBd(bd){
     X.fillStyle='rgba(0,0,0,0.52)';X.fillRect(bx+6,by+TILE-7,bwb,5);
     X.fillStyle=hpP2>0.55?'rgba(78,198,58,0.9)':hpP2>0.25?'rgba(218,148,28,0.9)':'rgba(208,38,28,0.9)';X.fillRect(bx+6,by+TILE-7,bwb*hpP2,5);
   }
-  if(bd.type!=='portal'){
+  if(bd.type!=='portal'&&bd.type!=='factory'&&bd.type!=='bank'){
     X.fillStyle='rgba(255,240,180,0.97)';X.font='bold 14px Courier New';X.textAlign='center';X.textBaseline='bottom';X.fillText(bd.label,cx,by+TILE-5);
   }
 }

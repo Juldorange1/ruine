@@ -4,7 +4,7 @@ var _cCols={coal:'#c8c4e8',gold:'#f5c830',diamond:'#80eeff'};
 
 function openShop(type,p){
   shopOpen=type;shopPlayer=p;
-  document.getElementById('stitle').textContent=type==='factory'?'USINE — Construire':'MAGAZIN — Améliorations';
+  document.getElementById('stitle').textContent='USINE';
   renderShop();
   document.getElementById('shop').style.display='block';
 }
@@ -12,32 +12,29 @@ function closeShop(){shopOpen=null;shopPlayer=null;document.getElementById('shop
 
 function renderShop(){
   var p=shopPlayer,el=document.getElementById('sitems'),html='';
-  if(shopOpen==='factory'){
-    var nd=G.buildings.filter(function(b){return b.type==='drill'||b.type==='drillfast';}).length;
-    var drillCost=5+nd;
-    var dt=costTypes.drill;
-    var ok1=(p[dt]||0)>=drillCost;
-    var dtLabel=_cNames[dt];
-    html+=sItem(ok1,'FOREUSE (x'+nd+')',drillCost+' '+dtLabel,'Extrait 1 ressource / 5s','drill');
+  var nd=G.buildings.filter(function(b){return b.type==='drill'||b.type==='drillfast';}).length;
+  var drillCost=5+nd;
+  var dt=costTypes.drill;
+  var ok1=(p[dt]||0)>=drillCost;
+  html+=sItem(ok1,'FOREUSE (x'+nd+')',drillCost+' '+_cNames[dt],'Extrait 1 ressource / 5s','drill');
 
-    var blockCost=4+2*(p.blocksBought||0);
-    var bt=costTypes.block;
-    var okB=(p[bt]||0)>=blockCost;
-    var btLabel=_cNames[bt];
-    var bs='flex:1;background:rgba(220,170,80,0.06);border:1px solid rgba(220,170,80,0.2);border-radius:3px;padding:7px 4px;cursor:pointer;font-family:Courier New,monospace;font-size:13px;font-weight:bold;transition:all .2s;';
-    var bLabel='<div style="font-size:12px;opacity:0.6;margin-bottom:5px;color:'+_cCols[bt]+'">BLOCS — '+blockCost+' '+btLabel+'</div><div style="display:flex;gap:4px">';
-    bLabel+='<button data-action="buy-coal" style="'+bs+(okB?'color:#c8c4e8"':'color:#444;cursor:not-allowed"')+'>Charbon</button>';
-    bLabel+='<button data-action="buy-gold" style="'+bs+(okB?'color:#f5c830"':'color:#444;cursor:not-allowed"')+'>Or</button>';
-    bLabel+='<button data-action="buy-diamond" style="'+bs+(okB?'color:#80eeff"':'color:#444;cursor:not-allowed"')+'>Diamant</button>';
-    bLabel+='</div>';
-    html+='<div class="si" style="padding:10px 14px">'+bLabel+'</div>';
-  } else {
-    var dt2=costTypes.dmg,dmgCost=2,okDmg=(p[dt2]||0)>=dmgCost;
-    html+=sItem(okDmg,'+2 Dégâts/s',dmgCost+' '+_cNames[dt2],'Actuel : '+p.dmg+' dég/s','dmg');
+  var blockCost=4+2*(p.blocksBought||0);
+  var bt=costTypes.block;
+  var okB=(p[bt]||0)>=blockCost;
+  var bs='flex:1;background:rgba(220,170,80,0.06);border:1px solid rgba(220,170,80,0.2);border-radius:3px;padding:7px 4px;cursor:pointer;font-family:Courier New,monospace;font-size:13px;font-weight:bold;transition:all .2s;';
+  var bLabel='<div style="font-size:12px;opacity:0.6;margin-bottom:5px;color:'+_cCols[bt]+'">BLOCS — '+blockCost+' '+_cNames[bt]+'</div><div style="display:flex;gap:4px">';
+  bLabel+='<button data-action="buy-coal" style="'+bs+(okB?'color:#c8c4e8"':'color:#444;cursor:not-allowed"')+'>Charbon</button>';
+  bLabel+='<button data-action="buy-gold" style="'+bs+(okB?'color:#f5c830"':'color:#444;cursor:not-allowed"')+'>Or</button>';
+  bLabel+='<button data-action="buy-diamond" style="'+bs+(okB?'color:#80eeff"':'color:#444;cursor:not-allowed"')+'>Diamant</button>';
+  bLabel+='</div>';
+  html+='<div class="si" style="padding:10px 14px">'+bLabel+'</div>';
 
-    var st=costTypes.spd,spdCost=(p.spdUpg||0)+1,okSpd=(p[st]||0)>=spdCost;
-    html+=sItem(okSpd,'+0.2 Vitesse',spdCost+' '+_cNames[st],'Actuel : '+p.speed.toFixed(1)+' (achat '+(p.spdUpg+1)+')','spd');
-  }
+  var dt2=costTypes.dmg,dmgCost=2,okDmg=(p[dt2]||0)>=dmgCost;
+  html+=sItem(okDmg,'+2 Dégâts/s',dmgCost+' '+_cNames[dt2],'Actuel : '+p.dmg+' dég/s','dmg');
+
+  var st=costTypes.spd,spdCost=(p.spdUpg||0)+1,okSpd=(p[st]||0)>=spdCost;
+  html+=sItem(okSpd,'+0.2 Vitesse',spdCost+' '+_cNames[st],'Actuel : '+p.speed.toFixed(1)+' (achat '+(p.spdUpg+1)+')','spd');
+
   el.innerHTML=html;
 }
 

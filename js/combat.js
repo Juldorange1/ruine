@@ -123,7 +123,6 @@ function updDrills(dt){
 /* INTERACT */
 function activateBd(bd,p){
   if(bd.type==='factory'){openShop('factory',p);}
-  else if(bd.type==='bank'){openShop('bank',p);}
   else if(bd.type==='drill'||bd.type==='drillfast'){
     var c=bd.stored.coal||0,g=bd.stored.gold||0,d=bd.stored.diamond||0;
     if(c||g||d){p.coal+=c;p.gold+=g;p.diamond=(p.diamond||0)+d;bd.stored={coal:0,gold:0,diamond:0};sfx('collect');log('+'+c+'C +'+g+'G +'+d+'D');}

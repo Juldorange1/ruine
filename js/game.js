@@ -42,25 +42,10 @@ function loop(ts){
         _ultimateTimer=(_nextOpt==='speed')?60:30;
       }
     }
-    // DESTRUCTION — toutes les 26s, choisir un bloc ou foreuse à détruire
-    if(destructMode&&!_selectionPending){
-      _destructTimer-=dt;
-      if(_destructTimer<=0){_destructTimer=30;_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
-    }
-    // FANTÔME — toutes les 26s, choisir un bloc ou foreuse à rendre traversable
-    if(ghostMode&&!_selectionPending){
-      _ghostTimer-=dt;
-      if(_ghostTimer<=0){_ghostTimer=30;_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
-    }
     // TÉLÉPORTEUR — toutes les 26s, poser 1 portail
     if(teleportMode&&!_selectionPending){
       _teleportTimer-=dt;
       if(_teleportTimer<=0){_teleportTimer=26;_portalPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('PORTAIL : cliquer une case libre');}
-    }
-    // INVERSION — toutes les 26s, choisir 2 minerais/foreuses et inverser leur position
-    if(inversionMode&&!_selectionPending){
-      _inversionTimer-=dt;
-      if(_inversionTimer<=0){_inversionTimer=30;_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('INVERSION : cliquer 2 minerais ou foreuses');}
     }
     // Mouvement tactile mobile
     if(_touchMoveTarget&&!_selectionPending&&!drillingMode){
@@ -121,7 +106,7 @@ function loop(ts){
 /* STATS localStorage */
 // Incrémenter cette version efface automatiquement le tableau de jeu de tous les joueurs
 // (à faire à chaque changement de gameplay important affectant l'équilibrage des records)
-var STATS_VERSION=5;
+var STATS_VERSION=6;
 (function(){
   try{
     var v=localStorage.getItem('ruine_stats_version');
@@ -303,7 +288,7 @@ function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();
 function _inversionPick(gx,gy){
   var blk=G.blocks.filter(function(b){return b.gx===gx&&b.gy===gy;})[0];
   if(blk)return blk;
-  return G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast')&&b.gx===gx&&b.gy===gy;})[0]||null;
+  return G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===gx&&b.gy===gy;})[0]||null;
 }
 function _inversionTrySelect(gx,gy){
   var tgt=_inversionPick(gx,gy);
@@ -346,7 +331,7 @@ C.addEventListener('click',function(e){
   // FANTÔME : rendre traversable le bloc/foreuse cliqué
   if(_ghostPending&&_selectionDelay<=0){
     var _gb=G.blocks.filter(function(b){return b.gx===pos.gx&&b.gy===pos.gy&&!b.ghost;})[0];
-    var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast')&&b.gx===pos.gx&&b.gy===pos.gy&&!b.ghost;})[0];
+    var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===pos.gx&&b.gy===pos.gy&&!b.ghost;})[0];
     if(_gb){_gb.ghost=true;_ghostPending=false;sfx('tp');}
     else if(_gd){_gd.ghost=true;_ghostPending=false;sfx('tp');}
     if(!_ghostPending){_selectionPending=_destructPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
@@ -467,7 +452,7 @@ C.addEventListener('touchend',function(e){
   // ─ Sélection FANTÔME (directement)
   if(_ghostPending&&_selectionDelay<=0){
     var _gb=G.blocks.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
-    var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast')&&b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
+    var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
     if(_gb){_gb.ghost=true;_ghostPending=false;sfx('tp');}
     else if(_gd){_gd.ghost=true;_ghostPending=false;sfx('tp');}
     if(!_ghostPending){_selectionPending=_destructPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
@@ -779,18 +764,17 @@ function _ultimateDeactivate(){
   _ultimateActiveOpt=null;
   if(opt==='night') nightMode=false;
   else if(opt==='speed') speedMode=false;
-  else if(opt==='teleport'){teleportMode=false;_portalPending=false;}
-  else if(opt==='inversion'){inversionMode=false;_inversionPending=false;_inversionFirst=null;}
+  else if(opt==='teleport'){teleportMode=false;if(_portalPending){_portalPending=false;_selectionPending=false;_hidePlaceInfo();}}
+  else if(opt==='inversion'){inversionMode=false;if(_inversionPending){_inversionPending=false;_inversionFirst=null;_selectionPending=false;_hidePlaceInfo();}}
   else if(opt==='random'){randomCostMode=false;costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};_updateRandomCostDisplay();}
-  else if(opt==='destruct') destructMode=false;
-  else if(opt==='ghost') ghostMode=false;
+  else if(opt==='destruct'){destructMode=false;if(_destructPending){_destructPending=false;_selectionPending=false;_hidePlaceInfo();}}
+  else if(opt==='ghost'){ghostMode=false;if(_ghostPending){_ghostPending=false;_selectionPending=false;_hidePlaceInfo();}}
 }
 function _ultimateActivate(opt){
   _ultimateActiveOpt=opt;
   if(opt==='night') nightMode=true;
   else if(opt==='speed') speedMode=true;
   else if(opt==='teleport'){teleportMode=true;_teleportTimer=26;}
-  else if(opt==='inversion'){inversionMode=true;_inversionTimer=26;}
   else if(opt==='random'){
     randomCostMode=true;
     var allRes=['coal','gold','diamond'];
@@ -798,8 +782,9 @@ function _ultimateActivate(opt){
     _updateRandomCostDisplay();
   }
   else if(opt==='shuffle') _ultimateShuffleMinerals();
-  else if(opt==='destruct'){destructMode=true;_destructTimer=30;}
-  else if(opt==='ghost'){ghostMode=true;_ghostTimer=30;}
+  else if(opt==='destruct'){destructMode=true;_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
+  else if(opt==='ghost'){ghostMode=true;_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('FANTÔME : cliquer un minerai ou foreuse');}
+  else if(opt==='inversion'){inversionMode=true;_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo('INVERSION : cliquer 2 minerais ou foreuses');}
 }
 function _ultimateShuffleMinerals(){
   if(!G||!G.blocks.length)return;
