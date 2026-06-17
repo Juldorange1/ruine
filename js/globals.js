@@ -146,7 +146,8 @@ var I18N={
     menu_arrow:'← MENU',
     mode_solo:'Solo',
     mode_coop:'Coop',
-    kh_text:'P1:Touches+Clic · Clic=activer · Clic-droit=attaquer · ESC=pause'
+    kh_text:'P1:Touches+Clic · Clic=activer · Clic-droit=attaquer · ESC=pause',
+    vol_title:'VOLUME'
   },
   en:{
     placement:'PLACEMENT',combat:'COMBAT',
@@ -217,7 +218,8 @@ var I18N={
     menu_arrow:'← MENU',
     mode_solo:'Solo',
     mode_coop:'Coop',
-    kh_text:'P1:Keys+Click · Click=activate · Right-click=attack · ESC=pause'
+    kh_text:'P1:Keys+Click · Click=activate · Right-click=attack · ESC=pause',
+    vol_title:'VOLUME'
   }
 };
 function t(k){return(I18N[gameLanguage]||I18N.fr)[k]||k;}
@@ -266,4 +268,12 @@ function setTheme(n){gameTheme=n;try{localStorage.setItem('ruine_theme',n);}catc
   [0,1,2].forEach(function(i){var b=document.getElementById('themebtn-'+i);
     if(b){b.style.opacity=gameTheme===i?'1':'0.38';b.style.borderColor=gameTheme===i?'rgba(220,170,80,0.85)':'rgba(200,160,50,0.25)';}
   });
+  // Teinte les overlays selon le thème
+  var _tBg=['rgba(4,2,0,0.97)','rgba(10,1,0,0.97)','rgba(0,3,10,0.97)'];
+  var _tPause=['rgba(4,2,0,0.85)','rgba(10,1,0,0.85)','rgba(0,3,10,0.85)'];
+  var _tOvBg=['rgba(4,2,0,0.88)','rgba(10,2,0,0.92)','rgba(0,4,12,0.92)'];
+  ['rulesov','paramsov'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.background=_tBg[n]||_tBg[0];});
+  var pov=document.getElementById('pauseov');if(pov)pov.style.background=_tPause[n]||_tPause[0];
+  var ov=document.getElementById('ov');if(ov)ov.style.background=_tOvBg[n]||_tOvBg[0];
+  var endov=document.getElementById('endov');if(endov)endov.style.background=_tBg[n]||_tBg[0];
 }

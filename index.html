@@ -30,7 +30,7 @@
 
   <!-- Zone code map — rejouer une map précédente -->
   <div style="margin-bottom:10px;padding:8px 16px;background:rgba(8,5,2,0.6);border:1px solid rgba(200,160,50,0.2);border-radius:6px;max-width:480px;width:100%;box-sizing:border-box">
-    <div style="font-size:9px;letter-spacing:3px;color:rgba(200,160,50,0.5);margin-bottom:4px;font-family:'Courier New',monospace">CODE MAP PRÉCÉDENTE</div>
+    <div style="font-size:9px;letter-spacing:3px;color:rgba(200,160,50,0.5);margin-bottom:4px;font-family:'Courier New',monospace">CODE MAP</div>
     <div id="lastmapcode" style="font-size:8px;color:rgba(200,160,50,0.55);font-family:'Courier New',monospace;margin-bottom:6px;word-break:break-all;min-height:10px;line-height:1.4"></div>
     <div style="display:flex;gap:6px;align-items:center">
       <input id="mapcodeload" type="text" placeholder="Coller un code ici pour rejouer cette map..." style="flex:1;background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:rgba(220,180,80,0.9);font-family:'Courier New',monospace;font-size:10px;padding:5px 8px;border-radius:3px;outline:none">
@@ -86,22 +86,13 @@
     <button onclick="openParams()" style="background:rgba(10,8,2,0.7);border:1px solid rgba(160,120,200,0.35);color:rgba(180,140,220,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all" data-i18n="btn_params">&#9881; PARAM&#200;TRES</button>
   </div>
 
-  <!-- Slider volume -->
-  <div style="margin-top:6px;display:flex;align-items:center;gap:10px;font-family:'Courier New',monospace;font-size:11px;color:rgba(200,160,50,0.55);letter-spacing:2px">
-    <span>🔈</span>
-    <input id="vol-slider" type="range" min="0" max="1" step="0.05" value="0.7"
-      oninput="masterVolume=parseFloat(this.value);document.getElementById('vol-val').textContent=Math.round(this.value*100)+'%'"
-      style="width:110px;accent-color:rgba(200,160,50,0.7);cursor:pointer">
-    <span id="vol-val">70%</span>
-    <span>🔊</span>
-  </div>
 
 </div>
 
 <!-- PAUSE -->
 <div id="pauseov" style="position:fixed;inset:0;background:rgba(4,2,0,0.82);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:998;backdrop-filter:blur(2px)">
   <div style="font-size:42px;font-weight:bold;letter-spacing:10px;color:#d4a040;font-family:'Courier New',monospace;margin-bottom:8px;text-shadow:0 0 30px rgba(200,140,20,0.4)" data-i18n="pause_title">PAUSE</div>
-  <div style="font-size:11px;opacity:0.35;letter-spacing:2px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:28px" data-i18n="pause_hint">ESPACE / ESC pour reprendre</div>
+  <div style="margin-bottom:28px"></div>
   <button class="btn" id="btnpauseresume" style="font-size:13px;padding:11px 32px;margin-bottom:12px" data-i18n="btn_resume">REPRENDRE</button>
   <button class="btn" id="btnpausemenu" style="font-size:11px;padding:8px 24px;opacity:0.7" data-i18n="btn_menu_short">MENU</button>
 </div>
@@ -453,6 +444,19 @@
 
     <div style="display:flex;flex-direction:column;gap:20px">
 
+      <!-- Volume -->
+      <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
+        <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:12px" data-i18n="vol_title">VOLUME</div>
+        <div style="display:flex;align-items:center;gap:12px;font-family:'Courier New',monospace;font-size:11px;color:rgba(200,160,240,0.7)">
+          <span>🔈</span>
+          <input id="vol-slider" type="range" min="0" max="1" step="0.05" value="0.7"
+            oninput="masterVolume=parseFloat(this.value);document.getElementById('vol-val').textContent=Math.round(this.value*100)+'%'"
+            style="flex:1;accent-color:rgba(160,120,200,0.8);cursor:pointer">
+          <span id="vol-val" style="min-width:36px">70%</span>
+          <span>🔊</span>
+        </div>
+      </div>
+
       <!-- Langue -->
       <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
         <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:12px" data-i18n="lang_title">LANGUE / LANGUAGE</div>
@@ -540,16 +544,16 @@
 <button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}" data-i18n="mob_pause">II PAUSE</button>
 
 
-<script src="js/canvas.js?v=9"></script>
-<script src="js/globals.js?v=9"></script>
-<script src="js/init.js?v=9"></script>
-<script src="js/placement.js?v=9"></script>
-<script src="js/combat.js?v=9"></script>
-<script src="js/shop.js?v=9"></script>
-<script src="js/world.js?v=9"></script>
-<script src="js/ai.js?v=9"></script>
-<script src="js/render.js?v=9"></script>
-<script src="js/game.js?v=9"></script>
+<script src="js/canvas.js?v=10"></script>
+<script src="js/globals.js?v=10"></script>
+<script src="js/init.js?v=10"></script>
+<script src="js/placement.js?v=10"></script>
+<script src="js/combat.js?v=10"></script>
+<script src="js/shop.js?v=10"></script>
+<script src="js/world.js?v=10"></script>
+<script src="js/ai.js?v=10"></script>
+<script src="js/render.js?v=10"></script>
+<script src="js/game.js?v=10"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>
