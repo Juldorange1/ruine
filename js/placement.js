@@ -31,16 +31,32 @@ function _hidePlaceInfo(){
 
 function nextPlace(){
   placePos=null;
+  var pbar=document.getElementById('pbar');
+  var pbc=document.getElementById('pbc');
+  var pturn=document.getElementById('pturn');
+  var pinfo=document.getElementById('pinfo');
   if(!placeQueue.length){
     G.phase='combat';
     document.getElementById('phase').textContent='COMBAT';
     _hidePlaceInfo();
+    if(pbar)pbar.style.display='none';
+    _startDrillsPlaced=true;
+    // Activer la première option ULTIME maintenant que les foreuses sont placées
+    if(ultimateMode&&_ultimatePool.length&&!_ultimateActiveOpt){
+      var _f=_ultimatePool[Math.floor(Math.random()*_ultimatePool.length)];
+      _ultimateActivate(_f);_ultimateTimer=(_f==='speed')?60:30;
+    }
     return;
   }
   var cur=placeQueue[0];
   var lbl=cur.type==='drill'?'FOREUSE':'TÉLÉPORTEUR';
   var who=(GAMEMODE!=='solo'&&cur.who==='p2')?'J2':'J1';
-  _showPlaceInfo(lbl+(GAMEMODE!=='solo'?' ('+who+')':''));
+  var txt=lbl+(GAMEMODE!=='solo'?' ('+who+')':'');
+  _showPlaceInfo(txt);
+  if(pbar)pbar.style.display='block';
+  if(pbc){pbc.disabled=true;}
+  if(pturn)pturn.textContent=GAMEMODE!=='solo'?who:'J1';
+  if(pinfo)pinfo.textContent='Cliquez une case libre';
 }
 
 function confirmPlace(){
@@ -75,11 +91,12 @@ function confirmDrill(){
 
 function selectCell(gx,gy){
   if(!placeQueue.length)return;
-  // Both p1 and p2 can select in pvp (only solo is p1-only but p2 doesn't exist there)
-  var cur=placeQueue[0];
   var ok=cellFreePlace(gx,gy);
   placePos={gx:gx,gy:gy,ok:ok,locked:true};
-  document.getElementById('pbc').disabled=!ok;
+  var pbc=document.getElementById('pbc');
+  if(pbc)pbc.disabled=!ok;
+  var pinfo=document.getElementById('pinfo');
+  if(pinfo)pinfo.textContent=ok?'Case libre — CONFIRMER':'Case occupée !';
 }
 
 function aiPickPlace(type){
@@ -100,8 +117,9 @@ function addBd(type,gx,gy,owner){
   if(onP)return null;
   var bd=mkBd(type,gx,gy,owner);
   if(type==='drill'){
-    // Priority: adjacent coal first, then gold, then diamond, then nearest of any
-    var typePriority=['coal','gold','diamond'];
+    // Priorité : minerai requis pour acheter foreuse > minerai objectif > troisième
+    var typePriority=[costTypes.drill,winResource];
+    ['coal','gold','diamond'].forEach(function(r){if(typePriority.indexOf(r)===-1)typePriority.push(r);});
     var best=null,bD=99;
     for(var ti=0;ti<typePriority.length;ti++){
       var ttype=typePriority[ti];

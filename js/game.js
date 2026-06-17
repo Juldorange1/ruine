@@ -8,8 +8,8 @@ function loop(ts){
     G.time+=dt;
   }
   if(G&&gameRunning&&G.phase==='combat'&&!gamePaused){
-    // Auto-pause après 20s d'inactivité
-    if(Date.now()-_lastActivityTime>20000){
+    // Auto-pause après 30s d'inactivité (uniquement après les 4 foreuses de départ placées)
+    if(_startDrillsPlaced&&Date.now()-_lastActivityTime>30000){
       gamePaused=true;
       document.getElementById('pauseov').style.display='flex';
     }
@@ -555,11 +555,11 @@ function startGame(mode){
   _destructTimer=30;_ghostTimer=30;_teleportTimer=26;_inversionTimer=30;
   _destructPending=false;_ghostPending=false;_portalPending=false;_inversionPending=false;_inversionFirst=null;_selectionPending=false;_ultimateSwitchPending=false;
 
+  _startDrillsPlaced=false;
   _gameUsedMapCode=!!_preloadedBlocks;
   G=initGame();G.phase_over=false;gameRunning=true;logLines=[];
   _lastActivityTime=Date.now();
-  // ULTIME — tirer la première option dès le début de partie
-  if(ultimateMode&&_ultimatePool.length){var _first=_ultimatePool[Math.floor(Math.random()*_ultimatePool.length)];_ultimateActivate(_first);_ultimateTimer=(_first==='speed')?60:30;}
+  // ULTIME — la première option se déclenche après le placement des 4 foreuses (dans nextPlace)
   placeQueue=[];placePos=null;drillingMode=false;
   shopOpen=null;shopPlayer=null;piqueMode=false;piquePlayer=null;
   tpMode=false;tpSrc=null;tpPlayer=null;bdAtk=null;bdAtkTimer=0;bdAtkPlayer=null;
@@ -835,6 +835,7 @@ function goToMenu(){
   closeShop();
   document.getElementById('endov').style.display='none';document.getElementById('endov').style.opacity='0';
   document.getElementById('pbar').style.display='none';document.getElementById('shop').style.display='none';
+  _startDrillsPlaced=false;
   document.getElementById('btnmidmenu').style.display='none';
   var finEl2=document.getElementById('btnfinish');if(finEl2)finEl2.style.display='none';
   var gn2=document.getElementById('gamename');if(gn2)gn2.style.display='none';

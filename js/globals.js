@@ -35,6 +35,7 @@ var _destructPending=false;
 var _ghostPending=false;
 var _selectionPending=false;
 var _selectionDelay=0;
+var _startDrillsPlaced=false; // true une fois les 4 foreuses de départ placées
 var masterVolume=0.7;
 var mineralQty=6;
 var seriesActive=false;
