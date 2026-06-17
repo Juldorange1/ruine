@@ -305,14 +305,24 @@ function _inversionTrySelect(gx,gy){
   }
 }
 
-/* Ghost de survol pendant le placement */
-C.addEventListener('mousemove',function(e){
-  if(!G||G.phase!=='placement'||!placeQueue.length)return;
-  var pos=getGrid(e);
-  if(pos.gx<0||pos.gx>=MAP||pos.gy<0||pos.gy>=MAP)return;
-  var ok=cellFreePlace(pos.gx,pos.gy);
-  placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};
-});
+/* Overlay placement : capte tous les clics et mouvements pendant la phase de placement */
+(function(){
+  var ov=document.getElementById('place-overlay');
+  ov.addEventListener('click',function(e){
+    if(!G||G.phase!=='placement'||!placeQueue.length)return;
+    var pos=getGrid(e);
+    if(pos.gx<1||pos.gx>=MAP-1||pos.gy<1||pos.gy>=MAP-1)return;
+    selectCell(pos.gx,pos.gy);
+    if(placePos&&placePos.ok)confirmPlace();
+  });
+  ov.addEventListener('mousemove',function(e){
+    if(!G||G.phase!=='placement'||!placeQueue.length)return;
+    var pos=getGrid(e);
+    if(pos.gx<0||pos.gx>=MAP||pos.gy<0||pos.gy>=MAP)return;
+    var ok=cellFreePlace(pos.gx,pos.gy);
+    placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};
+  });
+})();
 
 document.addEventListener('click',function(e){
   if(!G||!gameRunning)return;
@@ -612,7 +622,7 @@ function startGame(mode){
     }
 
     /* ── GRAIN DE SABLE (stippling) ── */
-    var _h=function(n){var x=Math.sin(n+13.753)*48271.8;return x-(x|0);};
+    var _h=function(n){var x=Math.sin(n+13.753)*48271.8;return x-Math.floor(x);};
     for(var _gi=0;_gi<5200;_gi++){
       var _gx=TILE+_h(_gi*1.618)*(CW-2*TILE);
       var _gy=TILE+_h(_gi*2.718)*(CH-2*TILE);

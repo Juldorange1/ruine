@@ -18,6 +18,8 @@ function startPlacement(){
     placeQueue.push({who:'p1',type:'teleporter'});
     placeQueue.push({who:'p2',type:'teleporter'});
   }
+  var _pov=document.getElementById('place-overlay');
+  if(_pov)_pov.style.display='block';
   nextPlace();
 }
 
@@ -32,6 +34,8 @@ function _hidePlaceInfo(){
 function nextPlace(){
   placePos=null;
   if(!placeQueue.length){
+    var _pov2=document.getElementById('place-overlay');
+    if(_pov2)_pov2.style.display='none';
     G.phase='combat';
     document.getElementById('phase').textContent='COMBAT';
     _hidePlaceInfo();
