@@ -349,14 +349,16 @@ function drawPlayer(p){
 /* HUD */
 function updateHUD(){
   if(!G)return;
-  var pairs=[[G.p1,'p1']];if(G.p2)pairs.push([G.p2,'p2']);
+  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop');
+  var pairs=[[G.p1,'p1']];if(G.p2&&!isRec)pairs.push([G.p2,'p2']);
   pairs.forEach(function(pr){
     var p=pr[0],pfx=pr[1];
-    document.getElementById(pfx+'nm').textContent=p.name+(p.dead?' [MORT]':'');
-    var pct=p.hp/p.maxHp*100,hf=document.getElementById(pfx+'hf');
-    if(!(GAMEMODE==='solo'||GAMEMODE==='coop')){hf.style.width=pct+'%';hf.className='hf'+(pct<30?' low':pct<60?' med':'');}
-    document.getElementById(pfx+'hn').textContent=(GAMEMODE==='solo'||GAMEMODE==='coop')?'':(Math.ceil(p.hp)+'/'+p.maxHp);
-    document.getElementById(pfx+'sr').textContent='DMG '+p.dmg+'  SPD '+p.speed.toFixed(1);
+    document.getElementById(pfx+'nm').textContent=p.name;
+    if(!isRec){
+      var pct=p.hp/p.maxHp*100,hf=document.getElementById(pfx+'hf');
+      if(hf){hf.style.width=pct+'%';hf.className='hf'+(pct<30?' low':pct<60?' med':'');}
+      var hn=document.getElementById(pfx+'hn');if(hn)hn.textContent=Math.ceil(p.hp)+'/'+p.maxHp;
+    }
     document.getElementById(pfx+'co').textContent='C '+p.coal;
     document.getElementById(pfx+'go').textContent='G '+p.gold;
     var di=document.getElementById(pfx+'di');if(di)di.textContent='D '+(p.diamond||0);

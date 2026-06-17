@@ -31,15 +31,10 @@ function _hidePlaceInfo(){
 
 function nextPlace(){
   placePos=null;
-  var pbar=document.getElementById('pbar');
-  var pbc=document.getElementById('pbc');
-  var pturn=document.getElementById('pturn');
-  var pinfo=document.getElementById('pinfo');
   if(!placeQueue.length){
     G.phase='combat';
     document.getElementById('phase').textContent='COMBAT';
     _hidePlaceInfo();
-    if(pbar)pbar.style.display='none';
     _startDrillsPlaced=true;
     // Activer la première option ULTIME maintenant que les foreuses sont placées
     if(ultimateMode&&_ultimatePool.length&&!_ultimateActiveOpt){
@@ -49,14 +44,12 @@ function nextPlace(){
     return;
   }
   var cur=placeQueue[0];
+  var total=(GAMEMODE==='solo'?4:4);
+  var placed=total-placeQueue.length;
   var lbl=cur.type==='drill'?'FOREUSE':'TÉLÉPORTEUR';
   var who=(GAMEMODE!=='solo'&&cur.who==='p2')?'J2':'J1';
-  var txt=lbl+(GAMEMODE!=='solo'?' ('+who+')':'');
+  var txt=(GAMEMODE!=='solo'?who+' — ':'')+lbl+' ('+(placed+1)+'/'+total+') — cliquer une case';
   _showPlaceInfo(txt);
-  if(pbar)pbar.style.display='block';
-  if(pbc){pbc.disabled=true;}
-  if(pturn)pturn.textContent=GAMEMODE!=='solo'?who:'J1';
-  if(pinfo)pinfo.textContent='Cliquez une case libre';
 }
 
 function confirmPlace(){
@@ -93,10 +86,6 @@ function selectCell(gx,gy){
   if(!placeQueue.length)return;
   var ok=cellFreePlace(gx,gy);
   placePos={gx:gx,gy:gy,ok:ok,locked:true};
-  var pbc=document.getElementById('pbc');
-  if(pbc)pbc.disabled=!ok;
-  var pinfo=document.getElementById('pinfo');
-  if(pinfo)pinfo.textContent=ok?'Case libre — CONFIRMER':'Case occupée !';
 }
 
 function aiPickPlace(type){

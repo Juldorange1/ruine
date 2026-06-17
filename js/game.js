@@ -306,6 +306,15 @@ function _inversionTrySelect(gx,gy){
   }
 }
 
+/* Ghost de survol pendant le placement */
+C.addEventListener('mousemove',function(e){
+  if(!G||G.phase!=='placement'||!placeQueue.length)return;
+  var pos=getGrid(e);
+  if(pos.gx<0||pos.gx>=MAP||pos.gy<0||pos.gy>=MAP)return;
+  var ok=cellFreePlace(pos.gx,pos.gy);
+  placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};
+});
+
 C.addEventListener('click',function(e){
   if(!G)return;
   var pos=getGrid(e);
@@ -736,12 +745,15 @@ function startGame(mode){
   })();
 
   document.getElementById('p1role').textContent=GAMEMODE==='solo'?'Solo':'Coop P1';
-  document.getElementById('p2card').style.display=GAMEMODE==='solo'?'none':'';
-  if(mode==='coop')document.getElementById('p2role').textContent='Coop P2';
   var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop');
+  // Masquer le bloc P2 entièrement en solo
+  var t2h=document.getElementById('team2hud');if(t2h)t2h.style.display=GAMEMODE==='solo'?'none':'';
+  if(mode==='coop')document.getElementById('p2role').textContent='Coop P2';
+  // Masquer les barres de PV et le compteur HP (mode record = pas de mort)
   ['p1','p2'].forEach(function(pfx){
-    var hf=document.getElementById(pfx+'hf');if(hf)hf.parentNode.style.display=isRec?'none':'';
+    var hb=document.getElementById(pfx+'hf');if(hb&&hb.parentNode)hb.parentNode.style.display=isRec?'none':'';
     var hn=document.getElementById(pfx+'hn');if(hn)hn.style.display=isRec?'none':'';
+    var sr=document.getElementById(pfx+'sr');if(sr)sr.style.display=isRec?'none':'';
   });
   var isDiamondRace=(mode==='solo'&&soloDur===999)||(mode==='coop'&&coopDur===999);
   diamondRace=isDiamondRace;
