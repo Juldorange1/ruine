@@ -200,8 +200,13 @@ function showEnd(){
 /* INPUT */
 document.addEventListener('keydown',function(e){
   if(_capturingKey){
-    p1Keys[_capturingKey]=e.key;
-    try{localStorage.setItem('ruine_keys',JSON.stringify(p1Keys));}catch(ex){}
+    if(_capturingKey==='pause'){
+      p1PauseKey=e.key;
+      try{localStorage.setItem('ruine_pause_key',e.key);}catch(ex){}
+    } else {
+      p1Keys[_capturingKey]=e.key;
+      try{localStorage.setItem('ruine_keys',JSON.stringify(p1Keys));}catch(ex){}
+    }
     _updateKeyDisplay();_capturingKey=null;e.preventDefault();return;
   }
   keys[e.key]=true;
@@ -241,8 +246,8 @@ document.addEventListener('keydown',function(e){
     return;
   }
   if(!G||!gameRunning)return;
-  if(e.key==='Escape'){
-    if(shopOpen||tpMode||drillingMode||piqueMode){
+  if(e.key==='Escape'||e.key===p1PauseKey){
+    if(e.key==='Escape'&&(shopOpen||tpMode||drillingMode||piqueMode)){
       closeShop();tpMode=false;tpSrc=null;tpPlayer=null;
       bdAtk=null;blkAtk=null;metAtk=null;
       if(drillingMode){
@@ -258,8 +263,8 @@ document.addEventListener('keydown',function(e){
       piqueMode=false;piquePlayer=null;
       return;
     }
-    // ESC annule aussi les sélections d'Ultime en cours (déblocage du joueur)
-    if(_selectionPending){
+    // ESC annule les sélections d'Ultime en cours (déblocage du joueur)
+    if(e.key==='Escape'&&_selectionPending){
       _destructPending=false;_ghostPending=false;_portalPending=false;
       _inversionPending=false;_inversionFirst=null;_selectionPending=false;
       if(!_inversionShopMode)_ultimateSwitchPending=true;
@@ -302,6 +307,7 @@ function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTim
     var _l=localStorage.getItem('ruine_lang');if(_l)gameLanguage=_l;
     var _n=localStorage.getItem('ruine_nick');if(_n!==null)playerNickname=_n;
     var _k=localStorage.getItem('ruine_keys');if(_k){var _pk=JSON.parse(_k);if(_pk&&_pk.up)p1Keys=_pk;}
+    var _psk=localStorage.getItem('ruine_pause_key');if(_psk)p1PauseKey=_psk;
     var _th=localStorage.getItem('ruine_theme');if(_th!==null)gameTheme=parseInt(_th)||0;
   }catch(e){}
   applyLanguage();
@@ -381,7 +387,7 @@ document.addEventListener('click',function(e){
   var pos=getGrid(e);
   // PORTAIL : poser le portail sur une case libre
   if(_portalPending&&_selectionDelay<=0){
-    if(cellFreePlace(pos.gx,pos.gy)){
+    if(!cellOcc(pos.gx,pos.gy)){
       var _pb=mkBd('portal',pos.gx,pos.gy,0);_pb.ghost=true;
       G.buildings.push(_pb);
       _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log(t('log_portail'));
@@ -499,7 +505,7 @@ C.addEventListener('touchend',function(e){
 
   // ─ Sélection PORTAIL (directement, sans faux clic souris)
   if(_portalPending&&_selectionDelay<=0){
-    if(cellFreePlace(tg.igx,tg.igy)){
+    if(!cellOcc(tg.igx,tg.igy)){
       var _pb2=mkBd('portal',tg.igx,tg.igy,0);_pb2.ghost=true;
       G.buildings.push(_pb2);
       _portalPending=false;_selectionPending=false;_hidePlaceInfo();sfx('tp');log(t('log_portail'));

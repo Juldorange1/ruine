@@ -72,6 +72,7 @@ var playerNickname='';
 var gameLanguage='fr';
 var gameTheme=0;
 var p1Keys={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
+var p1PauseKey='Escape';
 var _capturingKey=null;
 
 /* ── I18N ── */
@@ -99,6 +100,7 @@ var I18N={
     save_btn:'ENREGISTRER',saved_msg:'✓ Enregistré !',
     keys_title:'TOUCHES DE DÉPLACEMENT',
     key_up:'↑ HAUT',key_down:'↓ BAS',key_left:'← GAUCHE',key_right:'→ DROITE',
+    key_pause:'⏸ PAUSE',
     key_capture:'Appuie sur une touche...',
     close_x:'FERMER ✕',close:'FERMER',
     rules_title:'RÈGLES DU JEU',
@@ -175,6 +177,7 @@ var I18N={
     save_btn:'SAVE',saved_msg:'✓ Saved!',
     keys_title:'MOVEMENT KEYS',
     key_up:'↑ UP',key_down:'↓ DOWN',key_left:'← LEFT',key_right:'→ RIGHT',
+    key_pause:'⏸ PAUSE',
     key_capture:'Press a key...',
     close_x:'CLOSE ✕',close:'CLOSE',
     rules_title:'GAME RULES',
@@ -253,6 +256,10 @@ function _updateKeyDisplay(){
     b.style.background=(_capturingKey===d)?'rgba(220,170,30,0.22)':'rgba(8,5,2,0.7)';
     b.style.borderColor=(_capturingKey===d)?'rgba(220,170,80,0.9)':'rgba(200,160,50,0.3)';
   });
+  var bp=document.getElementById('keybtn-pause');
+  if(bp){var kp=bp.querySelector('.kv');if(kp)kp.textContent=_keyLabel(p1PauseKey);
+    bp.style.background=(_capturingKey==='pause')?'rgba(220,170,30,0.22)':'rgba(8,5,2,0.7)';
+    bp.style.borderColor=(_capturingKey==='pause')?'rgba(220,170,80,0.9)':'rgba(200,160,50,0.3)';}
   var cm=document.getElementById('key-capture-msg');
   if(cm){cm.style.display=_capturingKey?'block':'none';if(_capturingKey)cm.textContent=t('key_capture');}
 }

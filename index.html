@@ -506,6 +506,10 @@
             <span data-i18n="key_right" style="font-size:10px;opacity:0.6;letter-spacing:1px">→ DROITE</span>
             <span class="kv" style="font-size:18px;font-weight:bold">→</span>
           </button>
+          <button id="keybtn-pause" onclick="captureKey('pause')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s;grid-column:span 2">
+            <span data-i18n="key_pause" style="font-size:10px;opacity:0.6;letter-spacing:1px">⏸ PAUSE</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">ESC</span>
+          </button>
         </div>
         <div id="key-capture-msg" style="display:none;margin-top:12px;text-align:center;font-size:13px;color:#f0d060;letter-spacing:2px;animation:pulse 0.8s infinite alternate" data-i18n="key_capture">Appuie sur une touche...</div>
       </div>
@@ -544,16 +548,16 @@
 <button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}" data-i18n="mob_pause">II PAUSE</button>
 
 
-<script src="js/canvas.js?v=11"></script>
-<script src="js/globals.js?v=11"></script>
-<script src="js/init.js?v=11"></script>
-<script src="js/placement.js?v=11"></script>
-<script src="js/combat.js?v=11"></script>
-<script src="js/shop.js?v=11"></script>
-<script src="js/world.js?v=11"></script>
-<script src="js/ai.js?v=11"></script>
-<script src="js/render.js?v=11"></script>
-<script src="js/game.js?v=11"></script>
+<script src="js/canvas.js?v=12"></script>
+<script src="js/globals.js?v=12"></script>
+<script src="js/init.js?v=12"></script>
+<script src="js/placement.js?v=12"></script>
+<script src="js/combat.js?v=12"></script>
+<script src="js/shop.js?v=12"></script>
+<script src="js/world.js?v=12"></script>
+<script src="js/ai.js?v=12"></script>
+<script src="js/render.js?v=12"></script>
+<script src="js/game.js?v=12"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>
