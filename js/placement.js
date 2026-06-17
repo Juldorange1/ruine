@@ -49,7 +49,7 @@ function nextPlace(){
     var _pov2=document.getElementById('place-overlay');
     if(_pov2)_pov2.style.display='none';
     G.phase='combat';
-    document.getElementById('phase').textContent='COMBAT';
+    document.getElementById('phase').textContent=t('phase_combat');
     _hidePlaceInfo();
     _startDrillsPlaced=true;
     // Activer la première option ULTIME maintenant que les foreuses sont placées
@@ -77,7 +77,7 @@ function confirmPlace(){
 
   addBd(cur.type,placePos.gx,placePos.gy,owner);
   placeQueue.shift();sfx('place');
-  log('Place : '+(cur.type==='drill'?'FOREUSE':cur.type==='drillfast'?'FOREUSE+':'TELEPORTEUR'));
+  log(t('log_place')+' : '+(cur.type==='drill'?t('drill'):cur.type==='drillfast'?t('drillfast'):t('tp')));
   nextPlace();
 }
 function confirmDrill(){

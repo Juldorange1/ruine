@@ -71,6 +71,7 @@ document.addEventListener('mousemove',function(e){mouseX=e.clientX;mouseY=e.clie
 /* ── PARAMÈTRES ── */
 var playerNickname='';
 var gameLanguage='fr';
+var gameTheme=0;
 var p1Keys={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
 var _capturingKey=null;
 
@@ -99,7 +100,53 @@ var I18N={
     close_x:'FERMER ✕',close:'FERMER',
     rules_title:'RÈGLES DU JEU',
     choose_mode:'CHOISISSEZ UN MODE',
-    btn_rules:'? RÈGLES',btn_params:'⚙ PARAMÈTRES'
+    btn_rules:'? RÈGLES',btn_params:'⚙ PARAMÈTRES',
+    phase_menu:'MENU',
+    phase_placement:'PLACEMENT',
+    phase_combat:'COMBAT',
+    end_finished:'PARTIE TERMINÉE',
+    end_coop:'COOP TERMINÉE',
+    time_label:'Temps',
+    mode_label:'Mode',
+    total_label:'Total',
+    pause_title:'PAUSE',
+    pause_hint:'ESPACE / ESC pour reprendre',
+    btn_resume:'REPRENDRE',
+    btn_menu_short:'MENU',
+    btn_replay:'REJOUER',
+    confirm_abandon:'Abandonner la partie et revenir au menu ?',
+    costs_header:'COÛTS',
+    cost_drill_label:'Foreuse',
+    cost_dmg_label:'Dégâts',
+    cost_spd_label:'Vitesse',
+    cost_block_label:'Blocs',
+    cost_obj:'Objectif',
+    shop_title:'USINE',
+    shop_close_hint:'ESC pour fermer',
+    shop_buy:'ACHETER',
+    shop_drilleff:'Extrait 1 ressource / 5s',
+    shop_drillfast_eff:'Extrait 1 ressource / 2,5s',
+    shop_current:'Actuel',
+    shop_dmg_name:'+2 Dégâts',
+    shop_spd_name:'+0.2 Vitesse',
+    shop_blocks_label:'BLOCS',
+    res_coal:'Charbon',
+    res_gold:'Or',
+    res_diamond:'Diamant',
+    role_solo:'Solo',
+    role_coop1:'Coop P1',
+    role_coop2:'Coop P2',
+    theme_title:'DÉCOR',
+    theme_desert:'DÉSERT',
+    theme_volcanic:'VOLCANIQUE',
+    theme_glacial:'GLACIAL',
+    pbar_confirm:'CONFIRMER',
+    pbar_click:'Cliquez une case',
+    mob_pause:'II PAUSE',
+    menu_arrow:'← MENU',
+    mode_solo:'Solo',
+    mode_coop:'Coop',
+    kh_text:'P1:Touches+Clic · Clic=activer · Clic-droit=attaquer · ESC=pause'
   },
   en:{
     placement:'PLACEMENT',combat:'COMBAT',
@@ -124,7 +171,53 @@ var I18N={
     close_x:'CLOSE ✕',close:'CLOSE',
     rules_title:'GAME RULES',
     choose_mode:'CHOOSE A MODE',
-    btn_rules:'? RULES',btn_params:'⚙ SETTINGS'
+    btn_rules:'? RULES',btn_params:'⚙ SETTINGS',
+    phase_menu:'MENU',
+    phase_placement:'PLACEMENT',
+    phase_combat:'COMBAT',
+    end_finished:'GAME OVER',
+    end_coop:'COOP FINISHED',
+    time_label:'Time',
+    mode_label:'Mode',
+    total_label:'Total',
+    pause_title:'PAUSE',
+    pause_hint:'SPACE / ESC to resume',
+    btn_resume:'RESUME',
+    btn_menu_short:'MENU',
+    btn_replay:'PLAY AGAIN',
+    confirm_abandon:'Abandon the game and return to menu?',
+    costs_header:'COSTS',
+    cost_drill_label:'Drill',
+    cost_dmg_label:'Damage',
+    cost_spd_label:'Speed',
+    cost_block_label:'Blocks',
+    cost_obj:'Goal',
+    shop_title:'FACTORY',
+    shop_close_hint:'ESC to close',
+    shop_buy:'BUY',
+    shop_drilleff:'Extracts 1 resource / 5s',
+    shop_drillfast_eff:'Extracts 1 resource / 2.5s',
+    shop_current:'Current',
+    shop_dmg_name:'+2 Damage',
+    shop_spd_name:'+0.2 Speed',
+    shop_blocks_label:'BLOCKS',
+    res_coal:'Coal',
+    res_gold:'Gold',
+    res_diamond:'Diamond',
+    role_solo:'Solo',
+    role_coop1:'Coop P1',
+    role_coop2:'Coop P2',
+    theme_title:'THEME',
+    theme_desert:'DESERT',
+    theme_volcanic:'VOLCANIC',
+    theme_glacial:'GLACIAL',
+    pbar_confirm:'CONFIRM',
+    pbar_click:'Click a tile',
+    mob_pause:'II PAUSE',
+    menu_arrow:'← MENU',
+    mode_solo:'Solo',
+    mode_coop:'Coop',
+    kh_text:'P1:Keys+Click · Click=activate · Right-click=attack · ESC=pause'
   }
 };
 function t(k){return(I18N[gameLanguage]||I18N.fr)[k]||k;}
@@ -141,6 +234,8 @@ function applyLanguage(){
   });
   document.documentElement.lang=gameLanguage;
   _updateKeyDisplay();
+  setTheme(gameTheme);
+  if(typeof _updateRandomCostDisplay==='function'&&typeof G!=='undefined'&&G&&gameRunning)_updateRandomCostDisplay();
 }
 function _updateKeyDisplay(){
   ['up','down','left','right'].forEach(function(d){
@@ -167,3 +262,8 @@ function openParams(){
   applyLanguage();
 }
 function closeParams(){document.getElementById('paramsov').style.display='none';_capturingKey=null;_updateKeyDisplay();}
+function setTheme(n){gameTheme=n;try{localStorage.setItem('ruine_theme',n);}catch(e){}
+  [0,1,2].forEach(function(i){var b=document.getElementById('themebtn-'+i);
+    if(b){b.style.opacity=gameTheme===i?'1':'0.38';b.style.borderColor=gameTheme===i?'rgba(220,170,80,0.85)':'rgba(200,160,50,0.25)';}
+  });
+}

@@ -96,15 +96,14 @@
     <span>🔊</span>
   </div>
 
-  <div class="hint">SOLO : collecte max de diamants · Foreuses = extraction auto<br>Clic=activer · Clic droit=attaquer · ESC=pause · P=pause</div>
 </div>
 
 <!-- PAUSE -->
 <div id="pauseov" style="position:fixed;inset:0;background:rgba(4,2,0,0.82);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:998;backdrop-filter:blur(2px)">
-  <div style="font-size:42px;font-weight:bold;letter-spacing:10px;color:#d4a040;font-family:'Courier New',monospace;margin-bottom:8px;text-shadow:0 0 30px rgba(200,140,20,0.4)">PAUSE</div>
-  <div style="font-size:11px;opacity:0.35;letter-spacing:2px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:28px">ESPACE / ESC pour reprendre</div>
-  <button class="btn" id="btnpauseresume" style="font-size:13px;padding:11px 32px;margin-bottom:12px">REPRENDRE</button>
-  <button class="btn" id="btnpausemenu" style="font-size:11px;padding:8px 24px;opacity:0.7">MENU</button>
+  <div style="font-size:42px;font-weight:bold;letter-spacing:10px;color:#d4a040;font-family:'Courier New',monospace;margin-bottom:8px;text-shadow:0 0 30px rgba(200,140,20,0.4)" data-i18n="pause_title">PAUSE</div>
+  <div style="font-size:11px;opacity:0.35;letter-spacing:2px;color:#c0a060;font-family:'Courier New',monospace;margin-bottom:28px" data-i18n="pause_hint">ESPACE / ESC pour reprendre</div>
+  <button class="btn" id="btnpauseresume" style="font-size:13px;padding:11px 32px;margin-bottom:12px" data-i18n="btn_resume">REPRENDRE</button>
+  <button class="btn" id="btnpausemenu" style="font-size:11px;padding:8px 24px;opacity:0.7" data-i18n="btn_menu_short">MENU</button>
 </div>
 
 <!-- END -->
@@ -114,8 +113,8 @@
   <div id="endmode" style="font-size:11px;letter-spacing:3px;opacity:0.45;color:#c8a060;margin-bottom:10px;font-family:'Courier New',monospace"></div>
   <div id="endmapcode" onclick="copyMapCode()" title="Cliquer pour copier ce code" style="font-size:8px;color:rgba(200,160,50,0.5);font-family:'Courier New',monospace;margin-bottom:12px;cursor:pointer;word-break:break-all;max-width:440px;text-align:center;padding:4px 8px;border:1px solid rgba(200,160,50,0.15);border-radius:3px;transition:color .3s"></div>
   <div style="font-size:9px;color:rgba(200,160,50,0.3);font-family:'Courier New',monospace;margin-bottom:12px;letter-spacing:1px">↑ Cliquer pour copier le code map (rejouer via le menu)</div>
-  <button class="btn" id="btnreplay">REJOUER</button>
-  <button class="btn" id="btnmenu" style="margin-top:10px;font-size:11px;padding:8px 24px">MENU</button>
+  <button class="btn" id="btnreplay" data-i18n="btn_replay">REJOUER</button>
+  <button class="btn" id="btnmenu" style="margin-top:10px;font-size:11px;padding:8px 24px" data-i18n="btn_menu_short">MENU</button>
 </div>
 
 <!-- HUD -->
@@ -463,6 +462,16 @@
         </div>
       </div>
 
+      <!-- Thème -->
+      <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
+        <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:12px" data-i18n="theme_title">DÉCOR</div>
+        <div style="display:flex;gap:8px">
+          <button id="themebtn-0" onclick="setTheme(0)" style="flex:1;padding:9px 6px;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:5px;background:rgba(8,5,2,0.7);border:1px solid rgba(220,170,80,0.85);color:#d4b060;opacity:1;transition:all .2s" data-i18n="theme_desert">DÉSERT</button>
+          <button id="themebtn-1" onclick="setTheme(1)" style="flex:1;padding:9px 6px;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:5px;background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.25);color:#d4b060;opacity:0.38;transition:all .2s" data-i18n="theme_volcanic">VOLCANIQUE</button>
+          <button id="themebtn-2" onclick="setTheme(2)" style="flex:1;padding:9px 6px;font-family:'Courier New',monospace;font-size:11px;font-weight:bold;letter-spacing:1px;cursor:pointer;border-radius:5px;background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.25);color:#d4b060;opacity:0.38;transition:all .2s" data-i18n="theme_glacial">GLACIAL</button>
+        </div>
+      </div>
+
       <!-- Pseudonyme -->
       <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
         <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:12px" data-i18n="nick_title">PSEUDONYME</div>
@@ -506,7 +515,7 @@
 </div>
 
 <div id="gamebtn">
-  <button id="btnmidmenu" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all">&#8592; MENU</button>
+  <button id="btnmidmenu" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all" data-i18n="menu_arrow">&#8592; MENU</button>
   <button id="btnfinish" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,80,40,0.4);color:rgba(220,110,70,0.8);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all">&#10003; TERMINER</button>
 </div>
 <div id="mw"></div>
@@ -515,8 +524,8 @@
 <div id="pbar">
   <h4>PLACEMENT — <span id="pturn">Joueur</span></h4>
   <div class="pbrow">
-    <button class="pb" id="pbc">CONFIRMER</button>
-    <span id="pinfo">Cliquez une case</span>
+    <button class="pb" id="pbc" data-i18n="pbar_confirm">CONFIRMER</button>
+    <span id="pinfo" data-i18n="pbar_click">Cliquez une case</span>
   </div>
 </div>
 
@@ -524,23 +533,23 @@
   <button id="sclose">X</button>
   <h4 id="stitle">USINE</h4>
   <div class="sg" id="sitems"></div>
-  <div id="shint">ESC pour fermer</div>
+  <div id="shint" data-i18n="shop_close_hint">ESC pour fermer</div>
 </div>
 
-<div id="kh">P1:Fleches+Clic<br>Clic=activer<br>Clic-droit=attaquer<br>ESC=pause</div>
-<button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}">II PAUSE</button>
+<div id="kh" data-i18n="kh_text">P1:Fleches+Clic · Clic=activer · Clic-droit=attaquer · ESC=pause</div>
+<button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}" data-i18n="mob_pause">II PAUSE</button>
 
 
-<script src="js/canvas.js?v=8"></script>
-<script src="js/globals.js?v=8"></script>
-<script src="js/init.js?v=8"></script>
-<script src="js/placement.js?v=8"></script>
-<script src="js/combat.js?v=8"></script>
-<script src="js/shop.js?v=8"></script>
-<script src="js/world.js?v=8"></script>
-<script src="js/ai.js?v=8"></script>
-<script src="js/render.js?v=8"></script>
-<script src="js/game.js?v=8"></script>
+<script src="js/canvas.js?v=9"></script>
+<script src="js/globals.js?v=9"></script>
+<script src="js/init.js?v=9"></script>
+<script src="js/placement.js?v=9"></script>
+<script src="js/combat.js?v=9"></script>
+<script src="js/shop.js?v=9"></script>
+<script src="js/world.js?v=9"></script>
+<script src="js/ai.js?v=9"></script>
+<script src="js/render.js?v=9"></script>
+<script src="js/game.js?v=9"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>
