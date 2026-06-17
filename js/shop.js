@@ -29,6 +29,9 @@ function renderShop(){
   bLabel+='</div>';
   html+='<div class="si" style="padding:10px 14px">'+bLabel+'</div>';
 
+  var invCost=8,invT=costTypes.drill,okInv=(p[invT]||0)>=invCost;
+  html+=sItem(okInv,t('shop_inversion'),invCost+' '+_cName(invT),t('shop_inversion_eff'),'inversion');
+
   var dt2=costTypes.dmg,dmgCost=2,okDmg=(p[dt2]||0)>=dmgCost;
   html+=sItem(okDmg,t('shop_dmg_name'),dmgCost+' '+_cName(dt2),t('shop_current')+' : '+p.dmg,'dmg');
 
@@ -71,6 +74,14 @@ function buyBd(type){
   _showPlaceInfo(t('drill'));
 }
 
+function buyInversion(){
+  var p=shopPlayer;if(!p||!G)return;
+  var cost=8,ct=costTypes.drill;
+  if((p[ct]||0)<cost){log(t('log_cancel')+' '+_cName(ct)+'!');return;}
+  p[ct]-=cost;sfx('buy');closeShop();
+  _inversionPending=true;_inversionFirst=null;_inversionShopMode=true;_selectionPending=true;_selectionDelay=0.3;
+  _showPlaceInfo(t('msg_inversion_pick1'));
+}
 function buyUpg(upg){
   if(!shopPlayer||!G)return;
   var p=shopPlayer;

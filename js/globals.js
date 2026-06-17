@@ -16,10 +16,9 @@ var speedMode=false;
 var teleportMode=false;     // toutes les 26s : poser 1 portail
 var _teleportTimer=26;
 var _portalPending=false;   // sélection de case en cours pour poser le portail
-var inversionMode=false;    // toutes les 26s : choisir 2 minerais/foreuses et inverser leur position
-var _inversionTimer=30;
 var _inversionPending=false;
-var _inversionFirst=null;   // 1er élément sélectionné pour l'inversion
+var _inversionFirst=null;   // 1er élément sélectionné pour l'inversion (shop)
+var _inversionShopMode=false; // true = achat shop (pas ultime)
 var randomCostMode=false;
 var winResource='diamond';  // 'coal'|'gold'|'diamond' — aléatoire si randomCostMode
 var ultimateMode=true;      // toujours actif
@@ -86,11 +85,15 @@ var I18N={
     placer:'PLACER',clic_case:'cliquer une case',
     msg_detruire:'DÉTRUIRE : cliquer un minerai ou foreuse',
     msg_fantome:'FANTÔME : cliquer un minerai ou foreuse',
-    msg_inversion:'INVERSION : cliquer 2 minerais ou foreuses',
+    msg_inversion_pick1:'INVERSION : cliquer le 1er élément',
+    msg_inversion_pick2:'INVERSION : cliquer le 2e élément',
+    shop_inversion:'INVERSION',
+    shop_inversion_eff:'Échange 2 éléments (minerais, foreuses, joueur)',
     msg_portail:'PORTAIL : cliquer une case libre',
     dmg_label:'DMG',spd_label:'DPL',
     log_place:'Posé',log_cancel:'Achat annulé, remboursé :',
     log_inversion:'Inversion !',log_portail:'Portail posé !',log_occ:'Case occupée !',
+    log_inversion_cancel:'Inversion annulée.',
     params_title:'PARAMÈTRES',lang_title:'LANGUE / LANGUAGE',
     nick_title:'PSEUDONYME',nick_ph:'Ton nom (affiché en jeu)...',
     save_btn:'ENREGISTRER',saved_msg:'✓ Enregistré !',
@@ -158,11 +161,15 @@ var I18N={
     placer:'PLACE',clic_case:'click a tile',
     msg_detruire:'DESTROY: click a mineral or drill',
     msg_fantome:'GHOST: click a mineral or drill',
-    msg_inversion:'SWAP: click 2 minerals or drills',
+    msg_inversion_pick1:'SWAP: click the 1st element',
+    msg_inversion_pick2:'SWAP: click the 2nd element',
+    shop_inversion:'SWAP',
+    shop_inversion_eff:'Swap 2 elements (minerals, drills, player)',
     msg_portail:'PORTAL: click an empty tile',
     dmg_label:'DMG',spd_label:'SPD',
     log_place:'Placed',log_cancel:'Purchase cancelled, refunded:',
     log_inversion:'Swapped!',log_portail:'Portal placed!',log_occ:'Tile occupied!',
+    log_inversion_cancel:'Swap cancelled.',
     params_title:'SETTINGS',lang_title:'LANGUAGE',
     nick_title:'NICKNAME',nick_ph:'Your name (shown in game)...',
     save_btn:'SAVE',saved_msg:'✓ Saved!',

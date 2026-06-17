@@ -157,10 +157,21 @@ function draw(){
       X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
     });
   }
-  // Surbrillance INVERSION — 1er élément sélectionné en rouge
-  if(_inversionPending&&_inversionFirst){
-    X.strokeStyle='rgba(255,30,30,0.95)';X.lineWidth=3;X.setLineDash([4,3]);
-    X.strokeRect(_inversionFirst.gx*TILE+2,_inversionFirst.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
+  // Surbrillance INVERSION — 1er élément sélectionné en rouge, tout sélectionnable en cyan
+  if(_inversionPending){
+    var _invPulse=0.5+0.5*Math.sin(G.time*6);
+    // Cyan sur tout ce qui est cliquable
+    G.blocks.forEach(function(b){X.strokeStyle='rgba(80,200,255,'+(0.35+_invPulse*0.35)+')';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);});
+    G.buildings.forEach(function(b){if(b.type!=='drill'&&b.type!=='drillfast'&&b.type!=='factory')return;X.strokeStyle='rgba(80,200,255,'+(0.35+_invPulse*0.35)+')';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);});
+    G.players.forEach(function(p){if(p.dead)return;var _px=Math.floor(p.x)*TILE,_py=Math.floor(p.y)*TILE;X.strokeStyle='rgba(80,200,255,'+(0.35+_invPulse*0.35)+')';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(_px+2,_py+2,TILE-4,TILE-4);X.setLineDash([]);});
+    // Rouge sur le 1er sélectionné
+    if(_inversionFirst){
+      X.strokeStyle='rgba(255,30,30,0.95)';X.lineWidth=3;X.setLineDash([4,3]);
+      var _isPlyr=G.players.indexOf(_inversionFirst)>=0;
+      if(_isPlyr){var _phx=Math.floor(_inversionFirst.x)*TILE,_phy=Math.floor(_inversionFirst.y)*TILE;X.strokeRect(_phx+2,_phy+2,TILE-4,TILE-4);}
+      else{X.strokeRect(_inversionFirst.gx*TILE+2,_inversionFirst.gy*TILE+2,TILE-4,TILE-4);}
+      X.setLineDash([]);
+    }
   }
 
   // Players
@@ -411,7 +422,7 @@ function updateHUD(){
   var _uhud=document.getElementById('ultimatehud');
   if(_uhud){
     if(ultimateMode&&gameRunning&&G&&_ultimatePool.length){
-      var _uNames={night:t('night'),speed:t('speed'),teleport:t('teleport'),random:t('random_opt'),destruct:t('destruct'),ghost:t('ghost'),inversion:t('inversion')};
+      var _uNames={night:t('night'),speed:t('speed'),teleport:t('teleport'),random:t('random_opt'),destruct:t('destruct'),ghost:t('ghost')};
       var _uc=Math.ceil(Math.max(0,_ultimateTimer));
       var _uhtml='<div style="font-size:13px;letter-spacing:2px;color:rgba(200,60,255,0.7);margin-bottom:6px;border-bottom:1px solid rgba(140,30,180,0.35);padding-bottom:4px;font-weight:bold">'+t('ultime')+'</div>';
       _ultimatePool.forEach(function(opt){

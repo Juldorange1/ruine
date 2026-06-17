@@ -38,7 +38,6 @@ function loop(ts){
         var _cur=_ultimateActiveOpt;
         if(_cur==='destruct'&&!_destructPending){_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_detruire'));}
         else if(_cur==='ghost'&&!_ghostPending){_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_fantome'));}
-        else if(_cur==='inversion'&&!_inversionPending){_inversionPending=true;_inversionFirst=null;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_inversion'));}
         else if(_cur==='teleport'&&!_portalPending){_portalPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_portail'));}
       }
       if(_ultimateSwitchPending&&!_selectionPending){
@@ -263,7 +262,8 @@ document.addEventListener('keydown',function(e){
     if(_selectionPending){
       _destructPending=false;_ghostPending=false;_portalPending=false;
       _inversionPending=false;_inversionFirst=null;_selectionPending=false;
-      _ultimateSwitchPending=true;
+      if(!_inversionShopMode)_ultimateSwitchPending=true;
+      _inversionShopMode=false;
       _hidePlaceInfo();
       return;
     }
@@ -312,20 +312,41 @@ document.addEventListener('touchstart',_resetActivity,{passive:true});
 
 function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();return{gx:Math.floor((e.clientX-r.left)/(r.width/CW)/TILE),gy:Math.floor((e.clientY-r.top)/(r.height/CH)/TILE)};}
 
+function _inversionIsPlayer(obj){return G&&G.players&&G.players.indexOf(obj)>=0;}
 function _inversionPick(gx,gy){
+  // Joueur sur cette case ?
+  var pl=G.players.filter(function(p){return!p.dead&&Math.floor(p.x)===gx&&Math.floor(p.y)===gy;})[0];
+  if(pl)return pl;
   var blk=G.blocks.filter(function(b){return b.gx===gx&&b.gy===gy;})[0];
   if(blk)return blk;
   return G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===gx&&b.gy===gy;})[0]||null;
 }
+function _inversionDoSwap(a,b){
+  var aIsP=_inversionIsPlayer(a),bIsP=_inversionIsPlayer(b);
+  if(!aIsP&&!bIsP){
+    var t1gx=a.gx,t1gy=a.gy,t1x=a.x,t1y=a.y;
+    a.gx=b.gx;a.gy=b.gy;a.x=b.x;a.y=b.y;
+    b.gx=t1gx;b.gy=t1gy;b.x=t1x;b.y=t1y;
+  } else if(aIsP&&!bIsP){
+    var px=a.x,py=a.y;
+    a.x=b.x;a.y=b.y;
+    b.gx=Math.floor(px);b.gy=Math.floor(py);b.x=b.gx+0.5;b.y=b.gy+0.5;
+  } else if(!aIsP&&bIsP){
+    var px2=b.x,py2=b.y;
+    b.x=a.x;b.y=a.y;
+    a.gx=Math.floor(px2);a.gy=Math.floor(py2);a.x=a.gx+0.5;a.y=a.gy+0.5;
+  } else {
+    var px3=a.x,py3=a.y;a.x=b.x;a.y=b.y;b.x=px3;b.y=py3;
+  }
+}
 function _inversionTrySelect(gx,gy){
   var tgt=_inversionPick(gx,gy);
   if(!tgt)return;
-  if(!_inversionFirst){_inversionFirst=tgt;_showPlaceInfo('INVERSION : cliquer la 2e case');}
+  if(!_inversionFirst){_inversionFirst=tgt;_showPlaceInfo(t('msg_inversion_pick2'));}
   else if(tgt!==_inversionFirst){
-    var t1gx=_inversionFirst.gx,t1gy=_inversionFirst.gy,t1x=_inversionFirst.x,t1y=_inversionFirst.y;
-    _inversionFirst.gx=tgt.gx;_inversionFirst.gy=tgt.gy;_inversionFirst.x=tgt.x;_inversionFirst.y=tgt.y;
-    tgt.gx=t1gx;tgt.gy=t1gy;tgt.x=t1x;tgt.y=t1y;
-    _inversionPending=false;_inversionFirst=null;_selectionPending=false;_hidePlaceInfo();sfx('tp');log(t('log_inversion'));
+    _inversionDoSwap(_inversionFirst,tgt);
+    _inversionPending=false;_inversionFirst=null;_selectionPending=false;_inversionShopMode=false;
+    _hidePlaceInfo();sfx('tp');log(t('log_inversion'));
   }
 }
 
@@ -591,18 +612,18 @@ function startGame(mode){
   // ULTIME — pool fixe avec toutes les options, tirer la 1ère dès le début
   _ultimateActiveOpt=null;
   _ultimatePool=[];
-  nightMode=false;speedMode=false;teleportMode=false;inversionMode=false;
+  nightMode=false;speedMode=false;teleportMode=false;
   destructMode=false;ghostMode=false;
-  _portalPending=false;_inversionPending=false;_inversionFirst=null;
+  _portalPending=false;_inversionPending=false;_inversionFirst=null;_inversionShopMode=false;
   if(ultimateMode){
-    _ultimatePool=['night','speed','teleport','destruct','ghost','inversion'];
-    _destructTimer=30;_ghostTimer=30;_teleportTimer=26;_inversionTimer=30;
+    _ultimatePool=['night','speed','teleport','destruct','ghost'];
+    _destructTimer=30;_ghostTimer=30;_teleportTimer=26;
     if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
     _ultimateTimer=30;
   }
-  // Reset destruct/ghost/teleport/inversion
-  _destructTimer=30;_ghostTimer=30;_teleportTimer=26;_inversionTimer=30;
-  _destructPending=false;_ghostPending=false;_portalPending=false;_inversionPending=false;_inversionFirst=null;_selectionPending=false;_ultimateSwitchPending=false;
+  // Reset destruct/ghost/teleport
+  _destructTimer=30;_ghostTimer=30;_teleportTimer=26;
+  _destructPending=false;_ghostPending=false;_portalPending=false;_inversionPending=false;_inversionFirst=null;_inversionShopMode=false;_selectionPending=false;_ultimateSwitchPending=false;
 
   _startDrillsPlaced=false;
   _gameUsedMapCode=!!_preloadedBlocks;
@@ -942,6 +963,7 @@ document.getElementById('shop').addEventListener('click',function(e){
   else if(a==='buy-coal')buyBlock('coal');
   else if(a==='buy-gold')buyBlock('gold');
   else if(a==='buy-diamond')buyBlock('diamond');
+  else if(a==='inversion')buyInversion();
   else if(a==='dmg')buyUpg('dmg');
   else if(a==='spd')buyUpg('spd');
 });
@@ -1045,7 +1067,6 @@ function _ultimateDeactivate(){
   if(opt==='night') nightMode=false;
   else if(opt==='speed') speedMode=false;
   else if(opt==='teleport'){teleportMode=false;if(_portalPending){_portalPending=false;_selectionPending=false;_hidePlaceInfo();}}
-  else if(opt==='inversion'){inversionMode=false;if(_inversionPending){_inversionPending=false;_inversionFirst=null;_selectionPending=false;_hidePlaceInfo();}}
   else if(opt==='random'){randomCostMode=false;costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};_updateRandomCostDisplay();}
   else if(opt==='destruct'){destructMode=false;if(_destructPending){_destructPending=false;_selectionPending=false;_hidePlaceInfo();}}
   else if(opt==='ghost'){ghostMode=false;if(_ghostPending){_ghostPending=false;_selectionPending=false;_hidePlaceInfo();}}
@@ -1064,7 +1085,6 @@ function _ultimateActivate(opt){
   else if(opt==='shuffle') _ultimateShuffleMinerals();
   else if(opt==='destruct'){destructMode=true;}
   else if(opt==='ghost'){ghostMode=true;}
-  else if(opt==='inversion'){inversionMode=true;}
 }
 function _ultimateShuffleMinerals(){
   if(!G||!G.blocks.length)return;
