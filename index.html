@@ -157,55 +157,175 @@
 <div id="placeind" style="display:none;position:fixed;top:118px;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.35);border-radius:6px;padding:8px 24px;z-index:50;font-family:'Courier New',monospace;font-size:16px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap"></div>
 
 <!-- MODAL RÈGLES -->
-<div id="rulesov" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(4,2,0,0.96);z-index:1200;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:24px 16px">
-  <div style="max-width:700px;width:100%;font-family:'Courier New',monospace">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-      <div style="font-size:28px;font-weight:bold;letter-spacing:8px;color:#d4a040">RÈGLES</div>
-      <button onclick="document.getElementById('rulesov').style.display='none'" style="background:none;border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:15px;cursor:pointer;border-radius:4px;padding:6px 18px">FERMER</button>
+<div id="rulesov" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(4,2,0,0.97);z-index:1200;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:28px 16px">
+  <div style="max-width:720px;width:100%;font-family:'Courier New',monospace">
+
+    <!-- En-tête -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:1px solid rgba(200,160,50,0.2);padding-bottom:18px">
+      <div style="font-size:26px;font-weight:bold;letter-spacing:8px;color:#d4a040;text-shadow:0 0 20px rgba(200,140,20,0.4)">RÈGLES DU JEU</div>
+      <button onclick="document.getElementById('rulesov').style.display='none'" style="background:rgba(8,5,2,0.8);border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;padding:7px 20px;letter-spacing:1px">FERMER ✕</button>
     </div>
-    <div style="display:flex;flex-direction:column;gap:18px;font-size:14px;line-height:1.8">
 
-      <div style="border:1px solid rgba(240,210,80,0.2);border-radius:6px;padding:14px 18px">
-        <div style="font-size:16px;font-weight:bold;color:#f0d060;letter-spacing:3px;margin-bottom:8px">500 / 1000 / 2000 / 3000</div>
-        <div style="color:#c0b080">Atteindre l'objectif de diamants (500, 1000, 2000 ou 3000) le plus vite possible. Le chrono monte et s'arrête quand l'objectif est atteint. Place tes foreuses pour extraire automatiquement les ressources. Meilleur score = temps le plus court.</div>
+    <div style="display:flex;flex-direction:column;gap:16px;font-size:13px;line-height:1.85;color:#c0b080">
+
+      <!-- OBJECTIF -->
+      <div style="border:1px solid rgba(240,210,80,0.28);border-radius:8px;padding:16px 20px;background:rgba(30,20,0,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#f0d060;letter-spacing:4px;margin-bottom:10px">◆ OBJECTIF</div>
+        <div>Atteindre le quota de <span style="color:#80eeff">diamants</span> choisi (<b style="color:#f0d060">500 / 1000 / 2000 / 3000</b>) le plus vite possible. Le chrono monte dès le début du combat et s'arrête dès que l'objectif est atteint. <b>Meilleur score = temps le plus court.</b> Les records sont sauvegardés séparément selon l'objectif, et selon que le mode ALÉATOIRE était actif ou non.</div>
       </div>
 
-      <div style="border:1px solid rgba(100,120,200,0.2);border-radius:6px;padding:14px 18px">
-        <div style="font-size:16px;font-weight:bold;color:rgba(120,140,220,0.9);letter-spacing:3px;margin-bottom:8px">🌙 NOCTURNE</div>
-        <div style="color:#c0b080">Brouillard de guerre : tu ne vois que 2,75 cases autour de toi. Toutes les 35 secondes un éclair illumine tout le terrain pendant 1,5 seconde.</div>
+      <!-- RESSOURCES -->
+      <div style="border:1px solid rgba(180,160,80,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,15,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e8c850;letter-spacing:4px;margin-bottom:10px">⛏ RESSOURCES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">
+          <div style="text-align:center;padding:8px;border:1px solid rgba(180,180,200,0.18);border-radius:5px">
+            <div style="color:#b0b0c8;font-size:16px;font-weight:bold">C</div>
+            <div style="color:#8888aa;font-size:11px;margin-top:3px">CHARBON</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">achète les foreuses</div>
+          </div>
+          <div style="text-align:center;padding:8px;border:1px solid rgba(240,190,30,0.2);border-radius:5px">
+            <div style="color:#f0c030;font-size:16px;font-weight:bold">G</div>
+            <div style="color:#c09020;font-size:11px;margin-top:3px">OR</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">améliore les stats</div>
+          </div>
+          <div style="text-align:center;padding:8px;border:1px solid rgba(80,220,255,0.2);border-radius:5px">
+            <div style="color:#80eeff;font-size:16px;font-weight:bold">D</div>
+            <div style="color:#40c0d8;font-size:11px;margin-top:3px">DIAMANT</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">objectif + blocs</div>
+          </div>
+        </div>
+        <div>La carte contient des blocs de minerai (charbon, or, diamant) en quantité aléatoire entre 3 et 7 par type. La ressource à collecter in fine est toujours le <span style="color:#80eeff">diamant</span>. En mode <span style="color:#50d888">ALÉATOIRE</span>, les coûts de chaque achat sont tirés au hasard avant la partie.</div>
       </div>
 
-      <div style="border:1px solid rgba(200,120,30,0.2);border-radius:6px;padding:14px 18px">
-        <div style="font-size:16px;font-weight:bold;color:rgba(200,140,60,0.9);letter-spacing:3px;margin-bottom:8px">⚡ DBL VITESSE</div>
-        <div style="color:#c0b080">Le temps s'écoule deux fois plus vite. Les foreuses extraient 2× plus rapidement, les météorites tombent 2× plus souvent. En mode ULTIME, cette option dure 2 minutes réelles (soit 4 minutes de jeu).</div>
+      <!-- PHASES -->
+      <div style="border:1px solid rgba(200,140,50,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,12,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e0a840;letter-spacing:4px;margin-bottom:10px">⏱ DÉROULEMENT</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div><b style="color:#f0d060">1. PLACEMENT (20 s)</b> — Tu places tes bâtiments de départ : 1 foreuse + 1 bloc de ressource. Les bâtiments ne peuvent pas être placés sur le contour ni à 1 case d'une usine. Confirme chaque placement.</div>
+          <div><b style="color:#f0d060">2. COMBAT</b> — Le chrono démarre. Tu te déplaces, collectes, construis et améliores. La partie se termine quand tu atteins l'objectif en diamants.</div>
+          <div><b style="color:#f0d060">PAUSE</b> — Utilisable <b>une seule fois</b> par partie (touche P). Idéal pour souffler un instant.</div>
+        </div>
       </div>
 
-      <div style="border:1px solid rgba(130,50,170,0.2);border-radius:6px;padding:14px 18px">
-        <div style="font-size:16px;font-weight:bold;color:rgba(220,140,255,0.9);letter-spacing:3px;margin-bottom:8px">◎ TÉLÉPORTEUR</div>
-        <div style="color:#c0b080">Toutes les 26 secondes, les déplacements sont gelés et un portail est posé sur la case libre que tu cliques. Tu peux marcher normalement sur un portail. Cliquer dessus (à 1 case max) te téléporte sur sa case.</div>
+      <!-- CONTRÔLES -->
+      <div style="border:1px solid rgba(160,160,180,0.18);border-radius:8px;padding:16px 20px;background:rgba(15,12,20,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#c0b8e0;letter-spacing:4px;margin-bottom:10px">🎮 CONTRÔLES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">DÉPLACEMENT</div>
+            <div>Flèches directionnelles</div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ACTIVER BÂTIMENT</div>
+            <div>Clic gauche (à 1 case)</div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ATTAQUER</div>
+            <div>Clic droit (vise une case)</div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ANNULER / PAUSE</div>
+            <div>ESC · P</div>
+          </div>
+        </div>
       </div>
 
-      <div style="border:1px solid rgba(60,170,90,0.2);border-radius:6px;padding:14px 18px">
-        <div style="font-size:16px;font-weight:bold;color:rgba(80,200,120,0.9);letter-spacing:3px;margin-bottom:8px">⇄ INVERSION</div>
-        <div style="color:#c0b080">Toutes les 26 secondes, les déplacements sont gelés et tu dois cliquer 2 minerais ou foreuses : leurs positions sont alors échangées.</div>
+      <!-- USINE & SHOP -->
+      <div style="border:1px solid rgba(220,160,60,0.22);border-radius:8px;padding:16px 20px;background:rgba(25,15,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e8b840;letter-spacing:4px;margin-bottom:10px">🏭 USINE</div>
+        <div style="margin-bottom:8px">L'usine est le seul bâtiment de commerce. Approche-toi à 1 case et clique dessus pour ouvrir le shop. Achats disponibles :</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">FOREUSE</span><span style="color:#888">— extraction automatique (5s/unité). Doit faire face à un bloc.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">FOREUSE+</span><span style="color:#888">— extraction rapide (2,5s/unité). Coûte plus cher.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">BLOC</span><span style="color:#888">— place un bloc de ressource (charbon, or ou diamant) sur la carte.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">+2 DÉGÂTS</span><span style="color:#888">— augmente tes dégâts de corps-à-corps de 2.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">+0.2 VITESSE</span><span style="color:#888">— augmente ta vitesse de déplacement de 0,2 case/s.</span></div>
+        </div>
+        <div style="margin-top:8px;color:#888;font-size:12px">Après avoir acheté une foreuse ou un bloc, tu entres en phase de placement : choisis la case et l'orientation, puis confirme. ESC annule et rembourse.</div>
       </div>
 
-      <div style="border:1px solid rgba(180,40,20,0.2);border-radius:6px;padding:14px 18px">
-        <div style="font-size:16px;font-weight:bold;color:rgba(200,60,40,0.9);letter-spacing:3px;margin-bottom:8px">💥 DESTRUCTION</div>
-        <div style="color:#c0b080">Toutes les 26 secondes, les déplacements sont gelés et tu dois cliquer un minerai ou une foreuse à détruire instantanément. Les cases sélectionnables sont entourées en rouge.</div>
+      <!-- FOREUSES & COLLECTE -->
+      <div style="border:1px solid rgba(100,200,120,0.18);border-radius:8px;padding:16px 20px;background:rgba(10,20,12,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#70d888;letter-spacing:4px;margin-bottom:10px">⚙ FOREUSES</div>
+        <div>Une foreuse extrait automatiquement la ressource du bloc adjacent dans la direction où elle fait face. Elle stocke les ressources jusqu'à ce que tu viennes les récupérer (clic gauche sur la foreuse). La <b>FOREUSE+</b> est deux fois plus rapide. Les foreuses ne peuvent pas être placées sur le contour ni à 1 case de l'usine.</div>
+        <div style="margin-top:8px;color:#888;font-size:12px">Astuce : aligne plusieurs foreuses sur un même bloc pour extraire vite. Les blocs ne sont pas indestructibles — surveille-les !</div>
       </div>
 
-      <div style="border:1px solid rgba(30,120,180,0.2);border-radius:6px;padding:14px 18px">
-        <div style="font-size:16px;font-weight:bold;color:rgba(60,150,200,0.9);letter-spacing:3px;margin-bottom:8px">👻 FANTÔME</div>
-        <div style="color:#c0b080">Toutes les 26 secondes, les déplacements sont gelés et tu dois cliquer un minerai ou une foreuse à rendre traversable (semi-transparent). Les cases sélectionnables sont entourées en cyan.</div>
+      <!-- MÉTÉORES -->
+      <div style="border:1px solid rgba(220,100,30,0.2);border-radius:8px;padding:16px 20px;background:rgba(25,10,0,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#e07030;letter-spacing:4px;margin-bottom:10px">☄ MÉTÉORES</div>
+        <div>Des météores tombent aléatoirement sur le terrain toutes les ~12 secondes. Un avertissement visuel (cible rouge) apparaît 2 secondes avant l'impact. Le météore détruit le premier bâtiment ou bloc qui se trouve sur sa case. Tu peux détruire un météore en vol avec ta lance-pierre avant qu'il ne touche le sol.</div>
       </div>
 
-      <div style="border:2px solid rgba(140,30,180,0.35);border-radius:6px;padding:14px 18px;background:rgba(25,0,30,0.3)">
-        <div style="font-size:16px;font-weight:bold;color:rgba(200,80,255,0.95);letter-spacing:3px;margin-bottom:8px">⚡ ULTIME</div>
-        <div style="color:#c0b080">Dès le début de la partie, une option est tirée au hasard parmi toutes : NOCTURNE, DBL VITESSE, TÉLÉPORTEUR, DESTRUCTION, FANTÔME, INVERSION. Toutes les 60 secondes l'option change aléatoirement (jamais la même deux fois de suite). DBL VITESSE dure 2 minutes. L'option active est affichée à gauche de l'écran.</div>
+      <!-- COMBAT -->
+      <div style="border:1px solid rgba(200,50,50,0.2);border-radius:8px;padding:16px 20px;background:rgba(25,5,5,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#e05050;letter-spacing:4px;margin-bottom:10px">⚔ COMBAT (PvP uniquement)</div>
+        <div>Clic droit lance une pierre en direction du clic. Portée : 1,3 cases. Dégâts de base : 10, améliorables à l'usine. La récupération HP commence 0,5 s après avoir cessé de combattre. Les foreuses et blocs ennemis peuvent aussi être attaqués — l'usine et les portails sont indestructibles.</div>
+      </div>
+
+      <!-- PIQUES -->
+      <div style="border:1px solid rgba(200,60,80,0.18);border-radius:8px;padding:16px 20px;background:rgba(22,5,8,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#d84060;letter-spacing:4px;margin-bottom:10px">🔺 PIQUES</div>
+        <div>Des piques apparaissent aléatoirement sur le sol. Marcher dessus inflige <b>−25 PV/s</b> en continu tant que tu restes sur la case. Évite-les ou traverse-les rapidement.</div>
+      </div>
+
+      <!-- CODE MAP -->
+      <div style="border:1px solid rgba(180,140,60,0.18);border-radius:8px;padding:16px 20px;background:rgba(18,12,0,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#d4a040;letter-spacing:4px;margin-bottom:10px">🗺 CODE MAP</div>
+        <div>À la fin de chaque partie, un <b>code map</b> s'affiche (clique dessus pour le copier). Colle-le dans le champ du menu principal pour rejouer exactement la même configuration de carte. Attention : jouer sur une carte importée via code ne compte que pour <b>la moitié des victoires</b> et <b>n'enregistre pas de record de temps</b>.</div>
+      </div>
+
+      <!-- ALÉATOIRE -->
+      <div style="border:1px solid rgba(50,200,100,0.2);border-radius:8px;padding:16px 20px;background:rgba(5,20,10,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#40d870;letter-spacing:4px;margin-bottom:10px">🎲 MODE ALÉATOIRE</div>
+        <div>Activé via le bouton ALÉATOIRE du menu. Les coûts de chaque achat (foreuse, bloc, dégâts, vitesse) sont tirés au sort parmi les ressources disponibles avant la partie. Contrainte : chaque type de minerai (charbon, or, diamant) doit permettre d'acheter au moins 1 type d'objet. Les records en mode aléatoire sont séparés des records normaux (affichés en vert dans le menu).</div>
+      </div>
+
+      <!-- ULTIME -->
+      <div style="border:2px solid rgba(140,30,180,0.4);border-radius:8px;padding:16px 20px;background:rgba(20,0,28,0.45)">
+        <div style="font-size:15px;font-weight:bold;color:rgba(200,80,255,0.95);letter-spacing:4px;margin-bottom:12px">⚡ MODE ULTIME (toujours actif)</div>
+        <div style="margin-bottom:12px">Dès le début de la partie, une option est tirée au hasard parmi 6 possibilités. Elle reste active <b>30 secondes</b> (ou <b>60 s pour DBL VITESSE</b>). À la fin du délai, l'option déclenche son effet (si applicable), puis une nouvelle option est tirée au sort (jamais la même deux fois de suite). L'option active et le pool restant sont affichés à gauche de l'écran.</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+
+          <div style="padding:9px 13px;border:1px solid rgba(80,100,200,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(120,140,240,0.9);min-width:110px;font-weight:bold">🌙 NOCTURNE</span>
+            <span>Brouillard de guerre : vision limitée à 2,75 cases. Toutes les 35 s un éclair illumine tout le terrain 1,5 s. Pas d'effet de fin : actif pendant toute la durée de l'option.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(200,130,30,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(220,160,60,0.95);min-width:110px;font-weight:bold">⚡ DBL VITESSE</span>
+            <span>Le temps s'écoule 2× plus vite (foreuses et météores aussi). Dure 60 s réelles. Pas d'effet de fin.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(140,60,200,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(200,120,255,0.9);min-width:110px;font-weight:bold">◎ TÉLÉPORT</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique une case libre pour y poser un portail. Approche-toi du portail et clique dessus pour te téléporter dessus. Puis l'option change.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(60,180,100,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(80,210,130,0.9);min-width:110px;font-weight:bold">⇄ INVERSION</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique 2 minerais, foreuses ou l'usine. Leurs positions sont échangées. Le 1er sélectionné est entouré en rouge. Puis l'option change.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(200,50,30,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(220,70,50,0.9);min-width:110px;font-weight:bold">💥 DESTRUCTION</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique un minerai, une foreuse ou l'usine. L'élément est détruit instantanément. Les cibles possibles sont entourées en cyan. Puis l'option change.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(40,140,200,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(70,170,220,0.9);min-width:110px;font-weight:bold">👻 FANTÔME</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique un minerai, une foreuse ou l'usine. L'élément devient traversable (semi-transparent) pour la durée de l'option suivante. Les cibles possibles sont entourées en cyan. Puis l'option change.</span>
+          </div>
+
+        </div>
       </div>
 
     </div>
+
+    <div style="text-align:center;margin-top:24px;padding-top:18px;border-top:1px solid rgba(200,160,50,0.15)">
+      <button onclick="document.getElementById('rulesov').style.display='none'" style="background:rgba(30,20,0,0.8);border:1px solid rgba(220,170,80,0.4);color:#d4a040;font-family:'Courier New',monospace;font-size:14px;letter-spacing:2px;cursor:pointer;border-radius:5px;padding:11px 42px">FERMER</button>
+    </div>
+
   </div>
 </div>
 
