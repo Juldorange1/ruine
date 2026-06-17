@@ -315,8 +315,11 @@ C.addEventListener('mousemove',function(e){
   placePos={gx:pos.gx,gy:pos.gy,ok:ok,locked:true};
 });
 
-C.addEventListener('click',function(e){
+document.addEventListener('click',function(e){
   if(!G)return;
+  // Ne traiter que les clics dans la zone du canvas
+  var _cr=document.getElementById('cw').getBoundingClientRect();
+  if(e.clientX<_cr.left||e.clientX>_cr.right||e.clientY<_cr.top||e.clientY>_cr.bottom)return;
   var pos=getGrid(e);
   // PORTAIL : poser le portail sur une case libre
   if(_portalPending&&_selectionDelay<=0){
