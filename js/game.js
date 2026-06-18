@@ -308,7 +308,6 @@ function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTim
     var _n=localStorage.getItem('ruine_nick');if(_n!==null)playerNickname=_n;
     var _k=localStorage.getItem('ruine_keys');if(_k){var _pk=JSON.parse(_k);if(_pk&&_pk.up)p1Keys=_pk;}
     var _psk=localStorage.getItem('ruine_pause_key');if(_psk)p1PauseKey=_psk;
-    var _th=localStorage.getItem('ruine_theme');if(_th!==null)gameTheme=parseInt(_th)||0;
   }catch(e){}
   applyLanguage();
 })();
@@ -597,21 +596,20 @@ function startGame(mode){
       _ct={
         drill:allRes[Math.floor(Math.random()*3)],
         dmg:allRes[Math.floor(Math.random()*3)],
-        spd:allRes[Math.floor(Math.random()*3)],
-        block:allRes[Math.floor(Math.random()*3)]
+        spd:allRes[Math.floor(Math.random()*3)]
       };
       // Contrainte 1 : coût foreuse ≠ objectif
       if(_ct.drill===_wr)continue;
-      // Contrainte 2 : aucun minerai n'est utilisé pour les 4 coûts à la fois
+      // Contrainte 2 : chaque minerai est utilisé au moins une fois
       var _cnt={coal:0,gold:0,diamond:0};
-      ['drill','dmg','spd','block'].forEach(function(k){_cnt[_ct[k]]++;});
+      ['drill','dmg','spd'].forEach(function(k){_cnt[_ct[k]]++;});
       if(_cnt.coal<1||_cnt.gold<1||_cnt.diamond<1)continue;
       _ok=true;
     }
     costTypes=_ct;
     winResource=_wr;
   } else {
-    costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
+    costTypes={drill:'coal',dmg:'gold',spd:'gold'};
     winResource='diamond';
   }
 
@@ -624,7 +622,7 @@ function startGame(mode){
   if(ultimateMode){
     _ultimatePool=['night','speed','teleport','destruct','ghost'];
     _destructTimer=30;_ghostTimer=30;_teleportTimer=26;
-    if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
+    if(!randomCostMode) costTypes={drill:'coal',dmg:'gold',spd:'gold'};
     _ultimateTimer=30;
   }
   // Reset destruct/ghost/teleport
@@ -641,6 +639,8 @@ function startGame(mode){
   shopOpen=null;shopPlayer=null;piqueMode=false;piquePlayer=null;
   tpMode=false;tpSrc=null;tpPlayer=null;bdAtk=null;bdAtkTimer=0;bdAtkPlayer=null;
   blkAtk=null;blkAtkTimer=0;blkAtkPlayer=null;metAtk=null;metAtkTimer=0;metAtkPlayer=null;
+  // Thème aléatoire à chaque partie
+  setTheme(Math.floor(Math.random()*3));
   document.getElementById('shop').style.display='none';
   document.getElementById('pbar').style.display='none';
   var _cwEl2=document.getElementById('cw');if(_cwEl2)_cwEl2.style.visibility='';
@@ -946,8 +946,8 @@ function _updateRandomCostDisplay(){
   if(randomCostMode&&gameRunning){
     var sym={coal:'■',gold:'★',diamond:'◆'};
     var col={coal:'#7a5828',gold:'#f0c030',diamond:'#80eeff'};
-    var kLabels={drill:t('cost_drill_label'),dmg:t('cost_dmg_label'),spd:t('cost_spd_label'),block:t('cost_block_label')};
-    var lines=Object.keys(costTypes).map(function(k){
+    var kLabels={drill:t('cost_drill_label'),dmg:t('cost_dmg_label'),spd:t('cost_spd_label')};
+    var lines=Object.keys(costTypes).filter(function(k){return k!=='block';}).map(function(k){
       var r=costTypes[k];
       return kLabels[k]+' <span style="color:'+col[r]+'">'+sym[r]+'</span>';
     });
@@ -974,7 +974,7 @@ document.getElementById('shop').addEventListener('click',function(e){
   else if(a==='spd')buyUpg('spd');
 });
 document.getElementById('btn-record-play').addEventListener('click',function(){
-  mineralQty=6;
+  mineralQty=7;
   if(recDur==='500d'){diamondRace=true;diamondGoal=500;soloDur=999;coopDur=999;}
   else if(recDur==='1000d'){diamondRace=true;diamondGoal=1000;soloDur=999;coopDur=999;}
   else if(recDur==='2000d'){diamondRace=true;diamondGoal=2000;soloDur=999;coopDur=999;}

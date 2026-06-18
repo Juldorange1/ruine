@@ -36,7 +36,7 @@ var _selectionPending=false;
 var _selectionDelay=0;
 var _startDrillsPlaced=false; // true une fois les 4 foreuses de départ placées
 var masterVolume=0.7;
-var mineralQty=6;
+var mineralQty=7;
 var seriesActive=false;
 var seriesScores=[];
 var seriesGame=0;
@@ -278,7 +278,7 @@ function openParams(){
   applyLanguage();
 }
 function closeParams(){document.getElementById('paramsov').style.display='none';_capturingKey=null;_updateKeyDisplay();}
-function setTheme(n){gameTheme=n;try{localStorage.setItem('ruine_theme',n);}catch(e){}
+function setTheme(n){gameTheme=n;
   [0,1,2].forEach(function(i){var b=document.getElementById('themebtn-'+i);
     if(b){b.style.opacity=gameTheme===i?'1':'0.38';b.style.borderColor=gameTheme===i?'rgba(220,170,80,0.85)':'rgba(200,160,50,0.25)';}
   });
