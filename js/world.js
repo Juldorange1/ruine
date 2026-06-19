@@ -126,7 +126,7 @@ function spawnPvpBuilding(){
 /* SURVIVANT — vagues d'ennemis qui détruisent les minerais les plus proches */
 function mkEnemy(gx,gy,wave){
   var mult=Math.pow(1.2,wave-1);
-  var hp=16*mult*1.3;
+  var hp=16*mult*1.3*1.3;
   return{gx:gx,gy:gy,x:gx+.5,y:gy+.5,hp:hp,maxHp:hp,
     speed:0.32*mult,target:null,dmgRate:7*mult};
 }

@@ -122,7 +122,7 @@ var STATS_VERSION=6;
     }
   }catch(e){}
 })();
-var SURVIVOR_STATS_VERSION=1;
+var SURVIVOR_STATS_VERSION=2;
 (function(){
   try{
     var v=localStorage.getItem('ruine_survivor_stats_version');
