@@ -38,7 +38,7 @@ function loop(ts){
         var _cur=_ultimateActiveOpt;
         if(_cur==='destruct'&&!_destructPending){_destructPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_detruire'));}
         else if(_cur==='ghost'&&!_ghostPending){_ghostPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_fantome'));}
-        else if(_cur==='teleport'&&!_portalPending){_portalPending=true;_selectionPending=true;_selectionDelay=0.5;closeShop();_showPlaceInfo(t('msg_portail'));}
+        else if(_cur==='teleport'&&!_portalPending){_portalPending=true;_selectionPending=true;_selectionDelay=0.3;closeShop();_showPlaceInfo(t('msg_portail'),true);}
       }
       if(_ultimateSwitchPending&&!_selectionPending){
         _ultimateSwitchPending=false;

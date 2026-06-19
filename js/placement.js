@@ -23,7 +23,7 @@ function startPlacement(){
   nextPlace();
 }
 
-function _showPlaceInfo(txt){
+function _showPlaceInfo(txt,emphasis){
   var el=document.getElementById('placeind');
   if(!el)return;
   el.textContent='▶ PLACER : '+txt;
@@ -38,9 +38,10 @@ function _showPlaceInfo(txt){
   }
   el.style.left='50%';el.style.transform='translateX(-50%)';
   el.style.display='block';
+  el.classList.toggle('placeind-emph',!!emphasis);
 }
 function _hidePlaceInfo(){
-  var el=document.getElementById('placeind');if(el)el.style.display='none';
+  var el=document.getElementById('placeind');if(el){el.style.display='none';el.classList.remove('placeind-emph');}
 }
 
 function nextPlace(){

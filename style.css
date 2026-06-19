@@ -190,6 +190,20 @@ h1.title{
 .ok{color:#65ce40;font-size:14px;font-weight:bold}
 #shint{font-size:10px;opacity:0.20;color:#b89050}
 
+/* ══════ INDICATION DE PLACEMENT — emphase (ex: portail) ══════ */
+@keyframes placeind-glow{
+  0%{box-shadow:0 0 18px rgba(120,220,255,0.35);border-color:rgba(120,220,255,0.6);}
+  100%{box-shadow:0 0 34px rgba(120,220,255,0.85);border-color:rgba(160,235,255,1);}
+}
+#placeind.placeind-emph{
+  font-size:19px;
+  padding:13px 36px;
+  color:#bdf3ff;
+  border-width:2px;
+  letter-spacing:3px;
+  animation:placeind-glow 0.7s infinite alternate;
+}
+
 /* ══════ TOUCHES ══════ */
 #kh{position:fixed;right:12px;bottom:12px;font-size:11px;opacity:0.2;letter-spacing:1px;line-height:2.5;pointer-events:none;z-index:20;color:#a07840}
 
