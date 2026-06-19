@@ -122,6 +122,16 @@ var STATS_VERSION=6;
     }
   }catch(e){}
 })();
+var SURVIVOR_STATS_VERSION=1;
+(function(){
+  try{
+    var v=localStorage.getItem('ruine_survivor_stats_version');
+    if(v!==String(SURVIVOR_STATS_VERSION)){
+      localStorage.removeItem('ruine_survivor_stats');
+      localStorage.setItem('ruine_survivor_stats_version',String(SURVIVOR_STATS_VERSION));
+    }
+  }catch(e){}
+})();
 function _statsKey(goal){return 'ruine_stats_'+goal;}
 function _loadStats(goal){
   try{var s=JSON.parse(localStorage.getItem(_statsKey(goal)));return s||{wins:0,best:null,bestRandom:null};}
