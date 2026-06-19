@@ -54,18 +54,32 @@ function draw(){
       X.fillStyle='rgba(155,142,185,0.28)';X.beginPath();X.ellipse(bx+21,by+15,6,2.5,0.35,0,Math.PI*2);X.fill();
       X.strokeStyle='rgba(108,92,148,0.78)';X.lineWidth=2;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,5);X.stroke();
     } else if(bl.type==='gold'){
-      // Roche brune avec veinures et pépites dorées
-      X.fillStyle='rgba(42,24,3,0.96)';X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,5);X.fill();
-      X.strokeStyle='rgba(255,188,8,0.9)';X.lineWidth=3;X.beginPath();X.moveTo(bx+8,by+26);X.bezierCurveTo(bx+22,by+15,bx+38,by+35,bx+56,by+22);X.stroke();
-      X.strokeStyle='rgba(235,162,5,0.65)';X.lineWidth=2;
-      X.beginPath();X.moveTo(bx+12,by+40);X.bezierCurveTo(bx+28,by+30,bx+44,by+44,bx+55,by+36);X.stroke();
-      X.beginPath();X.moveTo(bx+10,by+15);X.bezierCurveTo(bx+24,by+11,bx+36,by+22,bx+50,by+13);X.stroke();
-      [[cx-10,cy-2],[cx+8,cy+7],[cx-1,cy+11]].forEach(function(gp){
-        var _gn=X.createRadialGradient(gp[0]-1,gp[1]-1,0,gp[0],gp[1],5);
-        _gn.addColorStop(0,'rgba(255,222,55,0.96)');_gn.addColorStop(1,'rgba(175,105,6,0.45)');
-        X.fillStyle=_gn;X.beginPath();X.ellipse(gp[0],gp[1],5,3.5,0.4,0,Math.PI*2);X.fill();
+      // Amas de pépites dorées brutes sur roche sombre, avec lueur chaude pulsante
+      var goldPulse=0.5+0.5*Math.sin(G.time*2.2);
+      X.fillStyle='rgba(20,14,10,0.96)';X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,5);X.fill();
+      var _gh=X.createRadialGradient(cx,cy,2,cx,cy,28);
+      _gh.addColorStop(0,'rgba(255,200,60,'+(0.30+goldPulse*0.18)+')');_gh.addColorStop(1,'rgba(150,90,10,0)');
+      X.fillStyle=_gh;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,5);X.fill();
+      // Pépites brutes (formes irrégulières, tailles variées)
+      var _nuggets=[
+        {p:[[cx-16,cy-4],[cx-9,cy-12],[cx-1,cy-7],[cx-3,cy+2],[cx-13,cy+4]],sz:1},
+        {p:[[cx+2,cy-13],[cx+14,cy-9],[cx+16,cy+1],[cx+6,cy+3],[cx+1,cy-4]],sz:1.05},
+        {p:[[cx-7,cy+6],[cx+4,cy+5],[cx+9,cy+15],[cx-2,cy+19],[cx-11,cy+14]],sz:0.95}
+      ];
+      _nuggets.forEach(function(ng,ni){
+        var ctr=ng.p.reduce(function(a,p){return[a[0]+p[0],a[1]+p[1]];},[0,0]).map(function(v){return v/ng.p.length;});
+        var ngg=X.createRadialGradient(ctr[0]-2,ctr[1]-2,0,ctr[0],ctr[1],11*ng.sz);
+        ngg.addColorStop(0,'rgba(255,232,140,'+(0.95+goldPulse*0.05)+')');
+        ngg.addColorStop(0.55,'rgba(232,178,30,0.92)');
+        ngg.addColorStop(1,'rgba(140,85,8,0.85)');
+        X.fillStyle=ngg;
+        X.beginPath();X.moveTo(ng.p[0][0],ng.p[0][1]);for(var pi=1;pi<ng.p.length;pi++)X.lineTo(ng.p[pi][0],ng.p[pi][1]);X.closePath();X.fill();
+        X.strokeStyle='rgba(120,70,5,0.55)';X.lineWidth=1;X.stroke();
+        // Reflet métallique
+        X.fillStyle='rgba(255,250,220,'+(0.55+goldPulse*0.25)+')';
+        X.beginPath();X.ellipse(ctr[0]-ng.p[0][0]*0+ (ng.p[1][0]-ctr[0])*0.3,ctr[1]+(ng.p[1][1]-ctr[1])*0.3,2.4,1.3,0.5,0,Math.PI*2);X.fill();
       });
-      X.strokeStyle='rgba(218,154,10,0.88)';X.lineWidth=2;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,5);X.stroke();
+      X.strokeStyle='rgba(220,170,40,'+(0.6+goldPulse*0.25)+')';X.lineWidth=2;X.beginPath();X.roundRect(bx+4,by+4,TILE-8,TILE-8,5);X.stroke();
     } else {
       // Cristal de diamant facetté, fond bleu profond
       var pulse=0.5+0.5*Math.sin(G.time*2.5);

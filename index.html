@@ -21,6 +21,7 @@
 <img id="tex-desert2" src="images/desert2.jpg" style="display:none">
 
 <div id="cw"><canvas id="c"></canvas></div>
+<div id="restartFade" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:1500"></div>
 <!-- Overlay transparent qui capte les clics pendant la phase de placement -->
 <div id="place-overlay" style="position:fixed;inset:0;z-index:5;display:none;cursor:crosshair;"></div>
 
@@ -561,16 +562,16 @@
 <button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}" data-i18n="mob_pause">II PAUSE</button>
 
 
-<script src="js/canvas.js?v=21"></script>
-<script src="js/globals.js?v=21"></script>
-<script src="js/init.js?v=21"></script>
-<script src="js/placement.js?v=21"></script>
-<script src="js/combat.js?v=21"></script>
-<script src="js/shop.js?v=21"></script>
-<script src="js/world.js?v=21"></script>
-<script src="js/ai.js?v=21"></script>
-<script src="js/render.js?v=21"></script>
-<script src="js/game.js?v=21"></script>
+<script src="js/canvas.js?v=22"></script>
+<script src="js/globals.js?v=22"></script>
+<script src="js/init.js?v=22"></script>
+<script src="js/placement.js?v=22"></script>
+<script src="js/combat.js?v=22"></script>
+<script src="js/shop.js?v=22"></script>
+<script src="js/world.js?v=22"></script>
+<script src="js/ai.js?v=22"></script>
+<script src="js/render.js?v=22"></script>
+<script src="js/game.js?v=22"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>

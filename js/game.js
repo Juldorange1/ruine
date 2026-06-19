@@ -304,9 +304,18 @@ document.addEventListener('keydown',function(e){
     C.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:mouseX,clientY:mouseY}));
   }
 });
-document.addEventListener('keyup',function(e){keys[e.key]=false;if(e.key===p1RestartKey&&_restartHoldT){clearTimeout(_restartHoldT);_restartHoldT=null;}});
-window.addEventListener('blur',function(){keys={};if(_restartHoldT){clearTimeout(_restartHoldT);_restartHoldT=null;}});
+document.addEventListener('keyup',function(e){keys[e.key]=false;if(e.key===p1RestartKey&&_restartHoldT){clearTimeout(_restartHoldT);_restartHoldT=null;_restartFadeCancel();}});
+window.addEventListener('blur',function(){keys={};if(_restartHoldT){clearTimeout(_restartHoldT);_restartHoldT=null;_restartFadeCancel();}});
 var _restartHoldT=null;
+var _RESTART_HOLD_MS=1000;
+function _restartFadeStart(ms){
+  var el=document.getElementById('restartFade');
+  if(el){el.style.transition='opacity '+ms+'ms linear';el.style.opacity='1';}
+}
+function _restartFadeCancel(){
+  var el=document.getElementById('restartFade');
+  if(el){el.style.transition='opacity 200ms ease';el.style.opacity='0';}
+}
 function _doRestart(){
   var _gm=GAMEMODE;
   seriesGame=0;seriesActive=false;seriesScores=[];
@@ -332,14 +341,16 @@ function _doRestart(){
   }
   gameRunning=false;G=null;
   startGame(_gm);
+  _restartFadeCancel();
 }
 document.addEventListener('keydown',function(e){
   if(e.key===p1RestartKey&&!_restartHoldT&&gameRunning&&G){
     e.preventDefault();
+    _restartFadeStart(_RESTART_HOLD_MS);
     _restartHoldT=setTimeout(function(){
       _restartHoldT=null;
       _doRestart();
-    },1500);
+    },_RESTART_HOLD_MS);
   }
 });
 // Reset inactivité sur toute action joueur
@@ -966,14 +977,15 @@ function startGame(mode){
 
   var finEl=document.getElementById('btnfinish');
   if(finEl)finEl.style.display=(mode==='solo'||mode==='coop')?'block':'none';
-  var modeLabel=mode==='solo'?t('mode_solo'):t('mode_coop');
+  var modeLabel=mode==='survivor'?t('mode_survivor'):mode==='solo'?t('mode_solo'):t('mode_coop');
   var durLabel=isDiamondRace?diamondGoal+' ◆':mode==='solo'?soloDur:coopDur;
-  log(modeLabel+(isDiamondRace?' — '+durLabel+' !':' — '+durLabel+' min !'));
+  if(mode!=='survivor')log(modeLabel+(isDiamondRace?' — '+durLabel+' !':' — '+durLabel+' min !'));
+  else log(modeLabel+' !');
   // Affichage du mode en haut de l'écran
   var _gmd=document.getElementById('gamemodedisp');
   if(_gmd){
     var _gmdSym={coal:'■',gold:'★',diamond:'◆'}[winResource]||'◆';
-    var _mn=isDiamondRace?(diamondGoal+' '+_gmdSym):(mode==='solo'?soloDur+' MIN':'COOP '+coopDur+' MIN');
+    var _mn=mode==='survivor'?t('survivor_title'):isDiamondRace?(diamondGoal+' '+_gmdSym):(mode==='solo'?soloDur+' MIN':'COOP '+coopDur+' MIN');
     _gmd.textContent=_mn;
   }
 
