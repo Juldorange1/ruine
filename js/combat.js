@@ -17,7 +17,7 @@ function updCombat(dt){
     if(!p.inCombat&&p.hp<p.maxHp)p.hp=Math.min(p.maxHp,p.hp+p.regen*dt);
     if(p.hp<=0&&!p.dead){p.dead=true;sfx('death');log(p.name+' est mort !');}
   });
-  if(GAMEMODE!=='solo'){
+  if(GAMEMODE!=='solo'&&GAMEMODE!=='survivor'){
     if(G.p1.dead&&!G.phase_over){G.phase='over';G.phase_over=true;G.winner='P2';}
     if(G.p2&&G.p2.dead&&!G.phase_over){G.phase='over';G.phase_over=true;G.winner='P1';}
   }
@@ -70,6 +70,10 @@ function applyRockHit(rock){
     var d=Math.hypot(m.gx+.5-kx,m.gy+.5-ky);
     if(d<RANGE&&d<bestDist){bestDist=d;bestTarget=m;bestType='meteor';}
   });
+  if(G.enemies)G.enemies.forEach(function(en){
+    var d=Math.hypot(en.x-kx,en.y-ky);
+    if(d<RANGE&&d<bestDist){bestDist=d;bestTarget=en;bestType='enemy';}
+  });
   if(!bestTarget)return;
   if(bestType==='player'){
     bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
@@ -85,6 +89,14 @@ function applyRockHit(rock){
     sfx('strike');
     bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
     if(bestTarget.hp<=0){G.blocks=G.blocks.filter(function(b){return b.id!==bestTarget.id;});}
+  } else if(bestType==='enemy'){
+    sfx('strike');
+    bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
+    if(bestTarget.hp<=0){
+      G.enemies=G.enemies.filter(function(e){return e!==bestTarget;});
+      _survivorKillsThisGame=(_survivorKillsThisGame||0)+1;
+      sfx('death');
+    }
   }
 }
 

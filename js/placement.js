@@ -2,7 +2,7 @@
 function startPlacement(){
   placeGen++;
   placeQueue=[];
-  if(GAMEMODE==='solo'){
+  if(GAMEMODE==='solo'||GAMEMODE==='survivor'){
     for(var i=0;i<4;i++)placeQueue.push({who:'p1',type:'drill'});
   } else if(GAMEMODE==='coop'){
     // Each player places 2 drills, no teleporters in coop
@@ -64,8 +64,8 @@ function nextPlace(){
   var total=(GAMEMODE==='solo'?4:4);
   var placed=total-placeQueue.length;
   var lbl=cur.type==='drill'?t('drill'):cur.type==='drillfast'?t('drillfast'):t('tp');
-  var who=(GAMEMODE!=='solo'&&cur.who==='p2')?'J2':'J1';
-  var txt=(GAMEMODE!=='solo'?who+' — ':'')+lbl+' ('+(placed+1)+'/'+total+') — '+t('clic_case');
+  var who=(GAMEMODE!=='solo'&&GAMEMODE!=='survivor'&&cur.who==='p2')?'J2':'J1';
+  var txt=(GAMEMODE!=='solo'&&GAMEMODE!=='survivor'?who+' — ':'')+lbl+' ('+(placed+1)+'/'+total+') — '+t('clic_case');
   _showPlaceInfo(txt);
 }
 

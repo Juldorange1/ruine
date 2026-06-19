@@ -3,7 +3,7 @@ function loop(ts){
   requestAnimationFrame(loop);
   var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
   if(speedMode)dt*=1.75;
-  var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop');
+  var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop'||GAMEMODE==='survivor');
   if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
     G.time+=dt;
   }
@@ -64,13 +64,16 @@ function loop(ts){
     }
     // Décompte du délai de sélection (0,5s d'invincibilité au clic)
     if(_selectionDelay>0){_selectionDelay=Math.max(0,_selectionDelay-dt);}
-    updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updRocks(dt);updAI(dt);aiAutoCollect();updPiques(dt);
+    updCombat(dt);updDrills(dt);updMeteors(dt);updBdAtk(dt);updBlkAtk(dt);updMetAtk(dt);updRocks(dt);updAI(dt);aiAutoCollect();updPiques(dt);updEnemies(dt);
     G.players.forEach(function(p){if(p&&!p.dead&&p.isHuman)p.atkCharge=Math.min(1,(p.atkCharge||0)+dt);});
     if((GAMEMODE==='solo'||GAMEMODE==='coop')&&!G.phase_over){
       var totalDia=(G.p1[winResource]||0)+(G.p2&&GAMEMODE==='coop'?(G.p2[winResource]||0):0);
       if(diamondRace){
         if(totalDia>=diamondGoal){G.phase='over';G.phase_over=true;G.winner='DIAMOND';}
       } else if(!diamondRace&&G.time>=SOLO_DUR){G.phase='over';G.phase_over=true;G.winner='TIME';}
+    }
+    if(GAMEMODE==='survivor'&&!G.phase_over&&_startDrillsPlaced&&G.blocks.length===0){
+      G.phase='over';G.phase_over=true;G.winner='SURVIVOR_END';
     }
     // Éclair nocturne
     if(nightMode){
@@ -141,6 +144,22 @@ function updateMenuStats(){
   });
 }
 
+/* STATS SURVIVANT */
+function _loadSurvivorStats(){
+  try{var s=JSON.parse(localStorage.getItem('ruine_survivor_stats'));return s||{best:null,kills:0};}
+  catch(e){return{best:null,kills:0};}
+}
+function _saveSurvivorStats(best,kills){
+  try{localStorage.setItem('ruine_survivor_stats',JSON.stringify({best:best!==undefined?best:null,kills:kills||0}));}catch(e){}
+}
+function updateSurvivorMenuStats(){
+  var s=_loadSurvivorStats();
+  var bEl=document.getElementById('stat-survivor-best');
+  var kEl=document.getElementById('stat-survivor-kills');
+  if(bEl)bEl.textContent=s.best!==null&&s.best!==undefined?_fmtTime(s.best):'—';
+  if(kEl)kEl.textContent=s.kills||0;
+}
+
 function showEnd(){
   var ov=document.getElementById('endov');
   var totalD=(G.p1.diamond||0)+(G.p2&&GAMEMODE==='coop'?(G.p2.diamond||0):0);
@@ -178,12 +197,28 @@ function showEnd(){
       _saveStats(diamondGoal,_sg.wins,_sg.best,_sg.bestRandom);
       updateMenuStats();
     }
+  } else if(GAMEMODE==='survivor'){
+    document.getElementById('endtitle').textContent=t('end_survivor');
+    document.getElementById('endtitle').style.color='#e05030';
+    var timeStr2=document.getElementById('timer').textContent;
+    document.getElementById('endsub').innerHTML=t('survivor_survived')+' : '+timeStr2+'  ·  '+t('survivor_wave')+' '+_survivorWave+'  ·  '+t('survivor_kills')+' : '+_survivorKillsThisGame;
+    var _sgv=_loadSurvivorStats();
+    var _elapsedV=Math.round(G.time);
+    if(_sgv.best===null||_sgv.best===undefined||_elapsedV>_sgv.best)_sgv.best=_elapsedV;
+    _sgv.kills=(_sgv.kills||0)+_survivorKillsThisGame;
+    _saveSurvivorStats(_sgv.best,_sgv.kills);
+    updateSurvivorMenuStats();
   }
-  var modeEl=document.getElementById('endmode');
-  if(modeEl){
-    var _wsym3={coal:'■',gold:'★',diamond:'◆'}[winResource]||'◆';
-    var modeName=diamondRace?(diamondGoal+' '+_wsym3):(GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':'COOP '+(SOLO_DUR/60|0)+'min');
-    modeEl.innerHTML=t('mode_label')+' : '+modeName+'  ·  '+mineralQty+'/type  ·  '+(totalD)+' '+_wsym3;
+  if(GAMEMODE!=='survivor'){
+    var modeEl=document.getElementById('endmode');
+    if(modeEl){
+      var _wsym3={coal:'■',gold:'★',diamond:'◆'}[winResource]||'◆';
+      var modeName=diamondRace?(diamondGoal+' '+_wsym3):(GAMEMODE==='solo'?'SOLO '+(SOLO_DUR/60|0)+'min':'COOP '+(SOLO_DUR/60|0)+'min');
+      modeEl.innerHTML=t('mode_label')+' : '+modeName+'  ·  '+mineralQty+'/type  ·  '+(totalD)+' '+_wsym3;
+    }
+  } else {
+    var modeEl2=document.getElementById('endmode');
+    if(modeEl2)modeEl2.innerHTML=t('mode_label')+' : '+t('mode_survivor');
   }
   var codeEl=document.getElementById('endmapcode');
   if(codeEl&&G.mapCode){
@@ -203,6 +238,9 @@ document.addEventListener('keydown',function(e){
     if(_capturingKey==='pause'){
       p1PauseKey=e.key;
       try{localStorage.setItem('ruine_pause_key',e.key);}catch(ex){}
+    } else if(_capturingKey==='restart'){
+      p1RestartKey=e.key;
+      try{localStorage.setItem('ruine_restart_key',e.key);}catch(ex){}
     } else {
       p1Keys[_capturingKey]=e.key;
       try{localStorage.setItem('ruine_keys',JSON.stringify(p1Keys));}catch(ex){}
@@ -214,35 +252,6 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Enter'&&(!G||!gameRunning)){
     var ov=document.getElementById('ov');
     if(ov&&ov.style.display!=='none'){document.getElementById('btn-record-play').click();}
-    return;
-  }
-  // $ en partie = relancer avec les mêmes réglages
-  if(e.key==='$'&&G&&gameRunning){
-    e.preventDefault();
-    var _gm=GAMEMODE;
-    seriesGame=0;seriesActive=false;seriesScores=[];
-    // Désactiver l'option active avant de relancer
-    if(ultimateMode)_ultimateDeactivate();
-    // Si un code map avait été chargé, relancer avec le même code
-    if(_lastMapCode){
-      var _B36r='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      var payloadR=_lastMapCode.substring(1,_lastMapCode.length-2);
-      var posIdxsR=[];var _pr=0;
-      while(_pr<payloadR.length){
-        var _remR=payloadR.length-_pr;
-        if(_remR===2){posIdxsR.push(_B36r.indexOf(payloadR[_pr])*36+_B36r.indexOf(payloadR[_pr+1]));_pr+=2;}
-        else if(_remR>=3){var _v2=_B36r.indexOf(payloadR[_pr])*1296+_B36r.indexOf(payloadR[_pr+1])*36+_B36r.indexOf(payloadR[_pr+2]);posIdxsR.push(Math.floor(_v2/121));posIdxsR.push(_v2%121);_pr+=3;}
-        else break;
-      }
-      var _typesR=['coal','gold','diamond'];var _nR=posIdxsR.length/3;
-      var allBlocksR=[];
-      posIdxsR.forEach(function(idx,i){var t=_typesR[Math.floor(i/_nR)];var gx=Math.floor(idx/11)+1,gy=idx%11+1;if(gx>=1&&gx<=11&&gy>=1&&gy<=11)allBlocksR.push({gx:gx,gy:gy,type:t});});
-      _preloadedBlocks=allBlocksR.length?allBlocksR:null;
-    } else {
-      _preloadedBlocks=null;
-    }
-    gameRunning=false;G=null;
-    startGame(_gm);
     return;
   }
   if(!G||!gameRunning)return;
@@ -296,15 +305,42 @@ document.addEventListener('keydown',function(e){
     C.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:mouseX,clientY:mouseY}));
   }
 });
-document.addEventListener('keyup',function(e){keys[e.key]=false;if(e.key==='$'&&_dollarHoldT){clearTimeout(_dollarHoldT);_dollarHoldT=null;}});
-window.addEventListener('blur',function(){keys={};if(_dollarHoldT){clearTimeout(_dollarHoldT);_dollarHoldT=null;}});
-var _dollarHoldT=null;
+document.addEventListener('keyup',function(e){keys[e.key]=false;if(e.key===p1RestartKey&&_restartHoldT){clearTimeout(_restartHoldT);_restartHoldT=null;}});
+window.addEventListener('blur',function(){keys={};if(_restartHoldT){clearTimeout(_restartHoldT);_restartHoldT=null;}});
+var _restartHoldT=null;
+function _doRestart(){
+  var _gm=GAMEMODE;
+  seriesGame=0;seriesActive=false;seriesScores=[];
+  // Désactiver l'option active avant de relancer
+  if(ultimateMode)_ultimateDeactivate();
+  // Si un code map avait été chargé, relancer avec le même code
+  if(_lastMapCode){
+    var _B36r='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var payloadR=_lastMapCode.substring(1,_lastMapCode.length-2);
+    var posIdxsR=[];var _pr=0;
+    while(_pr<payloadR.length){
+      var _remR=payloadR.length-_pr;
+      if(_remR===2){posIdxsR.push(_B36r.indexOf(payloadR[_pr])*36+_B36r.indexOf(payloadR[_pr+1]));_pr+=2;}
+      else if(_remR>=3){var _v2=_B36r.indexOf(payloadR[_pr])*1296+_B36r.indexOf(payloadR[_pr+1])*36+_B36r.indexOf(payloadR[_pr+2]);posIdxsR.push(Math.floor(_v2/121));posIdxsR.push(_v2%121);_pr+=3;}
+      else break;
+    }
+    var _typesR=['coal','gold','diamond'];var _nR=posIdxsR.length/3;
+    var allBlocksR=[];
+    posIdxsR.forEach(function(idx,i){var t=_typesR[Math.floor(i/_nR)];var gx=Math.floor(idx/11)+1,gy=idx%11+1;if(gx>=1&&gx<=11&&gy>=1&&gy<=11)allBlocksR.push({gx:gx,gy:gy,type:t});});
+    _preloadedBlocks=allBlocksR.length?allBlocksR:null;
+  } else {
+    _preloadedBlocks=null;
+  }
+  gameRunning=false;G=null;
+  startGame(_gm);
+}
 document.addEventListener('keydown',function(e){
-  if(e.key==='$'&&!_dollarHoldT&&gameRunning&&G){
-    _dollarHoldT=setTimeout(function(){
-      _dollarHoldT=null;
-      startGame(GAMEMODE);
-    },1000);
+  if(e.key===p1RestartKey&&!_restartHoldT&&gameRunning&&G){
+    e.preventDefault();
+    _restartHoldT=setTimeout(function(){
+      _restartHoldT=null;
+      _doRestart();
+    },1500);
   }
 });
 // Reset inactivité sur toute action joueur
@@ -317,6 +353,7 @@ function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTim
     var _n=localStorage.getItem('ruine_nick');if(_n!==null)playerNickname=_n;
     var _k=localStorage.getItem('ruine_keys');if(_k){var _pk=JSON.parse(_k);if(_pk&&_pk.up)p1Keys=_pk;}
     var _psk=localStorage.getItem('ruine_pause_key');if(_psk)p1PauseKey=_psk;
+    var _rsk=localStorage.getItem('ruine_restart_key');if(_rsk)p1RestartKey=_rsk;
   }catch(e){}
   applyLanguage();
 })();
@@ -588,6 +625,7 @@ C.addEventListener('touchend',function(e){
 function startGame(mode){
   GAMEMODE=mode;placeGen++;
   lightningTimer=35;lightningActive=false;lightningEnd=0;lightningBolt=[];
+  if(mode==='survivor'){_survivorWave=0;_survivorKillsThisGame=0;}
 
   // Réinitialiser MAP à la valeur par défaut
   MAP=13;CW=MAP*TILE;CH=MAP*TILE;
@@ -910,10 +948,10 @@ function startGame(mode){
     floorReady=true;
   })();
 
-  document.getElementById('p1role').textContent=GAMEMODE==='solo'?t('role_solo'):t('role_coop1');
-  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop');
-  // Masquer le bloc P2 entièrement en solo
-  var t2h=document.getElementById('team2hud');if(t2h)t2h.style.display=GAMEMODE==='solo'?'none':'';
+  document.getElementById('p1role').textContent=(GAMEMODE==='solo'||GAMEMODE==='survivor')?t('role_solo'):t('role_coop1');
+  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop'||GAMEMODE==='survivor');
+  // Masquer le bloc P2 entièrement en solo/survivant
+  var t2h=document.getElementById('team2hud');if(t2h)t2h.style.display=(GAMEMODE==='solo'||GAMEMODE==='survivor')?'none':'';
   if(mode==='coop')document.getElementById('p2role').textContent=t('role_coop2');
   // Masquer les barres de PV et le compteur HP (mode record = pas de mort)
   ['p1','p2'].forEach(function(pfx){
@@ -999,6 +1037,12 @@ document.getElementById('btn-record-play').addEventListener('click',function(){
     _lastMapCode=null;
     startGame('solo');
   }
+});
+document.getElementById('btn-survivor-play').addEventListener('click',function(){
+  mineralQty=7;diamondRace=false;
+  _survivorWave=0;_survivorKillsThisGame=0;
+  _preloadedBlocks=null;_lastMapCode=null;
+  startGame('survivor');
 });
 document.getElementById('btnreplay').addEventListener('click',function(){
   clearTimeout(window._autoMenuTimer);
@@ -1100,6 +1144,7 @@ function _ultimateActivate(opt){
   else if(opt==='shuffle') _ultimateShuffleMinerals();
   else if(opt==='destruct'){destructMode=true;}
   else if(opt==='ghost'){ghostMode=true;}
+  if(GAMEMODE==='survivor'&&_startDrillsPlaced)_survivorSpawnWave();
 }
 function _ultimateShuffleMinerals(){
   if(!G||!G.blocks.length)return;
@@ -1176,7 +1221,7 @@ window.recSetDur=recSetDur;
 window.buyBd=buyBd;window.buyUpg=buyUpg;window.closeShop=closeShop;
 
 requestAnimationFrame(function(ts){lastTime=ts;requestAnimationFrame(loop);});
-recSetDur(recDur);updateMenuStats();
+recSetDur(recDur);updateMenuStats();updateSurvivorMenuStats();
 
 /* MENU GEAR */
 (function(){

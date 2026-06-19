@@ -47,6 +47,8 @@ var lightningDir=0;     // 0=haut, 1=droite, 2=bas, 3=gauche
 var lightningPos=0.5;   // position 0..1 sur le bord
 var lightningBolt=[];   // points du tracé de la foudre [{x,y},...]
 var _preloadedBlocks=null;
+var _survivorWave=0;
+var _survivorKillsThisGame=0;
 
 // Types de minerai requis pour chaque achat (par défaut normaux, modifiés si randomCostMode)
 var costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
@@ -73,6 +75,7 @@ var gameLanguage='fr';
 var gameTheme=0;
 var p1Keys={up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
 var p1PauseKey='Escape';
+var p1RestartKey='$';
 var _capturingKey=null;
 
 /* ── I18N ── */
@@ -101,6 +104,7 @@ var I18N={
     keys_title:'TOUCHES DE DÉPLACEMENT',
     key_up:'↑ HAUT',key_down:'↓ BAS',key_left:'← GAUCHE',key_right:'→ DROITE',
     key_pause:'⏸ PAUSE',
+    key_restart:'⟳ RELANCER (1,5s)',
     key_capture:'Appuie sur une touche...',
     close_x:'FERMER ✕',close:'FERMER',
     rules_title:'RÈGLES DU JEU',
@@ -152,7 +156,14 @@ var I18N={
     mode_solo:'Solo',
     mode_coop:'Coop',
     kh_text:'P1:Touches+Clic · Clic=activer · Clic-droit=attaquer · ESC=pause',
-    vol_title:'VOLUME'
+    vol_title:'VOLUME',
+    survivor_title:'SURVIVANT',
+    survivor_wave:'VAGUE',
+    survivor_best:'Record',
+    survivor_kills:'Ennemis tués',
+    survivor_survived:'Survécu',
+    mode_survivor:'Survivant',
+    end_survivor:'PARTIE TERMINÉE'
   },
   en:{
     placement:'PLACEMENT',combat:'COMBAT',
@@ -178,6 +189,7 @@ var I18N={
     keys_title:'MOVEMENT KEYS',
     key_up:'↑ UP',key_down:'↓ DOWN',key_left:'← LEFT',key_right:'→ RIGHT',
     key_pause:'⏸ PAUSE',
+    key_restart:'⟳ RESTART (1.5s)',
     key_capture:'Press a key...',
     close_x:'CLOSE ✕',close:'CLOSE',
     rules_title:'GAME RULES',
@@ -229,7 +241,14 @@ var I18N={
     mode_solo:'Solo',
     mode_coop:'Coop',
     kh_text:'P1:Keys+Click · Click=activate · Right-click=attack · ESC=pause',
-    vol_title:'VOLUME'
+    vol_title:'VOLUME',
+    survivor_title:'SURVIVOR',
+    survivor_wave:'WAVE',
+    survivor_best:'Record',
+    survivor_kills:'Enemies killed',
+    survivor_survived:'Survived',
+    mode_survivor:'Survivor',
+    end_survivor:'GAME OVER'
   }
 };
 function t(k){return(I18N[gameLanguage]||I18N.fr)[k]||k;}
@@ -260,6 +279,10 @@ function _updateKeyDisplay(){
   if(bp){var kp=bp.querySelector('.kv');if(kp)kp.textContent=_keyLabel(p1PauseKey);
     bp.style.background=(_capturingKey==='pause')?'rgba(220,170,30,0.22)':'rgba(8,5,2,0.7)';
     bp.style.borderColor=(_capturingKey==='pause')?'rgba(220,170,80,0.9)':'rgba(200,160,50,0.3)';}
+  var br=document.getElementById('keybtn-restart');
+  if(br){var kr=br.querySelector('.kv');if(kr)kr.textContent=_keyLabel(p1RestartKey);
+    br.style.background=(_capturingKey==='restart')?'rgba(220,170,30,0.22)':'rgba(8,5,2,0.7)';
+    br.style.borderColor=(_capturingKey==='restart')?'rgba(220,170,80,0.9)':'rgba(200,160,50,0.3)';}
   var cm=document.getElementById('key-capture-msg');
   if(cm){cm.style.display=_capturingKey?'block':'none';if(_capturingKey)cm.textContent=t('key_capture');}
 }

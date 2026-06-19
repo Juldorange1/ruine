@@ -123,6 +123,58 @@ function spawnPvpBuilding(){
   log('Un '+{teleporter:'TELEPORTEUR',drill:'FOREUSE',bank:'MAGAZIN'}[type]+' apparait !');
 }
 
+/* SURVIVANT — vagues d'ennemis qui détruisent les minerais les plus proches */
+function mkEnemy(gx,gy,wave){
+  var hp=22+Math.floor(wave*1.5);
+  return{gx:gx,gy:gy,x:gx+.5,y:gy+.5,hp:hp,maxHp:hp,
+    speed:0.55+Math.min(wave*0.015,0.5),target:null,dmgRate:18+wave*1.5};
+}
+function _survivorBorderCell(){
+  var side=Math.floor(Math.random()*4),gx,gy;
+  if(side===0){gx=Math.floor(Math.random()*MAP);gy=0;}
+  else if(side===1){gx=Math.floor(Math.random()*MAP);gy=MAP-1;}
+  else if(side===2){gx=0;gy=Math.floor(Math.random()*MAP);}
+  else{gx=MAP-1;gy=Math.floor(Math.random()*MAP);}
+  return{gx:gx,gy:gy};
+}
+function _survivorSpawnWave(){
+  if(!G)return;
+  _survivorWave++;
+  var n=_survivorWave;
+  for(var i=0;i<n;i++){
+    var c=_survivorBorderCell();
+    G.enemies.push(mkEnemy(c.gx,c.gy,_survivorWave));
+  }
+  log(t('survivor_wave')+' '+n);
+}
+function updEnemies(dt){
+  if(!G||!G.enemies||!G.enemies.length)return;
+  G.enemies.forEach(function(en){
+    if(!en.target||G.blocks.indexOf(en.target)===-1){
+      var best=null,bd=99999;
+      G.blocks.forEach(function(b){
+        var d=Math.hypot(en.x-(b.gx+0.5),en.y-(b.gy+0.5));
+        if(d<bd){bd=d;best=b;}
+      });
+      en.target=best;
+    }
+    if(!en.target)return;
+    var tb=en.target;
+    var tx=tb.gx+0.5,ty=tb.gy+0.5;
+    var dx=tx-en.x,dy=ty-en.y,dist=Math.hypot(dx,dy);
+    if(dist>0.75){
+      en.x+=dx/dist*en.speed*dt;en.y+=dy/dist*en.speed*dt;
+      en.gx=Math.floor(en.x);en.gy=Math.floor(en.y);
+    } else {
+      tb.hp-=en.dmgRate*dt;
+      if(tb.hp<=0){
+        G.blocks=G.blocks.filter(function(b){return b!==tb;});
+        en.target=null;
+      }
+    }
+  });
+}
+
 function updPiques(dt){
   G.players.forEach(function(p){
     if(p.dead)return;

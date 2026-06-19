@@ -174,6 +174,9 @@ function draw(){
     }
   }
 
+  // Ennemis (mode Survivant)
+  if(G.enemies&&G.enemies.length)G.enemies.forEach(drawEnemy);
+
   // Players
   G.players.forEach(function(p){if(!p.dead)drawPlayer(p);});
 
@@ -331,6 +334,22 @@ function drawBd(bd){
   }
 }
 
+function drawEnemy(en){
+  var ex=en.x*TILE,ey=en.y*TILE,r=12;
+  var pulse=0.5+0.5*Math.sin(G.time*5+en.gx);
+  X.save();X.translate(ex,ey);
+  X.fillStyle='rgba(0,0,0,0.3)';X.beginPath();X.ellipse(0,r*0.6,r*0.7,r*0.25,0,0,Math.PI*2);X.fill();
+  var eg=X.createRadialGradient(0,0,1,0,0,r);
+  eg.addColorStop(0,'rgba(255,90,60,'+(0.9+pulse*0.1)+')');eg.addColorStop(1,'rgba(120,10,10,0.95)');
+  X.fillStyle=eg;X.beginPath();X.arc(0,0,r,0,Math.PI*2);X.fill();
+  X.strokeStyle='rgba(255,180,140,0.85)';X.lineWidth=2;X.beginPath();X.arc(0,0,r,0,Math.PI*2);X.stroke();
+  X.fillStyle='#1a0000';X.beginPath();X.arc(-4,-2,2.2,0,Math.PI*2);X.fill();X.beginPath();X.arc(4,-2,2.2,0,Math.PI*2);X.fill();
+  X.restore();
+  var bw=TILE-20,hpFrac=en.hp/en.maxHp;
+  X.fillStyle='rgba(0,0,0,0.5)';X.fillRect(ex-bw/2,ey-r-10,bw,4);
+  X.fillStyle=hpFrac>0.5?'rgba(220,80,30,0.9)':'rgba(255,40,20,0.95)';
+  X.fillRect(ex-bw/2,ey-r-10,bw*hpFrac,4);
+}
 function drawPlayer(p){
   var px=p.x*TILE,py=p.y*TILE,sz=28;
   X.save();X.translate(px,py);
@@ -386,14 +405,14 @@ function drawPlayer(p){
   X.restore();
   X.restore();
   var bw=38,bh=5,hpX=px-bw/2,hpY=py-sz*.8-4;
-  if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'){X.fillStyle='rgba(0,0,0,0.58)';X.fillRect(hpX-1,hpY-1,bw+2,bh+2);X.fillStyle=p.hp/p.maxHp>0.55?'rgba(78,208,58,0.95)':p.hp/p.maxHp>0.25?'rgba(218,148,28,0.95)':'rgba(208,38,28,0.95)';X.fillRect(hpX,hpY,bw*(p.hp/p.maxHp),bh);}
+  if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'&&GAMEMODE!=='survivor'){X.fillStyle='rgba(0,0,0,0.58)';X.fillRect(hpX-1,hpY-1,bw+2,bh+2);X.fillStyle=p.hp/p.maxHp>0.55?'rgba(78,208,58,0.95)':p.hp/p.maxHp>0.25?'rgba(218,148,28,0.95)':'rgba(208,38,28,0.95)';X.fillRect(hpX,hpY,bw*(p.hp/p.maxHp),bh);}
   if(p.inCombat&&(p.spearSwing||0)>0.1){var cf=0.5+0.5*Math.sin(G.time*20);X.strokeStyle='rgba(255,80,20,'+cf+')';X.lineWidth=2.5;X.beginPath();X.arc(px,py,sz*.65,0,Math.PI*2);X.stroke();}
 }
 
 /* HUD */
 function updateHUD(){
   if(!G)return;
-  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop');
+  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop'||GAMEMODE==='survivor');
   var pairs=[[G.p1,'p1']];if(G.p2&&!isRec)pairs.push([G.p2,'p2']);
   pairs.forEach(function(pr){
     var p=pr[0],pfx=pr[1];
@@ -418,6 +437,14 @@ function updateHUD(){
   else if(G.phase==='combat'){phEl.textContent=t('combat');}
   // Coûts aléatoires
   if(typeof _updateRandomCostDisplay==='function')_updateRandomCostDisplay();
+  // Panneau SURVIVANT
+  var _svh=document.getElementById('survivorhud');
+  if(_svh){
+    if(GAMEMODE==='survivor'&&gameRunning){
+      _svh.innerHTML=t('survivor_wave')+' '+_survivorWave+'<br>'+t('survivor_kills')+' : '+_survivorKillsThisGame;
+      _svh.style.display='block';
+    } else {_svh.style.display='none';}
+  }
   // Panneau ULTIME — gauche de l'écran (dans #leftpanel)
   var _uhud=document.getElementById('ultimatehud');
   if(_uhud){

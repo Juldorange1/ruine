@@ -77,6 +77,18 @@
       <button id="btn-record-play" style="background:transparent;border:1px solid rgba(220,170,80,0.4);color:#d4b060;font-family:'Courier New',monospace;font-size:15px;letter-spacing:2px;padding:13px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
     </div>
 
+    <!-- SURVIVANT card -->
+    <div class="mcard" style="min-width:200px">
+      <h2 style="color:#e05030;margin-bottom:10px" data-i18n="survivor_title">SURVIVANT</h2>
+      <div style="display:flex;gap:10px;margin-bottom:10px;justify-content:center;font-family:'Courier New',monospace">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-survivor-best" style="font-size:11px;color:#e08060;letter-spacing:1px" title="Record de survie">—</div>
+          <div id="stat-survivor-kills" style="font-size:12px;font-weight:bold;color:#e0a060">0</div>
+        </div>
+      </div>
+      <button id="btn-survivor-play" style="background:transparent;border:1px solid rgba(220,80,40,0.4);color:#e08060;font-family:'Courier New',monospace;font-size:15px;letter-spacing:2px;padding:13px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
+    </div>
+
   </div>
 
   <!-- Options -->
@@ -141,6 +153,7 @@
 <div id="leftpanel" style="position:fixed;top:175px;left:12px;z-index:49;display:flex;flex-direction:column;gap:7px;pointer-events:none;visibility:hidden">
   <div id="randomcostinfo" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(50,200,100,0.35);border-radius:5px;padding:6px 16px;font-family:'Courier New',monospace;font-size:14px;color:rgba(80,220,130,0.85);letter-spacing:1px;white-space:nowrap"></div>
   <div id="ultimatehud" style="display:none;background:rgba(8,2,12,0.95);border:1px solid rgba(140,30,180,0.3);border-radius:6px;padding:10px 16px;font-family:'Courier New',monospace;letter-spacing:1px;min-width:160px"></div>
+  <div id="survivorhud" style="display:none;background:rgba(20,4,2,0.9);border:1px solid rgba(220,80,40,0.4);border-radius:5px;padding:6px 16px;font-family:'Courier New',monospace;font-size:13px;color:rgba(240,140,90,0.9);letter-spacing:1px;white-space:nowrap"></div>
 </div>
 <div id="placeind" style="display:none;position:fixed;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.5);border-radius:6px;padding:9px 28px;z-index:50;font-family:'Courier New',monospace;font-size:15px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap;box-shadow:0 0 18px rgba(200,140,20,0.25)"></div>
 
@@ -296,6 +309,12 @@
         </div>
       </div>
 
+      <!-- SURVIVANT -->
+      <div style="border:1px solid rgba(220,80,40,0.3);border-radius:8px;padding:16px 20px;background:rgba(28,6,2,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#e05030;letter-spacing:4px;margin-bottom:10px">☠ MODE SURVIVANT</div>
+        <div>À chaque changement d'option ULTIME (toutes les 30 s), une vague d'ennemis apparaît sur le contour de la carte et se dirige vers les minerais les plus proches pour les détruire. Chaque vague compte 1 ennemi de plus que la précédente. Détruis les ennemis au lance-pierre (clic droit) avant qu'ils ne détruisent toutes les ressources. La partie se termine quand il ne reste plus aucun minerai. <b>Le record affiché est le temps de survie le plus long</b>, et le compteur indique le nombre total d'ennemis tués (toutes parties confondues).</div>
+      </div>
+
     </div>
 
     <div id="rules-en" style="display:none;flex-direction:column;gap:16px;font-size:13px;line-height:1.85;color:#c0b080">
@@ -423,6 +442,12 @@
         </div>
       </div>
 
+      <!-- SURVIVOR -->
+      <div style="border:1px solid rgba(220,80,40,0.3);border-radius:8px;padding:16px 20px;background:rgba(28,6,2,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#e05030;letter-spacing:4px;margin-bottom:10px">☠ SURVIVOR MODE</div>
+        <div>Every time the ULTIMATE option changes (every 30 s), a wave of enemies appears on the map border and heads toward the nearest minerals to destroy them. Each wave has 1 more enemy than the previous one. Destroy enemies with your rock throw (right click) before they wipe out all resources. The game ends once no mineral block is left. <b>The displayed record is the longest survival time</b>, and the counter shows the total number of enemies killed (across all games).</div>
+      </div>
+
     </div>
 
     <div style="text-align:center;margin-top:24px;padding-top:18px;border-top:1px solid rgba(200,160,50,0.15)">
@@ -496,9 +521,13 @@
             <span data-i18n="key_right" style="font-size:10px;opacity:0.6;letter-spacing:1px">→ DROITE</span>
             <span class="kv" style="font-size:18px;font-weight:bold">→</span>
           </button>
-          <button id="keybtn-pause" onclick="captureKey('pause')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s;grid-column:span 2">
+          <button id="keybtn-pause" onclick="captureKey('pause')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
             <span data-i18n="key_pause" style="font-size:10px;opacity:0.6;letter-spacing:1px">⏸ PAUSE</span>
             <span class="kv" style="font-size:18px;font-weight:bold">ESC</span>
+          </button>
+          <button id="keybtn-restart" onclick="captureKey('restart')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+            <span data-i18n="key_restart" style="font-size:10px;opacity:0.6;letter-spacing:1px">⟳ RELANCER (1,5s)</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">$</span>
           </button>
         </div>
         <div id="key-capture-msg" style="display:none;margin-top:12px;text-align:center;font-size:13px;color:#f0d060;letter-spacing:2px;animation:pulse 0.8s infinite alternate" data-i18n="key_capture">Appuie sur une touche...</div>
@@ -538,16 +567,16 @@
 <button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}" data-i18n="mob_pause">II PAUSE</button>
 
 
-<script src="js/canvas.js?v=15"></script>
-<script src="js/globals.js?v=15"></script>
-<script src="js/init.js?v=15"></script>
-<script src="js/placement.js?v=15"></script>
-<script src="js/combat.js?v=15"></script>
-<script src="js/shop.js?v=15"></script>
-<script src="js/world.js?v=15"></script>
-<script src="js/ai.js?v=15"></script>
-<script src="js/render.js?v=15"></script>
-<script src="js/game.js?v=15"></script>
+<script src="js/canvas.js?v=17"></script>
+<script src="js/globals.js?v=17"></script>
+<script src="js/init.js?v=17"></script>
+<script src="js/placement.js?v=17"></script>
+<script src="js/combat.js?v=17"></script>
+<script src="js/shop.js?v=17"></script>
+<script src="js/world.js?v=17"></script>
+<script src="js/ai.js?v=17"></script>
+<script src="js/render.js?v=17"></script>
+<script src="js/game.js?v=17"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>

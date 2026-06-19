@@ -121,7 +121,7 @@ function initGame(){
   var mapCode='R'+_pl+_B36[Math.floor(_chk/36)]+_B36[_chk%36];
 
   return{p1:p1,p2:p2,players:p2?[p1,p2]:[p1],
-    blocks:blocks,buildings:buildings,destroyed:[],meteors:[],piques:[],
+    blocks:blocks,buildings:buildings,destroyed:[],meteors:[],piques:[],enemies:[],
     time:0,phase:'placement',winner:null,phase_over:false,meteorTimer:18,rocks:[],
     mapCode:mapCode};
 }
