@@ -228,7 +228,7 @@ function draw(){
       _fx.globalCompositeOperation='destination-out';
       G.players.forEach(function(p){
         if(p.dead)return;
-        var px=p.x*TILE,py=p.y*TILE,R=2.75*TILE;
+        var px=p.x*TILE,py=p.y*TILE,R=3.25*TILE;
         var grd=_fx.createRadialGradient(px,py,0,px,py,R);
         grd.addColorStop(0,'rgba(0,0,0,1)');
         grd.addColorStop(0.84,'rgba(0,0,0,1)');
