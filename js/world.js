@@ -125,9 +125,9 @@ function spawnPvpBuilding(){
 
 /* SURVIVANT — vagues d'ennemis qui détruisent les minerais les plus proches */
 function mkEnemy(gx,gy,wave){
-  var hp=22+Math.floor(wave*1.5);
+  var hp=(22+Math.floor(wave*1.5))*2;
   return{gx:gx,gy:gy,x:gx+.5,y:gy+.5,hp:hp,maxHp:hp,
-    speed:0.55+Math.min(wave*0.015,0.5),target:null,dmgRate:18+wave*1.5};
+    speed:(0.55+Math.min(wave*0.015,0.5))/2,target:null,dmgRate:(18+wave*1.5)/2};
 }
 function _survivorBorderCell(){
   var side=Math.floor(Math.random()*4),gx,gy;

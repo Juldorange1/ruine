@@ -998,9 +998,13 @@ function _updateRandomCostDisplay(){
       var r=costTypes[k];
       return kLabels[k]+' <span style="color:'+col[r]+'">'+sym[r]+'</span>';
     });
-    var wr=winResource;
-    var winLine=t('cost_obj')+' <span style="color:'+col[wr]+'">'+sym[wr]+'</span>';
-    rc.innerHTML='<div style="opacity:0.5;font-size:11px;margin-bottom:3px;letter-spacing:2px">'+t('costs_header')+'</div>'+lines.join('<br>')+'<hr style="border-color:rgba(255,255,255,0.1);margin:4px 0">'+winLine;
+    var html='<div style="opacity:0.5;font-size:11px;margin-bottom:3px;letter-spacing:2px">'+t('costs_header')+'</div>'+lines.join('<br>');
+    if(GAMEMODE!=='survivor'){
+      var wr=winResource;
+      var winLine=t('cost_obj')+' <span style="color:'+col[wr]+'">'+sym[wr]+'</span>';
+      html+='<hr style="border-color:rgba(255,255,255,0.1);margin:4px 0">'+winLine;
+    }
+    rc.innerHTML=html;
     rc.style.display='block';
   } else {
     rc.style.display='none';
@@ -1022,6 +1026,13 @@ document.getElementById('shop').addEventListener('click',function(e){
 });
 document.getElementById('btn-record-play').addEventListener('click',function(){
   mineralQty=7;
+  if(recDur==='survivor'){
+    diamondRace=false;
+    _survivorWave=0;_survivorKillsThisGame=0;
+    _preloadedBlocks=null;_lastMapCode=null;
+    startGame('survivor');
+    return;
+  }
   if(recDur==='500d'){diamondRace=true;diamondGoal=500;soloDur=999;coopDur=999;}
   else if(recDur==='1000d'){diamondRace=true;diamondGoal=1000;soloDur=999;coopDur=999;}
   else if(recDur==='2000d'){diamondRace=true;diamondGoal=2000;soloDur=999;coopDur=999;}
@@ -1037,12 +1048,6 @@ document.getElementById('btn-record-play').addEventListener('click',function(){
     _lastMapCode=null;
     startGame('solo');
   }
-});
-document.getElementById('btn-survivor-play').addEventListener('click',function(){
-  mineralQty=7;diamondRace=false;
-  _survivorWave=0;_survivorKillsThisGame=0;
-  _preloadedBlocks=null;_lastMapCode=null;
-  startGame('survivor');
 });
 document.getElementById('btnreplay').addEventListener('click',function(){
   clearTimeout(window._autoMenuTimer);
@@ -1103,7 +1108,8 @@ function recSetDur(d){
     var bDur=btn.getAttribute('data-dur');
     var active=bDur===String(d);
     var isRace=bDur==='500d'||bDur==='1000d'||bDur==='2000d'||bDur==='3000d';
-    var col=isRace?'rgba(240,210,80,':'rgba(128,230,255,';
+    var isSurv=bDur==='survivor';
+    var col=isSurv?'rgba(220,80,40,':(isRace?'rgba(240,210,80,':'rgba(128,230,255,');
     btn.style.background=active?(col+'0.22)'):(col+'0.05)');
     btn.style.borderColor=active?(col+'0.8)'):(col+(isRace?'0.35':'0.25')+')');
     btn.style.color=active?(col+'1)'):(col+(isRace?'0.6':'0.55')+')');
