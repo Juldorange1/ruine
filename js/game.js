@@ -296,8 +296,17 @@ document.addEventListener('keydown',function(e){
     C.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,clientX:mouseX,clientY:mouseY}));
   }
 });
-document.addEventListener('keyup',function(e){keys[e.key]=false;});
-window.addEventListener('blur',function(){keys={};});
+document.addEventListener('keyup',function(e){keys[e.key]=false;if(e.key==='$'&&_dollarHoldT){clearTimeout(_dollarHoldT);_dollarHoldT=null;}});
+window.addEventListener('blur',function(){keys={};if(_dollarHoldT){clearTimeout(_dollarHoldT);_dollarHoldT=null;}});
+var _dollarHoldT=null;
+document.addEventListener('keydown',function(e){
+  if(e.key==='$'&&!_dollarHoldT&&gameRunning&&G){
+    _dollarHoldT=setTimeout(function(){
+      _dollarHoldT=null;
+      startGame(GAMEMODE);
+    },1000);
+  }
+});
 // Reset inactivité sur toute action joueur
 function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTime=Date.now();}
 
@@ -324,7 +333,7 @@ function _inversionPick(gx,gy){
   if(pl)return pl;
   var blk=G.blocks.filter(function(b){return b.gx===gx&&b.gy===gy;})[0];
   if(blk)return blk;
-  return G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===gx&&b.gy===gy;})[0]||null;
+  return G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory'||b.type==='teleporter')&&b.gx===gx&&b.gy===gy;})[0]||null;
 }
 function _inversionDoSwap(a,b){
   var aIsP=_inversionIsPlayer(a),bIsP=_inversionIsPlayer(b);

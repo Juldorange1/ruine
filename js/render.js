@@ -162,7 +162,7 @@ function draw(){
     var _invPulse=0.5+0.5*Math.sin(G.time*6);
     // Cyan sur tout ce qui est cliquable
     G.blocks.forEach(function(b){X.strokeStyle='rgba(80,200,255,'+(0.35+_invPulse*0.35)+')';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);});
-    G.buildings.forEach(function(b){if(b.type!=='drill'&&b.type!=='drillfast'&&b.type!=='factory')return;X.strokeStyle='rgba(80,200,255,'+(0.35+_invPulse*0.35)+')';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);});
+    G.buildings.forEach(function(b){if(b.type!=='drill'&&b.type!=='drillfast'&&b.type!=='factory'&&b.type!=='teleporter')return;X.strokeStyle='rgba(80,200,255,'+(0.35+_invPulse*0.35)+')';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);});
     G.players.forEach(function(p){if(p.dead)return;var _px=Math.floor(p.x)*TILE,_py=Math.floor(p.y)*TILE;X.strokeStyle='rgba(80,200,255,'+(0.35+_invPulse*0.35)+')';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(_px+2,_py+2,TILE-4,TILE-4);X.setLineDash([]);});
     // Rouge sur le 1er sélectionné
     if(_inversionFirst){
