@@ -125,9 +125,10 @@ function spawnPvpBuilding(){
 
 /* SURVIVANT — vagues d'ennemis qui détruisent les minerais les plus proches */
 function mkEnemy(gx,gy,wave){
-  var hp=(22+Math.floor(wave*1.5))*2;
+  var mult=Math.pow(1.2,wave-1);
+  var hp=16*mult;
   return{gx:gx,gy:gy,x:gx+.5,y:gy+.5,hp:hp,maxHp:hp,
-    speed:(0.55+Math.min(wave*0.015,0.5))/2,target:null,dmgRate:(18+wave*1.5)/2};
+    speed:0.32*mult,target:null,dmgRate:7*mult};
 }
 function _survivorBorderCell(){
   var side=Math.floor(Math.random()*4),gx,gy;
@@ -140,12 +141,11 @@ function _survivorBorderCell(){
 function _survivorSpawnWave(){
   if(!G)return;
   _survivorWave++;
-  var n=_survivorWave;
-  for(var i=0;i<n;i++){
+  for(var i=0;i<3;i++){
     var c=_survivorBorderCell();
     G.enemies.push(mkEnemy(c.gx,c.gy,_survivorWave));
   }
-  log(t('survivor_wave')+' '+n);
+  log(t('survivor_wave')+' '+_survivorWave);
 }
 function updEnemies(dt){
   if(!G||!G.enemies||!G.enemies.length)return;
