@@ -73,7 +73,7 @@
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-survivor-best" style="font-size:11px;color:#e08060;letter-spacing:1px" title="Record de survie">—</div>
+          <div id="stat-survivor-best" style="font-size:11px;color:#e08060;letter-spacing:1px" title="Record : meilleur nb d'ennemis tués en une partie">—</div>
           <div id="stat-survivor-kills" style="font-size:12px;font-weight:bold;color:#e0a060">0</div>
           <button class="rec-dur" data-dur="survivor" onclick="recSetDur('survivor')" title="SURVIVANT" style="background:rgba(220,80,40,0.05);border:1px solid rgba(220,80,40,0.35);color:rgba(220,100,60,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 10px;">☠</button>
         </div>
@@ -306,7 +306,7 @@
       <!-- SURVIVANT -->
       <div style="border:1px solid rgba(220,80,40,0.3);border-radius:8px;padding:16px 20px;background:rgba(28,6,2,0.4)">
         <div style="font-size:15px;font-weight:bold;color:#e05030;letter-spacing:4px;margin-bottom:10px">☠ MODE SURVIVANT</div>
-        <div>À chaque changement d'option ULTIME (toutes les 30 s), une vague d'ennemis apparaît sur le contour de la carte et se dirige vers les minerais les plus proches pour les détruire. Chaque vague compte 1 ennemi de plus que la précédente. Détruis les ennemis au lance-pierre (clic droit) avant qu'ils ne détruisent toutes les ressources. La partie se termine quand il ne reste plus aucun minerai. <b>Le record affiché est le temps de survie le plus long</b>, et le compteur indique le nombre total d'ennemis tués (toutes parties confondues).</div>
+        <div>À chaque changement d'option ULTIME (toutes les 30 s), une vague de 3 ennemis apparaît sur le contour de la carte et se dirige vers les minerais les plus proches pour les détruire. Chaque nouvelle vague d'ennemis a +20% de vitesse, de PV et de dégâts par rapport à la précédente. Détruis les ennemis au lance-pierre (clic droit) avant qu'ils ne détruisent toutes les ressources. La partie se termine quand il ne reste plus aucun minerai. <b>Le record affiché est ton plus grand nombre d'ennemis tués en une seule partie</b>, et le compteur indique le nombre total d'ennemis tués (toutes parties confondues).</div>
       </div>
 
     </div>
@@ -439,7 +439,7 @@
       <!-- SURVIVOR -->
       <div style="border:1px solid rgba(220,80,40,0.3);border-radius:8px;padding:16px 20px;background:rgba(28,6,2,0.4)">
         <div style="font-size:15px;font-weight:bold;color:#e05030;letter-spacing:4px;margin-bottom:10px">☠ SURVIVOR MODE</div>
-        <div>Every time the ULTIMATE option changes (every 30 s), a wave of enemies appears on the map border and heads toward the nearest minerals to destroy them. Each wave has 1 more enemy than the previous one. Destroy enemies with your rock throw (right click) before they wipe out all resources. The game ends once no mineral block is left. <b>The displayed record is the longest survival time</b>, and the counter shows the total number of enemies killed (across all games).</div>
+        <div>Every time the ULTIMATE option changes (every 30 s), a wave of 3 enemies appears on the map border and heads toward the nearest minerals to destroy them. Each new wave of enemies has +20% speed, HP and damage compared to the previous one. Destroy enemies with your rock throw (right click) before they wipe out all resources. The game ends once no mineral block is left. <b>The displayed record is your highest number of enemies killed in a single game</b>, and the counter shows the total number of enemies killed (across all games).</div>
       </div>
 
     </div>
@@ -561,16 +561,16 @@
 <button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}" data-i18n="mob_pause">II PAUSE</button>
 
 
-<script src="js/canvas.js?v=19"></script>
-<script src="js/globals.js?v=19"></script>
-<script src="js/init.js?v=19"></script>
-<script src="js/placement.js?v=19"></script>
-<script src="js/combat.js?v=19"></script>
-<script src="js/shop.js?v=19"></script>
-<script src="js/world.js?v=19"></script>
-<script src="js/ai.js?v=19"></script>
-<script src="js/render.js?v=19"></script>
-<script src="js/game.js?v=19"></script>
+<script src="js/canvas.js?v=20"></script>
+<script src="js/globals.js?v=20"></script>
+<script src="js/init.js?v=20"></script>
+<script src="js/placement.js?v=20"></script>
+<script src="js/combat.js?v=20"></script>
+<script src="js/shop.js?v=20"></script>
+<script src="js/world.js?v=20"></script>
+<script src="js/ai.js?v=20"></script>
+<script src="js/render.js?v=20"></script>
+<script src="js/game.js?v=20"></script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
 </body>
 </html>

@@ -146,17 +146,17 @@ function updateMenuStats(){
 
 /* STATS SURVIVANT */
 function _loadSurvivorStats(){
-  try{var s=JSON.parse(localStorage.getItem('ruine_survivor_stats'));return s||{best:null,kills:0};}
-  catch(e){return{best:null,kills:0};}
+  try{var s=JSON.parse(localStorage.getItem('ruine_survivor_stats'));return s||{bestKills:null,kills:0};}
+  catch(e){return{bestKills:null,kills:0};}
 }
-function _saveSurvivorStats(best,kills){
-  try{localStorage.setItem('ruine_survivor_stats',JSON.stringify({best:best!==undefined?best:null,kills:kills||0}));}catch(e){}
+function _saveSurvivorStats(bestKills,kills){
+  try{localStorage.setItem('ruine_survivor_stats',JSON.stringify({bestKills:bestKills!==undefined?bestKills:null,kills:kills||0}));}catch(e){}
 }
 function updateSurvivorMenuStats(){
   var s=_loadSurvivorStats();
   var bEl=document.getElementById('stat-survivor-best');
   var kEl=document.getElementById('stat-survivor-kills');
-  if(bEl)bEl.textContent=s.best!==null&&s.best!==undefined?_fmtTime(s.best):'—';
+  if(bEl)bEl.textContent=s.bestKills!==null&&s.bestKills!==undefined?s.bestKills:'—';
   if(kEl)kEl.textContent=s.kills||0;
 }
 
@@ -203,10 +203,9 @@ function showEnd(){
     var timeStr2=document.getElementById('timer').textContent;
     document.getElementById('endsub').innerHTML=t('survivor_survived')+' : '+timeStr2+'  ·  '+t('survivor_wave')+' '+_survivorWave+'  ·  '+t('survivor_kills')+' : '+_survivorKillsThisGame;
     var _sgv=_loadSurvivorStats();
-    var _elapsedV=Math.round(G.time);
-    if(_sgv.best===null||_sgv.best===undefined||_elapsedV>_sgv.best)_sgv.best=_elapsedV;
+    if(_sgv.bestKills===null||_sgv.bestKills===undefined||_survivorKillsThisGame>_sgv.bestKills)_sgv.bestKills=_survivorKillsThisGame;
     _sgv.kills=(_sgv.kills||0)+_survivorKillsThisGame;
-    _saveSurvivorStats(_sgv.best,_sgv.kills);
+    _saveSurvivorStats(_sgv.bestKills,_sgv.kills);
     updateSurvivorMenuStats();
   }
   if(GAMEMODE!=='survivor'){
