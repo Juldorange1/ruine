@@ -27,8 +27,10 @@ function initGame(){
     if(isWall(_wx,_wy))taken[_wx+','+_wy]=true;
   }
   // Usine : une case libre aléatoire, jamais sur le contour
+  // (en mode SURVIVANT, marge plus grande pour laisser de l'espace avant les vagues d'ennemis)
+  var _facMargin=(GAMEMODE==='survivor')?3:2;
   var _fGx,_fGy;
-  _fGx=2+Math.floor(rr()*(MAP-4));_fGy=2+Math.floor(rr()*(MAP-4));taken[_fGx+','+_fGy]=true;
+  _fGx=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));_fGy=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));taken[_fGx+','+_fGy]=true;
 
   var blocks=[];
 

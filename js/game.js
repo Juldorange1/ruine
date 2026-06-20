@@ -409,11 +409,11 @@ function _inversionDoSwap(a,b){
   } else if(aIsP&&!bIsP){
     var px=a.x,py=a.y;
     a.x=b.x;a.y=b.y;
-    b.gx=Math.floor(px);b.gy=Math.floor(py);b.x=b.gx+0.5;b.y=b.gy+0.5;
+    b.gx=Math.max(1,Math.min(MAP-2,Math.floor(px)));b.gy=Math.max(1,Math.min(MAP-2,Math.floor(py)));b.x=b.gx+0.5;b.y=b.gy+0.5;
   } else if(!aIsP&&bIsP){
     var px2=b.x,py2=b.y;
     b.x=a.x;b.y=a.y;
-    a.gx=Math.floor(px2);a.gy=Math.floor(py2);a.x=a.gx+0.5;a.y=a.gy+0.5;
+    a.gx=Math.max(1,Math.min(MAP-2,Math.floor(px2)));a.gy=Math.max(1,Math.min(MAP-2,Math.floor(py2)));a.x=a.gx+0.5;a.y=a.gy+0.5;
   } else {
     var px3=a.x,py3=a.y;a.x=b.x;a.y=b.y;b.x=px3;b.y=py3;
   }
@@ -485,8 +485,8 @@ document.addEventListener('click',function(e){
   if(_ghostPending&&_selectionDelay<=0){
     var _gb=G.blocks.filter(function(b){return b.gx===pos.gx&&b.gy===pos.gy&&!b.ghost;})[0];
     var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===pos.gx&&b.gy===pos.gy&&!b.ghost;})[0];
-    if(_gb){_gb.ghost=true;_ghostPending=false;sfx('tp');}
-    else if(_gd){_gd.ghost=true;_ghostPending=false;sfx('tp');}
+    if(_gb){_gb.ghost=true;_ghostedObj=_gb;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
+    else if(_gd){_gd.ghost=true;_ghostedObj=_gd;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
     if(!_ghostPending){_selectionPending=_destructPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
     return;
   }
@@ -606,8 +606,8 @@ C.addEventListener('touchend',function(e){
   if(_ghostPending&&_selectionDelay<=0){
     var _gb=G.blocks.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
     var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
-    if(_gb){_gb.ghost=true;_ghostPending=false;sfx('tp');}
-    else if(_gd){_gd.ghost=true;_ghostPending=false;sfx('tp');}
+    if(_gb){_gb.ghost=true;_ghostedObj=_gb;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
+    else if(_gd){_gd.ghost=true;_ghostedObj=_gd;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
     if(!_ghostPending){_selectionPending=_destructPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
     return;
   }
@@ -1166,6 +1166,11 @@ function _ultimateDeactivate(){
   else if(opt==='ghost'){ghostMode=false;if(_ghostPending){_ghostPending=false;_selectionPending=false;_hidePlaceInfo();}}
 }
 function _ultimateActivate(opt){
+  // L'effet FANTÔME dure pour l'option suivante seulement : on l'éteint au 2e changement après son application
+  if(_ghostedObj){
+    if(_ghostClearArmed){_ghostedObj.ghost=false;_ghostedObj=null;_ghostClearArmed=false;}
+    else _ghostClearArmed=true;
+  }
   _ultimateActiveOpt=opt;
   if(opt==='night') nightMode=true;
   else if(opt==='speed') speedMode=true;
