@@ -994,7 +994,7 @@ function startGame(mode){
 
 
   var finEl=document.getElementById('btnfinish');
-  if(finEl)finEl.style.display=(mode==='solo'||mode==='coop')?'block':'none';
+  if(finEl)finEl.style.display=(mode==='solo'||mode==='coop'||mode==='survivor')?'block':'none';
   var modeLabel=mode==='survivor'?t('mode_survivor'):mode==='solo'?t('mode_solo'):t('mode_coop');
   var durLabel=isDiamondRace?diamondGoal+' ◆':mode==='solo'?soloDur:coopDur;
   if(mode!=='survivor')log(modeLabel+(isDiamondRace?' — '+durLabel+' !':' — '+durLabel+' min !'));
