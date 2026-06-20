@@ -117,6 +117,7 @@ function updRocks(dt){
 function updMetAtk(dt){}
 
 function updDrills(dt){
+  if(_selectionPending)return;
   G.buildings.forEach(function(bd){
     if(bd.type!=='drill'&&bd.type!=='drillfast')return;
     bd.drillTimer=(bd.drillTimer||0)+dt;

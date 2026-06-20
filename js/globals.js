@@ -54,7 +54,7 @@ var _survivorKillsThisGame=0;
 var costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
 
 /* STATE */
-var G=null,keys={},gameRunning=false,logLines=[];
+var G=null,keys={},_keyLastSeen={},gameRunning=false,logLines=[];
 var GAMEMODE='';
 var placeQueue=[],placePos=null,placeGen=0;
 var shopOpen=null,shopPlayer=null;
