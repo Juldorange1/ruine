@@ -2,13 +2,6 @@
 function loop(ts){
   requestAnimationFrame(loop);
   var dt=Math.min((ts-lastTime)/1000,.05);lastTime=ts;
-  // Anti-touche-collée : une touche maintenue doit être rafraîchie régulièrement
-  // par les répétitions de keydown. Si elle ne l'est plus depuis 400ms (keyup manqué
-  // suite à un changement de focus, alt-tab, etc.), on la force relâchée.
-  var _nowK=Date.now();
-  for(var _kk in keys){
-    if(keys[_kk]&&_nowK-(_keyLastSeen[_kk]||0)>400)keys[_kk]=false;
-  }
   if(speedMode)dt*=1.75;
   var isRecordMode=(GAMEMODE==='solo'||GAMEMODE==='coop'||GAMEMODE==='survivor');
   if(G&&gameRunning&&(G.phase==='combat'||(G.phase==='placement'&&isRecordMode))&&!gamePaused){
@@ -263,7 +256,7 @@ document.addEventListener('keydown',function(e){
     }
     _updateKeyDisplay();_capturingKey=null;e.preventDefault();return;
   }
-  keys[e.key]=true;_keyLastSeen[e.key]=Date.now();
+  keys[e.key]=true;
   // Entrée dans le menu = JOUER
   if(e.key==='Enter'&&(!G||!gameRunning)){
     var ov=document.getElementById('ov');
