@@ -234,6 +234,13 @@ function showEnd(){
     codeEl.textContent=G.mapCode;
     var lastEl=document.getElementById('lastmapcode');
     if(lastEl)lastEl.textContent=G.mapCode;
+    var _csym={coal:'■',gold:'★',diamond:'◆'}[costTypes.drill]||'■';
+    var _cname={coal:t('res_coal'),gold:t('res_gold'),diamond:t('res_diamond')}[costTypes.drill]||costTypes.drill;
+    var _costTxt=t('cost_drill_label')+': '+_csym+' '+_cname;
+    var costEl=document.getElementById('endmapcode-cost');
+    if(costEl)costEl.textContent=_costTxt;
+    var lastCostEl=document.getElementById('lastmapcode-cost');
+    if(lastCostEl)lastCostEl.textContent=_costTxt;
   }
   sfx(G&&G.winner==='TIME'?'end':'win');
   ov.style.display='flex';setTimeout(function(){ov.style.opacity='1';},20);
@@ -478,8 +485,8 @@ document.addEventListener('click',function(e){
   if(_ghostPending&&_selectionDelay<=0){
     var _gb=G.blocks.filter(function(b){return b.gx===pos.gx&&b.gy===pos.gy&&!b.ghost;})[0];
     var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===pos.gx&&b.gy===pos.gy&&!b.ghost;})[0];
-    if(_gb){_gb.ghost=true;_ghostedObj=_gb;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
-    else if(_gd){_gd.ghost=true;_ghostedObj=_gd;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
+    if(_gb){_gb.ghost=true;_ghostPending=false;sfx('tp');}
+    else if(_gd){_gd.ghost=true;_ghostPending=false;sfx('tp');}
     if(!_ghostPending){_selectionPending=_destructPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
     return;
   }
@@ -599,8 +606,8 @@ C.addEventListener('touchend',function(e){
   if(_ghostPending&&_selectionDelay<=0){
     var _gb=G.blocks.filter(function(b){return b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
     var _gd=G.buildings.filter(function(b){return(b.type==='drill'||b.type==='drillfast'||b.type==='factory')&&b.gx===tg.igx&&b.gy===tg.igy&&!b.ghost;})[0];
-    if(_gb){_gb.ghost=true;_ghostedObj=_gb;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
-    else if(_gd){_gd.ghost=true;_ghostedObj=_gd;_ghostClearArmed=false;_ghostPending=false;sfx('tp');}
+    if(_gb){_gb.ghost=true;_ghostPending=false;sfx('tp');}
+    else if(_gd){_gd.ghost=true;_ghostPending=false;sfx('tp');}
     if(!_ghostPending){_selectionPending=_destructPending;if(!_selectionPending)_hidePlaceInfo();else _showPlaceInfo('DÉTRUIRE : cliquer un minerai ou foreuse');}
     return;
   }
@@ -1159,11 +1166,7 @@ function _ultimateDeactivate(){
   else if(opt==='ghost'){ghostMode=false;if(_ghostPending){_ghostPending=false;_selectionPending=false;_hidePlaceInfo();}}
 }
 function _ultimateActivate(opt){
-  // L'effet FANTÔME dure pour l'option suivante seulement : on l'éteint au 2e changement après son application
-  if(_ghostedObj){
-    if(_ghostClearArmed){_ghostedObj.ghost=false;_ghostedObj=null;_ghostClearArmed=false;}
-    else _ghostClearArmed=true;
-  }
+  // L'effet FANTÔME est permanent pour le reste de la partie (pas d'extinction automatique)
   _ultimateActiveOpt=opt;
   if(opt==='night') nightMode=true;
   else if(opt==='speed') speedMode=true;
