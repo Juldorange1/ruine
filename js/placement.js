@@ -2,7 +2,7 @@
 function startPlacement(){
   placeGen++;
   placeQueue=[];
-  if(GAMEMODE==='solo'||GAMEMODE==='survivor'){
+  if(GAMEMODE==='solo'||GAMEMODE==='survivor'||GAMEMODE==='boss'){
     for(var i=0;i<4;i++)placeQueue.push({who:'p1',type:'drill'});
   } else if(GAMEMODE==='coop'){
     // Each player places 2 drills, no teleporters in coop
@@ -23,10 +23,11 @@ function startPlacement(){
   nextPlace();
 }
 
-function _showPlaceInfo(txt,emphasis){
+function _showPlaceInfo(txt,kind){
   var el=document.getElementById('placeind');
   if(!el)return;
-  el.textContent='▶ PLACER : '+txt;
+  var _icons={destruct:'💥',ghost:'👻',portal:'◎',inversion:'⇄'};
+  el.textContent=(kind&&_icons[kind]?_icons[kind]+' ':'▶ PLACER : ')+txt;
   // Positionner sous le canvas, jamais par-dessus
   var cwr=document.getElementById('cw').getBoundingClientRect();
   var spaceBelow=window.innerHeight-cwr.bottom;
@@ -38,10 +39,15 @@ function _showPlaceInfo(txt,emphasis){
   }
   el.style.left='50%';el.style.transform='translateX(-50%)';
   el.style.display='block';
-  el.classList.toggle('placeind-emph',!!emphasis);
+  el.classList.remove('placeind-emph','placeind-destruct','placeind-ghost','placeind-portal','placeind-inversion');
+  if(kind==='destruct'||kind==='ghost'||kind==='portal'||kind==='inversion'){
+    el.classList.add('placeind-emph','placeind-'+kind);
+  } else if(kind===true){
+    el.classList.add('placeind-emph');
+  }
 }
 function _hidePlaceInfo(){
-  var el=document.getElementById('placeind');if(el){el.style.display='none';el.classList.remove('placeind-emph');}
+  var el=document.getElementById('placeind');if(el){el.style.display='none';el.classList.remove('placeind-emph','placeind-destruct','placeind-ghost','placeind-portal','placeind-inversion');}
 }
 
 function nextPlace(){
@@ -56,8 +62,11 @@ function nextPlace(){
     // Activer la première option ULTIME maintenant que les foreuses sont placées
     if(ultimateMode&&_ultimatePool.length&&!_ultimateActiveOpt){
       var _f=_ultimatePool[Math.floor(Math.random()*_ultimatePool.length)];
-      _ultimateActivate(_f);_ultimateTimer=(_f==='speed')?60:30;
+      _ultimateActivate(_f);
+      _ultimateTimer=(_f==='speed')?60:30;
     }
+    // BOSS — la 1ère case sûre n'est tirée qu'une fois les 4 foreuses posées (début réel du combat)
+    if(GAMEMODE==='boss')bossSafeCell=_bossPickSafeCell();
     return;
   }
   var cur=placeQueue[0];

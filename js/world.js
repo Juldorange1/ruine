@@ -186,3 +186,65 @@ function updPiques(dt){
     });
   });
 }
+
+/* ── BOSS — carte divisée en 4 zones, séquence de zones fixe (_bossZoneSeq) ── */
+function _bossZoneOf(gx,gy){
+  var midX=MAP/2,midY=MAP/2;
+  if(gx<midX) return gy<midY?1:3;
+  else return gy<midY?2:4;
+}
+function _bossFreeCells(){
+  // La case du boss fait partie des cases attaquables (et peut donc être la case sûre) :
+  // rester sur lui pendant une attaque tue, comme n'importe quelle autre case.
+  var cells=[];
+  for(var gy=1;gy<MAP-1;gy++)for(var gx=1;gx<MAP-1;gx++){
+    if(cellOcc(gx,gy))continue;
+    cells.push({gx:gx,gy:gy});
+  }
+  return cells;
+}
+function _bossPickSafeCell(){
+  var zone=_bossZoneSeq[bossAttackIdx%_bossZoneSeq.length];
+  var free=_bossFreeCells();
+  var inZone=free.filter(function(c){return _bossZoneOf(c.gx,c.gy)===zone;});
+  var pool=inZone.length?inZone:free;
+  if(!pool.length)return null;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function _startBoss(){
+  bossDmgDealt=0;
+  bossAttackInterval=30;bossAttackTimer=30;bossAttackIdx=0;
+  bossTelegraphActive=true;
+  bossSafeCell=null; // tirée seulement une fois les 4 foreuses placées (voir nextPlace)
+  _bossSpriteIdx=Math.floor(Math.random()*_BOSS_SPRITES.length);
+}
+function _bossTriggerAttack(){
+  var free=_bossFreeCells();
+  G.players.forEach(function(p){
+    if(p.dead)return;
+    var pgx=Math.floor(p.x),pgy=Math.floor(p.y);
+    var onSafe=bossSafeCell&&pgx===bossSafeCell.gx&&pgy===bossSafeCell.gy;
+    var onFree=free.some(function(c){return c.gx===pgx&&c.gy===pgy;});
+    if(onFree&&!onSafe){p.dead=true;p.hp=0;sfx('death');log('Le boss te terrasse !');}
+  });
+  // Embrasement de toutes les cases attaquées (toutes sauf la case sûre)
+  bossBurnCells=free.filter(function(c){return!(bossSafeCell&&c.gx===bossSafeCell.gx&&c.gy===bossSafeCell.gy);})
+    .map(function(c){return{gx:c.gx,gy:c.gy,life:1.1};});
+  bossFlashTimer=0.25;
+  bossAttackIdx++;
+  bossAttackInterval=Math.max(BOSS_MIN_INTERVAL,bossAttackInterval-1);
+  bossAttackTimer=bossAttackInterval;
+  bossSafeCell=_bossPickSafeCell();
+}
+function updBoss(dt){
+  if(!G||G.phase!=='combat')return;
+  if(bossFlashTimer>0)bossFlashTimer=Math.max(0,bossFlashTimer-dt);
+  if(bossHitFlashTimer>0)bossHitFlashTimer=Math.max(0,bossHitFlashTimer-dt);
+  if(bossBurnCells.length){
+    bossBurnCells.forEach(function(c){c.life-=dt;});
+    bossBurnCells=bossBurnCells.filter(function(c){return c.life>0;});
+  }
+  bossAttackTimer-=dt;
+  if(bossAttackTimer<=0)_bossTriggerAttack();
+  if(G.p1&&G.p1.dead){G.phase='over';G.phase_over=true;G.winner='BOSS_DEAD';}
+}

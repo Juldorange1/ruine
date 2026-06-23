@@ -20,17 +20,30 @@ function mkBd(type,gx,gy,owner){
     stored:{coal:0,gold:0,diamond:0},drillTimer:0,facing:'down'};
 }
 
+var _initSeedOverride=null; // fixe la seed de génération de carte (ex: défi du jour)
 function initGame(){
-  var rr=mkRng(Date.now()|0),taken={};
+  var rr=mkRng(_initSeedOverride!=null?_initSeedOverride:(Date.now()|0)),taken={};
+  _initSeedOverride=null;
   // Marquer tous les murs comme pris
   for(var _wy=0;_wy<MAP;_wy++)for(var _wx=0;_wx<MAP;_wx++){
     if(isWall(_wx,_wy))taken[_wx+','+_wy]=true;
   }
+  // En mode BOSS, la case centrale est réservée au boss : aucun bloc ni bâtiment ne peut y apparaître
+  if(GAMEMODE==='boss')taken[Math.floor(MAP/2)+','+Math.floor(MAP/2)]=true;
   // Usine : une case libre aléatoire, jamais sur le contour
   // (en mode SURVIVANT, marge plus grande pour laisser de l'espace avant les vagues d'ennemis)
+  // (en mode BOSS, l'usine ne doit jamais être à plus de 8 cases du boss, au centre total de la carte)
   var _facMargin=(GAMEMODE==='survivor')?3:2;
   var _fGx,_fGy;
-  _fGx=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));_fGy=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));taken[_fGx+','+_fGy]=true;
+  if(GAMEMODE==='boss'){
+    var _bossPosX=MAP/2,_bossPosY=MAP/2,_facTries=0;
+    do{
+      _fGx=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));_fGy=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));_facTries++;
+    }while((taken[_fGx+','+_fGy]||Math.hypot(_fGx-_bossPosX,_fGy-_bossPosY)>8)&&_facTries<500);
+  } else {
+    _fGx=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));_fGy=_facMargin+Math.floor(rr()*(MAP-_facMargin*2));
+  }
+  taken[_fGx+','+_fGy]=true;
 
   var blocks=[];
 
@@ -62,7 +75,7 @@ function initGame(){
     }
     placeRes('coal',mineralQty);
     placeRes('gold',mineralQty);
-    placeRes('diamond',mineralQty);
+    if(GAMEMODE!=='boss')placeRes('diamond',mineralQty);
   }
 
   // Flood-fill : compte les cases libres connectées depuis (fx,fy), s'arrête à max+1

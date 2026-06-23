@@ -32,8 +32,7 @@
   <!-- Zone code map — rejouer une map précédente -->
   <div style="margin-bottom:10px;padding:8px 16px;background:rgba(8,5,2,0.6);border:1px solid rgba(200,160,50,0.2);border-radius:6px;max-width:480px;width:100%;box-sizing:border-box">
     <div style="font-size:9px;letter-spacing:3px;color:rgba(200,160,50,0.5);margin-bottom:4px;font-family:'Courier New',monospace">CODE MAP</div>
-    <div id="lastmapcode" style="font-size:8px;color:rgba(200,160,50,0.55);font-family:'Courier New',monospace;margin-bottom:2px;word-break:break-all;min-height:10px;line-height:1.4"></div>
-    <div id="lastmapcode-cost" style="font-size:9px;color:rgba(220,180,80,0.6);font-family:'Courier New',monospace;margin-bottom:6px"></div>
+    <div id="lastmapcode" style="font-size:8px;color:rgba(200,160,50,0.55);font-family:'Courier New',monospace;margin-bottom:6px;word-break:break-all;min-height:10px;line-height:1.4"></div>
     <div style="display:flex;gap:6px;align-items:center">
       <input id="mapcodeload" type="text" placeholder="Coller un code ici pour rejouer cette map..." style="flex:1;background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:rgba(220,180,80,0.9);font-family:'Courier New',monospace;font-size:10px;padding:5px 8px;border-radius:3px;outline:none">
     </div>
@@ -45,39 +44,44 @@
 
     <!-- RECORD card (solo) -->
     <div class="mcard" style="min-width:260px">
-      <h2 id="record-title" style="color:#80eeff;margin-bottom:10px">RECORD</h2>
 
       <!-- Colonnes : stats + bouton durée -->
       <div style="display:flex;gap:4px;margin-bottom:10px;justify-content:center;font-family:'Courier New',monospace">
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-bestr-500" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
+          <div id="stat-best-500" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Meilleur temps">—</div>
           <div id="stat-wins-500"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="500d" onclick="recSetDur('500d')" style="background:rgba(240,210,80,0.2);border:1px solid rgba(240,210,80,0.7);color:#f0d250;font-weight:bold;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">500</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-bestr-1000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
+          <div id="stat-best-1000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Meilleur temps">—</div>
           <div id="stat-wins-1000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="1000d" onclick="recSetDur('1000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">1000</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-bestr-2000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
+          <div id="stat-best-2000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Meilleur temps">—</div>
           <div id="stat-wins-2000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
           <button class="rec-dur" data-dur="2000d" onclick="recSetDur('2000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">2000</button>
-        </div>
-
-        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-          <div id="stat-bestr-3000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Record ALÉATOIRE">—</div>
-          <div id="stat-wins-3000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
-          <button class="rec-dur" data-dur="3000d" onclick="recSetDur('3000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">3000</button>
         </div>
 
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
           <div id="stat-survivor-best" style="font-size:11px;color:#e08060;letter-spacing:1px" title="Record : meilleur nb d'ennemis tués en une partie">—</div>
           <div id="stat-survivor-kills" style="font-size:12px;font-weight:bold;color:#e0a060">0</div>
           <button class="rec-dur" data-dur="survivor" onclick="recSetDur('survivor')" title="SURVIVANT" style="background:rgba(220,80,40,0.05);border:1px solid rgba(220,80,40,0.35);color:rgba(220,100,60,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 10px;">☠</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-daily-best" style="font-size:11px;color:#d0a0ff;letter-spacing:1px" title="Meilleur temps du jour">—</div>
+          <div id="stat-daily-date" style="font-size:9px;font-weight:bold;color:#a888d8">—</div>
+          <button class="rec-dur" data-dur="daily" onclick="recSetDur('daily')" title="DÉFI DU JOUR" style="background:rgba(140,60,220,0.05);border:1px solid rgba(140,60,220,0.35);color:rgba(170,110,230,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 10px;">📅</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-boss-best" style="font-size:11px;color:#ff9050;letter-spacing:1px" title="Meilleurs dégâts infligés au boss">—</div>
+          <div id="stat-boss-kills" style="font-size:12px;font-weight:bold;color:#ffb070">0</div>
+          <button class="rec-dur" data-dur="boss" onclick="recSetDur('boss')" title="BOSS" style="background:rgba(220,30,30,0.05);border:1px solid rgba(220,30,30,0.35);color:rgba(230,90,80,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 10px;">👹</button>
         </div>
 
       </div>
@@ -89,7 +93,6 @@
 
   <!-- Options -->
   <div style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
-    <button id="btn-random" onclick="toggleRandomCostMode()" style="background:rgba(0,25,15,0.06);border:1px solid rgba(30,150,80,0.25);color:rgba(50,180,100,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 20px;pointer-events:all">AL&#201;ATOIRE</button>
     <button onclick="document.getElementById('rulesov').style.display='flex'" style="background:rgba(10,8,2,0.7);border:1px solid rgba(200,160,50,0.35);color:rgba(220,180,80,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all" data-i18n="btn_rules">? R&#200;GLES</button>
     <button onclick="openParams()" style="background:rgba(10,8,2,0.7);border:1px solid rgba(160,120,200,0.35);color:rgba(180,140,220,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all" data-i18n="btn_params">&#9881; PARAM&#200;TRES</button>
   </div>
@@ -110,8 +113,7 @@
   <h1 class="title" id="endtitle"></h1>
   <div class="sub" id="endsub"></div>
   <div id="endmode" style="font-size:11px;letter-spacing:3px;opacity:0.45;color:#c8a060;margin-bottom:10px;font-family:'Courier New',monospace"></div>
-  <div id="endmapcode" onclick="copyMapCode()" title="Cliquer pour copier ce code" style="font-size:8px;color:rgba(200,160,50,0.5);font-family:'Courier New',monospace;margin-bottom:4px;cursor:pointer;word-break:break-all;max-width:440px;text-align:center;padding:4px 8px;border:1px solid rgba(200,160,50,0.15);border-radius:3px;transition:color .3s"></div>
-  <div id="endmapcode-cost" style="font-size:11px;color:rgba(220,180,80,0.7);font-family:'Courier New',monospace;margin-bottom:12px;text-align:center"></div>
+  <div id="endmapcode" onclick="copyMapCode()" title="Cliquer pour copier ce code" style="font-size:8px;color:rgba(200,160,50,0.5);font-family:'Courier New',monospace;margin-bottom:12px;cursor:pointer;word-break:break-all;max-width:440px;text-align:center;padding:4px 8px;border:1px solid rgba(200,160,50,0.15);border-radius:3px;transition:color .3s"></div>
   <div style="font-size:9px;color:rgba(200,160,50,0.3);font-family:'Courier New',monospace;margin-bottom:12px;letter-spacing:1px">↑ Cliquer pour copier le code map (rejouer via le menu)</div>
   <button class="btn" id="btnreplay" data-i18n="btn_replay">REJOUER</button>
   <button class="btn" id="btnmenu" style="margin-top:10px;font-size:11px;padding:8px 24px" data-i18n="btn_menu_short">MENU</button>
@@ -148,7 +150,6 @@
 
 <!-- Panel gauche : objectif roi, coûts aléatoires, pool ultime — empilés verticalement -->
 <div id="leftpanel" style="position:fixed;top:175px;left:12px;z-index:49;display:flex;flex-direction:column;gap:7px;pointer-events:none;visibility:hidden">
-  <div id="randomcostinfo" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(50,200,100,0.35);border-radius:5px;padding:6px 16px;font-family:'Courier New',monospace;font-size:14px;color:rgba(80,220,130,0.85);letter-spacing:1px;white-space:nowrap"></div>
   <div id="ultimatehud" style="display:none;background:rgba(8,2,12,0.95);border:1px solid rgba(140,30,180,0.3);border-radius:6px;padding:10px 16px;font-family:'Courier New',monospace;letter-spacing:1px;min-width:160px"></div>
   <div id="survivorhud" style="display:none;background:rgba(20,4,2,0.9);border:1px solid rgba(220,80,40,0.4);border-radius:5px;padding:6px 16px;font-family:'Courier New',monospace;font-size:13px;color:rgba(240,140,90,0.9);letter-spacing:1px;white-space:nowrap"></div>
 </div>
@@ -169,7 +170,7 @@
       <!-- OBJECTIF -->
       <div style="border:1px solid rgba(240,210,80,0.28);border-radius:8px;padding:16px 20px;background:rgba(30,20,0,0.4)">
         <div style="font-size:15px;font-weight:bold;color:#f0d060;letter-spacing:4px;margin-bottom:10px">◆ OBJECTIF</div>
-        <div>Atteindre le quota de <span style="color:#80eeff">diamants</span> choisi (<b style="color:#f0d060">500 / 1000 / 2000 / 3000</b>) le plus vite possible. Le chrono monte dès le début du combat et s'arrête dès que l'objectif est atteint. <b>Meilleur score = temps le plus court.</b> Les records sont sauvegardés séparément selon l'objectif, et selon que le mode ALÉATOIRE était actif ou non.</div>
+        <div>Atteindre le quota de <span style="color:#80eeff">diamants</span> choisi (<b style="color:#f0d060">500 / 1000 / 2000</b>) le plus vite possible. Le chrono monte dès le début du combat et s'arrête dès que l'objectif est atteint. <b>Meilleur score = temps le plus court.</b> Pour l'objectif <b>1000</b>, il faut que le minerai que tu possèdes en plus petite quantité atteigne 1000 (et pas seulement le diamant). Les records sont sauvegardés séparément selon l'objectif.</div>
       </div>
 
       <!-- RESSOURCES -->
@@ -192,7 +193,7 @@
             <div style="color:#888;font-size:10px;margin-top:2px">objectif + blocs</div>
           </div>
         </div>
-        <div>La carte contient des blocs de minerai (charbon ■, or ★, diamant ◆) en quantité fixe de 6 par type. La ressource à collecter est toujours le <span style="color:#80eeff">diamant</span>. En mode <span style="color:#50d888">ALÉATOIRE</span>, les coûts de chaque achat sont tirés au hasard avant la partie.</div>
+        <div>La carte contient des blocs de minerai (charbon ■, or ★, diamant ◆) en quantité fixe par type. La ressource à collecter est toujours le <span style="color:#80eeff">diamant</span>.</div>
       </div>
 
       <!-- PHASES -->
@@ -255,16 +256,22 @@
         <div>À la fin de chaque partie, un <b>code map</b> s'affiche (clique dessus pour le copier). Colle-le dans le champ du menu principal pour rejouer exactement la même configuration de carte. Attention : jouer sur une carte importée via code ne compte que pour <b>la moitié des victoires</b> et <b>n'enregistre pas de record de temps</b>.</div>
       </div>
 
-      <!-- ALÉATOIRE -->
-      <div style="border:1px solid rgba(50,200,100,0.2);border-radius:8px;padding:16px 20px;background:rgba(5,20,10,0.3)">
-        <div style="font-size:15px;font-weight:bold;color:#40d870;letter-spacing:4px;margin-bottom:10px">🎲 MODE ALÉATOIRE</div>
-        <div>Activé via le bouton ALÉATOIRE du menu. Les coûts de chaque achat (foreuse, bloc, dégâts, vitesse) sont tirés au sort parmi les ressources disponibles avant la partie. Contrainte : chaque type de minerai doit permettre d'acheter au moins 1 type d'objet.</div>
-      </div>
-
       <!-- RECORDS -->
       <div style="border:1px solid rgba(80,210,130,0.25);border-radius:8px;padding:16px 20px;background:rgba(5,18,10,0.35)">
         <div style="font-size:15px;font-weight:bold;color:#50d888;letter-spacing:4px;margin-bottom:10px">🏆 RECORDS</div>
-        <div><b style="color:#50d888">Les records de temps ne sont enregistrés et affichés que si le mode ALÉATOIRE était actif pendant la partie.</b> Une partie jouée sans ce mode ne compte pas pour le tableau de records. Les victoires (nombre de parties gagnées) sont toujours comptées, quel que soit le mode.</div>
+        <div><b style="color:#50d888">Le meilleur temps est enregistré à chaque victoire.</b> Les victoires (nombre de parties gagnées) sont toujours comptées également.</div>
+      </div>
+
+      <!-- DÉFI DU JOUR -->
+      <div style="border:1px solid rgba(140,60,220,0.25);border-radius:8px;padding:16px 20px;background:rgba(14,4,22,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#b070e8;letter-spacing:4px;margin-bottom:10px">📅 DÉFI DU JOUR</div>
+        <div>Chaque jour, une carte (seed) et un effet ULTIME fixe sont tirés au hasard — les mêmes pour tout le monde ce jour-là. Objectif : 1000 ◆ le plus vite possible. Le lendemain, une nouvelle carte et un nouvel effet sont tirés, et le record de la veille est remplacé.</div>
+      </div>
+
+      <!-- BOSS -->
+      <div style="border:1px solid rgba(220,30,30,0.28);border-radius:8px;padding:16px 20px;background:rgba(22,3,3,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#ff7050;letter-spacing:4px;margin-bottom:10px">👹 BOSS</div>
+        <div>Un boss géant apparaît en haut de l'écran. Toutes les <b>N secondes</b> (30, puis 29, 28, 27… de moins en moins), il attaque <b>toutes les cases libres sauf une</b> : si tu n'es pas sur la case sûre au moment de l'attaque, tu meurs instantanément. La case sûre est révélée dès le début du décompte. But : infliger le plus de dégâts possible au boss avant de mourir.</div>
       </div>
 
       <!-- ULTIME -->
@@ -318,7 +325,7 @@
 
       <div style="border:1px solid rgba(240,210,80,0.28);border-radius:8px;padding:16px 20px;background:rgba(30,20,0,0.4)">
         <div style="font-size:15px;font-weight:bold;color:#f0d060;letter-spacing:4px;margin-bottom:10px">◆ OBJECTIVE</div>
-        <div>Reach the chosen <span style="color:#80eeff">diamond</span> quota (<b style="color:#f0d060">500 / 1000 / 2000 / 3000</b>) as fast as possible. The timer starts when combat begins and stops when the goal is reached. <b>Best score = shortest time.</b> Records are saved separately per goal, and only when RANDOM mode was active.</div>
+        <div>Reach the chosen <span style="color:#80eeff">diamond</span> quota (<b style="color:#f0d060">500 / 1000 / 2000</b>) as fast as possible. The timer starts when combat begins and stops when the goal is reached. <b>Best score = shortest time.</b> For the <b>1000</b> goal, the mineral you hold the least of must reach 1000 (not just diamond). Records are saved separately per goal.</div>
       </div>
 
       <div style="border:1px solid rgba(180,160,80,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,15,0,0.35)">
@@ -340,7 +347,7 @@
             <div style="color:#888;font-size:10px;margin-top:2px">goal + blocks</div>
           </div>
         </div>
-        <div>The map contains mineral blocks (coal ■, gold ★, diamond ◆), 6 of each type. The resource to collect is always <span style="color:#80eeff">diamond</span>. In <span style="color:#50d888">RANDOM</span> mode, purchase costs are drawn randomly before the game.</div>
+        <div>The map contains mineral blocks (coal ■, gold ★, diamond ◆), a fixed amount per type. The resource to collect is always <span style="color:#80eeff">diamond</span>.</div>
       </div>
 
       <div style="border:1px solid rgba(200,140,50,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,12,0,0.35)">
@@ -398,14 +405,19 @@
         <div>At the end of each game, a <b>map code</b> is displayed (click it to copy). Paste it in the main menu field to replay the exact same map layout. Note: playing on an imported map counts for only <b>half the wins</b> and <b>does not record a time record</b>.</div>
       </div>
 
-      <div style="border:1px solid rgba(50,200,100,0.2);border-radius:8px;padding:16px 20px;background:rgba(5,20,10,0.3)">
-        <div style="font-size:15px;font-weight:bold;color:#40d870;letter-spacing:4px;margin-bottom:10px">🎲 RANDOM MODE</div>
-        <div>Activated via the RANDOM button in the menu. Purchase costs (drill, block, damage, speed) are drawn randomly from available resources before the game. Constraint: each mineral type must enable buying at least 1 item type.</div>
-      </div>
-
       <div style="border:1px solid rgba(80,210,130,0.25);border-radius:8px;padding:16px 20px;background:rgba(5,18,10,0.35)">
         <div style="font-size:15px;font-weight:bold;color:#50d888;letter-spacing:4px;margin-bottom:10px">🏆 RECORDS</div>
-        <div><b style="color:#50d888">Time records are only saved and displayed when RANDOM mode was active during the game.</b> A game played without this mode does not count for the leaderboard. Win counts (number of won games) are always tracked regardless of mode.</div>
+        <div><b style="color:#50d888">The best time is recorded on every win.</b> Win counts are always tracked too.</div>
+      </div>
+
+      <div style="border:1px solid rgba(140,60,220,0.25);border-radius:8px;padding:16px 20px;background:rgba(14,4,22,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#b070e8;letter-spacing:4px;margin-bottom:10px">📅 DAILY CHALLENGE</div>
+        <div>Every day, a fixed map (seed) and a fixed ULTIMATE effect are drawn at random — the same for everyone that day. Goal: 1000 ◆ as fast as possible. The next day, a new map and effect are drawn, and yesterday's record is replaced.</div>
+      </div>
+
+      <div style="border:1px solid rgba(220,30,30,0.28);border-radius:8px;padding:16px 20px;background:rgba(22,3,3,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#ff7050;letter-spacing:4px;margin-bottom:10px">👹 BOSS</div>
+        <div>A giant boss appears at the top of the screen. Every <b>N seconds</b> (30, then 29, 28, 27… decreasing), it attacks <b>every free tile except one</b>: if you're not on the safe tile when it hits, you die instantly. The safe tile is revealed as soon as the countdown starts. Goal: deal as much damage as possible to the boss before dying.</div>
       </div>
 
       <div style="border:2px solid rgba(140,30,180,0.4);border-radius:8px;padding:16px 20px;background:rgba(20,0,28,0.45)">

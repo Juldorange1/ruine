@@ -14,10 +14,10 @@ function updCombat(dt){
   pl.forEach(function(p){
     if(p.dead)return;
     if((p.combatTimer-=dt)<=0)p.inCombat=false;
-    if(!p.inCombat&&p.hp<p.maxHp)p.hp=Math.min(p.maxHp,p.hp+p.regen*dt);
+    if(!p.inCombat&&p.hp<p.maxHp&&!p.dead)p.hp=Math.min(p.maxHp,p.hp+p.regen*dt);
     if(p.hp<=0&&!p.dead){p.dead=true;sfx('death');log(p.name+' est mort !');}
   });
-  if(GAMEMODE!=='solo'&&GAMEMODE!=='survivor'){
+  if(GAMEMODE!=='solo'&&GAMEMODE!=='survivor'&&GAMEMODE!=='boss'){
     if(G.p1.dead&&!G.phase_over){G.phase='over';G.phase_over=true;G.winner='P2';}
     if(G.p2&&G.p2.dead&&!G.phase_over){G.phase='over';G.phase_over=true;G.winner='P1';}
   }
@@ -50,6 +50,18 @@ function spearStrike(actor, worldX, worldY){
 function applyRockHit(rock){
   var RANGE=0.3; // zone d'impact minuscule — précision requise
   var kx=rock.tx,ky=rock.ty,actor=rock.owner;
+  // Le boss a la priorité absolue : si l'impact est dans sa zone, seul lui est touché
+  // (même si une foreuse/un minerai/un portail se trouve aussi à cet endroit)
+  // Hitbox elliptique identique pour les 10 apparences, calée sur la forme/taille du sprite
+  if(GAMEMODE==='boss'){
+    var _bhdx=(kx-MAP/2)/BOSS_HITBOX_RX,_bhdy=(ky-MAP/2)/BOSS_HITBOX_RY;
+    if(_bhdx*_bhdx+_bhdy*_bhdy<=1){
+      bossDmgDealt+=actor.dmg;
+      bossHitFlashTimer=0.25; // ne rougit que l'apparence du boss, jamais sa hitbox ni l'écran
+      sfx('strike');
+      return;
+    }
+  }
   var bestDist=RANGE,bestTarget=null,bestType=null;
   G.players.forEach(function(p){
     if(p===actor||p.dead||p.team===actor.team)return;
@@ -75,6 +87,7 @@ function applyRockHit(rock){
     if(d<RANGE&&d<bestDist){bestDist=d;bestTarget=en;bestType='enemy';}
   });
   if(!bestTarget)return;
+  bestTarget.hitFlash=0.2; // flash rouge temporaire pour confirmer l'impact
   if(bestType==='player'){
     bestTarget.hp=Math.max(0,bestTarget.hp-actor.dmg);
     bestTarget.inCombat=true;bestTarget.combatTimer=0.5;
@@ -111,6 +124,12 @@ function updRocks(dt){
     if(t>=1){rock.done=true;applyRockHit(rock);}
   });
   G.rocks=G.rocks.filter(function(r){return !r.done;});
+  // Décompte du flash rouge d'impact sur toutes les cibles touchées
+  function _tickFlash(o){if(o.hitFlash>0)o.hitFlash=Math.max(0,o.hitFlash-dt);}
+  G.players.forEach(_tickFlash);
+  G.buildings.forEach(_tickFlash);
+  G.blocks.forEach(_tickFlash);
+  if(G.enemies)G.enemies.forEach(_tickFlash);
 }
 
 

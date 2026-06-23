@@ -101,6 +101,7 @@ function draw(){
     }
     if(bl.hp<bl.maxHp){var bw3=TILE-10;X.fillStyle='rgba(0,0,0,0.5)';X.fillRect(bx+5,by+TILE-6,bw3,4);X.fillStyle=bl.hp/bl.maxHp>0.5?'#70b038':'#d07020';X.fillRect(bx+5,by+TILE-6,bw3*(bl.hp/bl.maxHp),4);}
     X.globalAlpha=1;
+    if(bl.hitFlash>0){X.fillStyle='rgba(255,30,20,'+(bl.hitFlash/0.2*0.55)+')';X.fillRect(bx+2,by+2,TILE-4,TILE-4);}
   });
 
   // Range indicator removed
@@ -110,6 +111,7 @@ function draw(){
     if(bd.ghost)X.globalAlpha=0.32;
     drawBd(bd);
     X.globalAlpha=1;
+    if(bd.hitFlash>0){X.fillStyle='rgba(255,30,20,'+(bd.hitFlash/0.2*0.55)+')';X.fillRect(bd.gx*TILE+2,bd.gy*TILE+2,TILE-4,TILE-4);}
   });
 
   // TP highlight
@@ -138,20 +140,31 @@ function draw(){
   // Pique mode border
   if(piqueMode){X.strokeStyle='rgba(255,200,50,0.6)';X.lineWidth=2;X.setLineDash([4,3]);X.strokeRect(2,2,CW-4,CH-4);X.setLineDash([]);}
 
-  // Pierres en vol (projectiles)
+  // Pierres en vol (projectiles) — plus grosses, traînée lumineuse, halo bien visible
   if(G.rocks)G.rocks.forEach(function(rock){
     var rx=rock.x*TILE,ry=rock.y*TILE;
     var t=rock.totalTime>0?Math.min(rock.time/rock.totalTime,1):1;
     var arcH=Math.sin(t*Math.PI)*22; // arc parabolique max 22px
     // Ombre au sol (s'étale quand la pierre monte)
-    X.fillStyle='rgba(0,0,0,0.2)';
-    X.beginPath();X.ellipse(rx,ry+4,7*(1-arcH/28),3.5,0,0,Math.PI*2);X.fill();
-    // Pierre
-    var rg2=X.createRadialGradient(rx-2,ry-arcH-2,1,rx,ry-arcH,5);
-    rg2.addColorStop(0,'rgba(168,140,94,0.98)');rg2.addColorStop(1,'rgba(62,48,26,0.93)');
+    X.fillStyle='rgba(0,0,0,0.25)';
+    X.beginPath();X.ellipse(rx,ry+4,8*(1-arcH/28),4,0,0,Math.PI*2);X.fill();
+    // Traînée derrière la pierre (sens du déplacement)
+    var tdx=rock.tx-rock.ox,tdy=rock.ty-rock.oy,tdl=Math.hypot(tdx,tdy)||1;
+    var trX=rx-(tdx/tdl)*16,trY=ry-arcH-(tdy/tdl)*16;
+    var trg=X.createLinearGradient(rx,ry-arcH,trX,trY);
+    trg.addColorStop(0,'rgba(255,210,120,0.85)');trg.addColorStop(1,'rgba(255,210,120,0)');
+    X.strokeStyle=trg;X.lineWidth=5;X.lineCap='round';
+    X.beginPath();X.moveTo(rx,ry-arcH);X.lineTo(trX,trY);X.stroke();
+    // Halo lumineux autour de la pierre
+    var hg2=X.createRadialGradient(rx,ry-arcH,1,rx,ry-arcH,13);
+    hg2.addColorStop(0,'rgba(255,220,140,0.55)');hg2.addColorStop(1,'rgba(255,180,60,0)');
+    X.fillStyle=hg2;X.beginPath();X.arc(rx,ry-arcH,13,0,Math.PI*2);X.fill();
+    // Pierre (plus grosse, contour net)
+    var rg2=X.createRadialGradient(rx-2,ry-arcH-2,1,rx,ry-arcH,7.5);
+    rg2.addColorStop(0,'rgba(210,185,140,1)');rg2.addColorStop(0.6,'rgba(168,140,94,0.98)');rg2.addColorStop(1,'rgba(62,48,26,0.95)');
     X.fillStyle=rg2;
-    X.beginPath();X.arc(rx,ry-arcH,5,0,Math.PI*2);X.fill();
-    X.strokeStyle='rgba(28,20,8,0.55)';X.lineWidth=1;X.stroke();
+    X.beginPath();X.arc(rx,ry-arcH,7.5,0,Math.PI*2);X.fill();
+    X.strokeStyle='rgba(255,230,160,0.8)';X.lineWidth=1.5;X.stroke();
   });
 
   // Surbrillance sélection Destruction / Fantôme
@@ -164,8 +177,9 @@ function draw(){
       X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
     });
     G.buildings.forEach(function(b){
-      if(b.type!=='drill'&&b.type!=='drillfast'&&b.type!=='factory')return;
+      if(b.type!=='drill'&&b.type!=='drillfast'&&b.type!=='factory'&&b.type!=='portal')return;
       if(_destructPending&&b.type==='factory')return;
+      if(_ghostPending&&b.type==='portal')return; // le fantôme ne cible pas les portails
       if(_ghostPending&&b.ghost)return;
       X.strokeStyle='rgba('+_sCol+','+(0.45+_sPulse*0.45)+')';X.lineWidth=2.5;X.setLineDash([5,3]);
       X.strokeRect(b.gx*TILE+2,b.gy*TILE+2,TILE-4,TILE-4);X.setLineDash([]);
@@ -190,6 +204,46 @@ function draw(){
 
   // Ennemis (mode Survivant)
   if(G.enemies&&G.enemies.length)G.enemies.forEach(drawEnemy);
+
+  // BOSS — case sûre télégraphiée, zones, attaque
+  if(GAMEMODE==='boss'&&G.phase==='combat'){
+    var _bPulse=0.5+0.5*Math.sin(G.time*5);
+    if(bossSafeCell){
+      X.fillStyle='rgba(60,255,120,'+(0.18+_bPulse*0.12)+')';
+      X.fillRect(bossSafeCell.gx*TILE,bossSafeCell.gy*TILE,TILE,TILE);
+      X.strokeStyle='rgba(80,255,140,'+(0.7+_bPulse*0.3)+')';X.lineWidth=3;
+      X.strokeRect(bossSafeCell.gx*TILE+2,bossSafeCell.gy*TILE+2,TILE-4,TILE-4);
+    }
+    if(bossFlashTimer>0){
+      // Flash rouge global au moment de l'impact
+      X.fillStyle='rgba(255,30,20,'+(0.4*(bossFlashTimer/0.25))+')';
+      X.fillRect(0,0,CW,CH);
+    }
+    // Flammes menaçantes sur les cases attaquées
+    if(bossBurnCells&&bossBurnCells.length)bossBurnCells.forEach(function(c){
+      var bx=c.gx*TILE,by=c.gy*TILE,cx=bx+TILE/2,cy=by+TILE/2;
+      var a=Math.min(1,c.life/1.1);
+      var flick=0.5+0.5*Math.sin(G.time*22+c.gx*3+c.gy*5);
+      X.fillStyle='rgba(255,90,10,'+(0.28*a)+')';X.fillRect(bx,by,TILE,TILE);
+      for(var fi=0;fi<3;fi++){
+        var fx=bx+TILE*(0.25+fi*0.25)+Math.sin(G.time*14+fi*2+c.gx)*3;
+        var fh=(18+flick*10+fi*3)*a;
+        var fg=X.createLinearGradient(fx,cy+10,fx,cy+10-fh);
+        fg.addColorStop(0,'rgba(255,60,0,'+(0.95*a)+')');
+        fg.addColorStop(0.5,'rgba(255,160,20,'+(0.85*a)+')');
+        fg.addColorStop(1,'rgba(255,230,120,0)');
+        X.fillStyle=fg;
+        X.beginPath();
+        X.moveTo(fx,cy+10);
+        X.quadraticCurveTo(fx-7,cy+10-fh*0.55,fx,cy+10-fh);
+        X.quadraticCurveTo(fx+7,cy+10-fh*0.55,fx,cy+10);
+        X.closePath();X.fill();
+      }
+      X.strokeStyle='rgba(255,120,20,'+(0.5*a)+')';X.lineWidth=2;
+      X.strokeRect(bx+2,by+2,TILE-4,TILE-4);
+    });
+    drawBossSprite();
+  }
 
   // Players
   G.players.forEach(function(p){if(!p.dead)drawPlayer(p);});
@@ -358,11 +412,213 @@ function drawEnemy(en){
   X.fillStyle=eg;X.beginPath();X.arc(0,0,r,0,Math.PI*2);X.fill();
   X.strokeStyle='rgba(255,180,140,0.85)';X.lineWidth=2;X.beginPath();X.arc(0,0,r,0,Math.PI*2);X.stroke();
   X.fillStyle='#1a0000';X.beginPath();X.arc(-4,-2,2.2,0,Math.PI*2);X.fill();X.beginPath();X.arc(4,-2,2.2,0,Math.PI*2);X.fill();
+  if(en.hitFlash>0){X.fillStyle='rgba(255,255,255,'+(en.hitFlash/0.2*0.6)+')';X.beginPath();X.arc(0,0,r,0,Math.PI*2);X.fill();}
   X.restore();
   var bw=TILE-20,hpFrac=en.hp/en.maxHp;
   X.fillStyle='rgba(0,0,0,0.5)';X.fillRect(ex-bw/2,ey-r-10,bw,4);
   X.fillStyle=hpFrac>0.5?'rgba(220,80,30,0.9)':'rgba(255,40,20,0.95)';
   X.fillRect(ex-bw/2,ey-r-10,bw*hpFrac,4);
+}
+
+/* ── 10 variantes du boss — mage / mécha / élémentaire, toutes liées au feu (orbe/cœur incandescent) ── */
+var _BOSS_SPRITES=[
+  {arc:'mage',body:[120,30,20],dark:[50,10,6],accent:[255,210,120],fire:[255,90,10]},
+  {arc:'mage',body:[30,20,90],dark:[10,6,40],accent:[180,160,255],fire:[120,80,255]},
+  {arc:'mage',body:[20,80,60],dark:[6,30,22],accent:[160,255,200],fire:[60,255,140]},
+  {arc:'mage',body:[90,20,90],dark:[36,6,40],accent:[255,160,255],fire:[230,60,255]},
+  {arc:'mech',body:[70,70,80],dark:[26,26,32],accent:[255,140,40],fire:[255,120,20]},
+  {arc:'mech',body:[40,60,90],dark:[14,22,36],accent:[120,220,255],fire:[80,180,255]},
+  {arc:'mech',body:[90,70,30],dark:[40,30,10],accent:[255,220,80],fire:[255,200,40]},
+  {arc:'elemental',body:[180,60,10],dark:[80,24,4],accent:[255,200,80],fire:[255,80,0]},
+  {arc:'elemental',body:[20,20,24],dark:[6,6,8],accent:[230,230,255],fire:[255,255,255]},
+  {arc:'elemental',body:[140,20,140],dark:[54,6,54],accent:[255,140,255],fire:[200,40,220]}
+];
+var _bossSpriteIdx=0;
+var _bossBufCanvas=null; // tampon transparent pour isoler le masque de rougissement du corps du boss
+function drawBossSprite(){
+  if(!G)return;
+  var cx=(MAP/2)*TILE,cy=(MAP/2)*TILE;
+  var cfg=_BOSS_SPRITES[_bossSpriteIdx]||_BOSS_SPRITES[0];
+  var bob=Math.sin(G.time*2)*4;
+  var pulse=0.5+0.5*Math.sin(G.time*3);
+  var hit=bossHitFlashTimer>0?bossHitFlashTimer/0.25:0;
+  var b=cfg.body,d=cfg.dark,a=cfg.accent,f=cfg.fire;
+  function rgba(c,al){return 'rgba('+c[0]+','+c[1]+','+c[2]+','+al+')';}
+
+  // Anneau de menace tournant au sol (toujours centré sur le boss)
+  X.save();X.translate(cx,cy+34);
+  X.rotate(G.time*0.4);
+  X.strokeStyle=rgba(f,0.22+pulse*0.1);X.lineWidth=2;X.setLineDash([10,9]);
+  X.beginPath();X.ellipse(0,0,40,15,0,0,Math.PI*2);X.stroke();X.setLineDash([]);
+  X.restore();
+
+  // Ombre portée au sol
+  X.save();X.translate(cx,cy+30);
+  X.fillStyle='rgba(0,0,0,0.45)';X.beginPath();X.ellipse(0,4,30,9,0,0,Math.PI*2);X.fill();
+  X.restore();
+
+  // Particules de braise montantes autour du boss
+  X.save();X.translate(cx,cy);
+  for(var pi=0;pi<9;pi++){
+    var ph=(G.time*0.6+pi*0.71)%1;
+    var pa=pi*2.4;
+    var ppx=Math.sin(pa+G.time*0.5)*(20+pi*2);
+    var ppy=34-ph*70;
+    var pal=(1-ph)*0.8;
+    X.fillStyle=rgba(f,pal);
+    X.beginPath();X.arc(ppx,ppy,1.6-ph*1,0,Math.PI*2);X.fill();
+  }
+  X.restore();
+
+  // Le corps est dessiné sur un canvas tampon transparent à part : ainsi le masque de
+  // rougissement (source-atop) ne peut jamais déborder en carré sur le fond/sol déjà opaque.
+  if(!_bossBufCanvas){_bossBufCanvas=document.createElement('canvas');_bossBufCanvas.width=160;_bossBufCanvas.height=180;}
+  var BOX=80,BOY=100; // origine locale dans le tampon
+  var BX=_bossBufCanvas.getContext('2d');
+  BX.clearRect(0,0,_bossBufCanvas.width,_bossBufCanvas.height);
+  var X_=X;X=BX; // redirige temporairement les appels de dessin du corps vers le tampon
+  X.save();X.translate(BOX,BOY);
+  // Halo lumineux d'ensemble (impression de puissance)
+  X.shadowColor=rgba(f,0.85);X.shadowBlur=22+hit*20;
+
+  // Braise au sol sous le corps
+  var eg=X.createRadialGradient(0,30,2,0,30,38);
+  eg.addColorStop(0,rgba(f,0.4+pulse*0.18));eg.addColorStop(1,rgba(f,0));
+  X.fillStyle=eg;X.beginPath();X.ellipse(0,30,38,13,0,0,Math.PI*2);X.fill();
+
+  if(cfg.arc==='mage'){
+    // Cape — pans déchiquetés et flottants
+    X.fillStyle=rgba(d,1);
+    X.beginPath();X.moveTo(0,-36);
+    X.lineTo(26,18);X.lineTo(20,30);X.lineTo(14,20);X.lineTo(7,34);X.lineTo(0,22);
+    X.lineTo(-7,34);X.lineTo(-14,20);X.lineTo(-20,30);X.lineTo(-26,18);
+    X.closePath();X.fill();
+    // Robe principale (dégradé volumétrique)
+    var rg=X.createLinearGradient(-22,-32,22,32);
+    rg.addColorStop(0,rgba(b,1));rg.addColorStop(0.5,rgba(d,1));rg.addColorStop(1,rgba(b,1));
+    X.fillStyle=rg;X.beginPath();X.moveTo(0,-32);X.lineTo(21,26);X.lineTo(-21,26);X.closePath();X.fill();
+    X.strokeStyle=rgba(a,0.35);X.lineWidth=1;X.beginPath();X.moveTo(0,-32);X.lineTo(21,26);X.moveTo(0,-32);X.lineTo(-21,26);X.stroke();
+    // Bras / manches
+    X.fillStyle=rgba(d,1);
+    X.beginPath();X.moveTo(16,-2);X.quadraticCurveTo(30,8,26,22);X.lineTo(18,18);X.quadraticCurveTo(20,4,10,-6);X.closePath();X.fill();
+    // Capuche profonde avec ombre intérieure
+    X.fillStyle=rgba(d,1);X.beginPath();X.moveTo(0,-58);X.quadraticCurveTo(20,-44,16,-16);X.quadraticCurveTo(0,-22,-16,-16);X.quadraticCurveTo(-20,-44,0,-58);X.closePath();X.fill();
+    var hg=X.createRadialGradient(0,-22,2,0,-22,20);hg.addColorStop(0,'rgba(0,0,0,0.85)');hg.addColorStop(1,'rgba(0,0,0,0)');
+    X.fillStyle=hg;X.beginPath();X.ellipse(0,-22,15,14,0,0,Math.PI*2);X.fill();
+    // Yeux incandescents sous la capuche
+    X.fillStyle=rgba(a,0.9+hit*0.1);X.shadowColor=rgba(a,1);X.shadowBlur=8;
+    X.beginPath();X.ellipse(-6,-24,3,1.8,0,0,Math.PI*2);X.fill();
+    X.beginPath();X.ellipse(6,-24,3,1.8,0,0,Math.PI*2);X.fill();
+    X.shadowBlur=22+hit*20;X.shadowColor=rgba(f,0.85);
+    // Bâton + orbe de feu flottant et tournoyant
+    X.strokeStyle=rgba(d,1);X.lineWidth=3;X.beginPath();X.moveTo(24,20);X.lineTo(30,-32);X.stroke();
+    X.strokeStyle=rgba(a,0.4);X.lineWidth=1;X.beginPath();
+    for(var wi=0;wi<3;wi++){var wy=-30+wi*16;X.moveTo(28-2,wy);X.lineTo(32+2,wy+3);}
+    X.stroke();
+    var og=X.createRadialGradient(30,-38,1,30,-38,13);
+    og.addColorStop(0,'rgba(255,250,220,'+(0.95+hit*0.05)+')');og.addColorStop(0.45,rgba(f,0.9));og.addColorStop(1,rgba(f,0));
+    X.fillStyle=og;X.beginPath();X.arc(30,-38,13,0,Math.PI*2);X.fill();
+    for(var ti=0;ti<3;ti++){var ta=G.time*5+ti*2.1;X.fillStyle=rgba(f,0.5);X.beginPath();X.arc(30+Math.cos(ta)*9,-38+Math.sin(ta)*9,1.4,0,Math.PI*2);X.fill();}
+  } else if(cfg.arc==='mech'){
+    // Jambes / pieds
+    X.fillStyle=rgba(d,1);X.fillRect(-14,22,8,12);X.fillRect(6,22,8,12);
+    // Torse — châssis anguleux avec plaques
+    var bg=X.createLinearGradient(-20,-30,20,30);bg.addColorStop(0,rgba(b,1));bg.addColorStop(0.5,rgba(d,1));bg.addColorStop(1,rgba(b,1));
+    X.fillStyle=bg;X.beginPath();X.moveTo(-20,-14);X.lineTo(20,-14);X.lineTo(22,24);X.lineTo(-22,24);X.closePath();X.fill();
+    X.strokeStyle=rgba(a,0.45);X.lineWidth=1.3;X.strokeRect(-20,-14,40,38);
+    X.beginPath();X.moveTo(-20,2);X.lineTo(20,2);X.stroke();
+    // Rivets
+    X.fillStyle=rgba(a,0.5);[-15,-5,5,15].forEach(function(rx){X.beginPath();X.arc(rx,-9,1.3,0,Math.PI*2);X.fill();X.beginPath();X.arc(rx,18,1.3,0,Math.PI*2);X.fill();});
+    // Épaulières
+    X.fillStyle=rgba(d,1);X.beginPath();X.roundRect(-30,-18,14,14,4);X.fill();X.beginPath();X.roundRect(16,-18,14,14,4);X.fill();
+    X.strokeStyle=rgba(a,0.4);X.strokeRect(-30,-18,14,14);X.strokeRect(16,-18,14,14);
+    // Tête anguleuse avec ailerons
+    X.fillStyle=rgba(d,1);X.beginPath();X.moveTo(-14,-36);X.lineTo(14,-36);X.lineTo(17,-16);X.lineTo(-17,-16);X.closePath();X.fill();
+    X.fillStyle=rgba(b,1);X.beginPath();X.moveTo(-16,-30);X.lineTo(-22,-22);X.lineTo(-14,-22);X.closePath();X.fill();
+    X.beginPath();X.moveTo(16,-30);X.lineTo(22,-22);X.lineTo(14,-22);X.closePath();X.fill();
+    // Visière lumineuse
+    X.fillStyle=rgba(a,0.92+hit*0.08);X.shadowColor=rgba(a,1);X.shadowBlur=10;
+    X.fillRect(-10,-29,20,6);
+    X.shadowBlur=22+hit*20;X.shadowColor=rgba(f,0.85);
+    // Antenne + cœur de feu sommital
+    X.strokeStyle=rgba(d,1);X.lineWidth=2.2;X.beginPath();X.moveTo(0,-36);X.lineTo(0,-54);X.stroke();
+    var mg=X.createRadialGradient(0,-58,1,0,-58,11);
+    mg.addColorStop(0,'rgba(255,250,220,'+(0.95+hit*0.05)+')');mg.addColorStop(0.5,rgba(f,0.9));mg.addColorStop(1,rgba(f,0));
+    X.fillStyle=mg;X.beginPath();X.arc(0,-58,11,0,Math.PI*2);X.fill();
+    // Cœur de poitrine fissuré et lumineux
+    X.fillStyle=rgba(f,0.85+hit*0.15);X.beginPath();X.moveTo(0,-2);X.lineTo(5,4);X.lineTo(0,12);X.lineTo(-5,4);X.closePath();X.fill();
+    X.strokeStyle=rgba(a,0.6);X.lineWidth=1;X.stroke();
+    // Vapeur / fumée des évents d'épaule
+    for(var si=0;si<2;si++){var sx=si===0?-23:23;var sph=(G.time*0.7+si*0.5)%1;
+      X.fillStyle='rgba(180,180,190,'+((1-sph)*0.35)+')';X.beginPath();X.arc(sx,-18-sph*20,2.5+sph*3,0,Math.PI*2);X.fill();}
+  } else {
+    // Élémentaire — créature vivante de feu : corps organique qui respire, visage expressif
+    // (volontairement moins "cristal/énergie figée" : silhouette molle et asymétrique, pas d'étoile à pointes)
+    var squish=1+Math.sin(G.time*2.2)*0.06;
+    X.scale(1/squish,squish);
+    var elg=X.createRadialGradient(-3,-4,2,0,-2,30);
+    elg.addColorStop(0,'rgba(255,250,220,'+(0.95+hit*0.05)+')');elg.addColorStop(0.4,rgba(f,0.92));elg.addColorStop(0.75,rgba(b,0.88));elg.addColorStop(1,rgba(d,0.92));
+    X.fillStyle=elg;
+    X.beginPath();
+    var nPts=10;
+    for(var i=0;i<=nPts;i++){
+      var ang=i/nPts*Math.PI*2;
+      // Bosses organiques irrégulières (pas de pointes nettes) — silhouette de créature, pas de cristal
+      var rr=22+Math.sin(ang*2.3+G.time*1.3)*3.5+Math.sin(ang*5+G.time*2.1)*1.8+Math.sin(G.time*1.7)*1.5;
+      var px=Math.cos(ang)*rr,py=Math.sin(ang)*rr*0.86-4;
+      if(i===0)X.moveTo(px,py);else X.quadraticCurveTo(Math.cos(ang-0.3)*rr,Math.sin(ang-0.3)*rr*0.86-4,px,py);
+    }
+    X.closePath();X.fill();
+    // Petites flammèches qui s'échappent du dos, comme une crinière vivante
+    for(var fj=0;fj<4;fj++){
+      var fjx=(fj-1.5)*9;
+      var fjh=14+Math.sin(G.time*3.4+fj*2)*7;
+      var fjg=X.createLinearGradient(fjx,-22,fjx,-22-fjh);
+      fjg.addColorStop(0,rgba(f,0.8));fjg.addColorStop(1,rgba(f,0));
+      X.fillStyle=fjg;
+      X.beginPath();X.moveTo(fjx-4,-20);X.quadraticCurveTo(fjx-7,-20-fjh*0.6,fjx,-20-fjh);X.quadraticCurveTo(fjx+7,-20-fjh*0.6,fjx+4,-20);X.closePath();X.fill();
+    }
+    // Visage expressif : sourcils, yeux clignotants, bouche entrouverte
+    var blink=((G.time*0.45)%4)>3.85?0.12:1; // clignement bref périodique
+    X.strokeStyle=rgba(d,0.9);X.lineWidth=2.2;X.lineCap='round';
+    X.beginPath();X.moveTo(-11,-13);X.lineTo(-3,-16);X.stroke();
+    X.beginPath();X.moveTo(11,-13);X.lineTo(3,-16);X.stroke();
+    X.fillStyle=rgba(a,0.95);X.shadowColor=rgba(a,1);X.shadowBlur=9;
+    X.beginPath();X.ellipse(-6,-6,3,2.4*blink,0,0,Math.PI*2);X.fill();
+    X.beginPath();X.ellipse(6,-6,3,2.4*blink,0,0,Math.PI*2);X.fill();
+    if(blink>0.5){X.fillStyle=rgba(d,1);X.beginPath();X.arc(-6,-6,1.1,0,Math.PI*2);X.fill();X.beginPath();X.arc(6,-6,1.1,0,Math.PI*2);X.fill();}
+    X.shadowBlur=22+hit*20;X.shadowColor=rgba(f,0.85);
+    var mouthOpen=2+Math.sin(G.time*5)*1.4;
+    X.fillStyle=rgba(d,0.85);X.beginPath();X.ellipse(0,4,5,mouthOpen,0,0,Math.PI*2);X.fill();
+  }
+
+  X.shadowBlur=0;
+  // Rougissement localisé : ne teinte que les pixels déjà dessinés du corps (silhouette exacte,
+  // car le tampon est resté transparent partout ailleurs) — jamais un carré, jamais le décor autour.
+  if(hit>0){
+    X.save();
+    X.setTransform(1,0,0,1,0,0); // coordonnées brutes du tampon, indépendantes de la translation locale
+    X.globalCompositeOperation='source-atop';
+    X.fillStyle='rgba(255,20,20,'+(hit*0.85)+')';
+    X.fillRect(0,0,_bossBufCanvas.width,_bossBufCanvas.height);
+    X.restore();
+  }
+  X.restore();
+  X=X_; // restaure le contexte du canvas principal
+  X.drawImage(_bossBufCanvas,cx-BOX,cy+bob-BOY);
+
+  // Dégâts totaux + temps avant la prochaine attaque, inscrits sous le boss
+  // (bien visible mais contenu sur la largeur d'une case pour ne jamais déborder sur les cases voisines)
+  X.save();X.translate(cx,cy+60);
+  var _bw=Math.min(TILE-6,58);
+  X.fillStyle='rgba(0,0,0,0.55)';X.fillRect(-_bw/2,-15,_bw,30);
+  X.strokeStyle=rgba(f,0.6);X.lineWidth=1;X.strokeRect(-_bw/2,-15,_bw,30);
+  X.textAlign='center';X.textBaseline='middle';
+  X.fillStyle=rgba(f,1);X.font='bold 12px Courier New';
+  X.fillText(Math.round(bossDmgDealt)+' DMG',0,-5);
+  X.fillStyle='rgba(255,210,150,0.95)';X.font='bold 12px Courier New';
+  X.fillText(Math.ceil(Math.max(0,bossAttackTimer))+'s',0,9);
+  X.restore();
 }
 function drawPlayer(p){
   var px=p.x*TILE,py=p.y*TILE,sz=28;
@@ -380,6 +636,7 @@ function drawPlayer(p){
   X.beginPath();X.moveTo(-sz*.25,-sz*.3);X.bezierCurveTo(-sz*.28,sz*.1,-sz*.2,sz*.2,-sz*.05,sz*.2);X.lineTo(sz*.05,sz*.2);X.bezierCurveTo(sz*.2,sz*.2,sz*.28,sz*.1,sz*.25,-sz*.3);X.closePath();X.stroke();
   // Corps
   X.fillStyle=p.color;X.beginPath();X.moveTo(-sz*.25,-sz*.3);X.bezierCurveTo(-sz*.28,sz*.1,-sz*.2,sz*.2,-sz*.05,sz*.2);X.lineTo(sz*.05,sz*.2);X.bezierCurveTo(sz*.2,sz*.2,sz*.28,sz*.1,sz*.25,-sz*.3);X.closePath();X.fill();
+  if(p.hitFlash>0){X.fillStyle='rgba(255,30,20,'+(p.hitFlash/0.2*0.6)+')';X.beginPath();X.moveTo(-sz*.25,-sz*.3);X.bezierCurveTo(-sz*.28,sz*.1,-sz*.2,sz*.2,-sz*.05,sz*.2);X.lineTo(sz*.05,sz*.2);X.bezierCurveTo(sz*.2,sz*.2,sz*.28,sz*.1,sz*.25,-sz*.3);X.closePath();X.fill();}
   X.fillStyle='rgba(0,0,0,0.18)';X.fillRect(-sz*.04,-sz*.3,sz*.08,sz*.5);
   X.fillStyle=TEAM_COL[p.team-1];X.globalAlpha=0.45;X.fillRect(-sz*.2,-sz*.04,sz*.4,sz*.06);X.globalAlpha=1;
   X.fillStyle='#d8c8a0';X.beginPath();X.arc(0,-sz*.44,sz*.2,0,Math.PI*2);X.fill();
@@ -419,14 +676,14 @@ function drawPlayer(p){
   X.restore();
   X.restore();
   var bw=38,bh=5,hpX=px-bw/2,hpY=py-sz*.8-4;
-  if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'&&GAMEMODE!=='survivor'){X.fillStyle='rgba(0,0,0,0.58)';X.fillRect(hpX-1,hpY-1,bw+2,bh+2);X.fillStyle=p.hp/p.maxHp>0.55?'rgba(78,208,58,0.95)':p.hp/p.maxHp>0.25?'rgba(218,148,28,0.95)':'rgba(208,38,28,0.95)';X.fillRect(hpX,hpY,bw*(p.hp/p.maxHp),bh);}
+  if(GAMEMODE!=='solo'&&GAMEMODE!=='coop'&&GAMEMODE!=='survivor'&&GAMEMODE!=='boss'){X.fillStyle='rgba(0,0,0,0.58)';X.fillRect(hpX-1,hpY-1,bw+2,bh+2);X.fillStyle=p.hp/p.maxHp>0.55?'rgba(78,208,58,0.95)':p.hp/p.maxHp>0.25?'rgba(218,148,28,0.95)':'rgba(208,38,28,0.95)';X.fillRect(hpX,hpY,bw*(p.hp/p.maxHp),bh);}
   if(p.inCombat&&(p.spearSwing||0)>0.1){var cf=0.5+0.5*Math.sin(G.time*20);X.strokeStyle='rgba(255,80,20,'+cf+')';X.lineWidth=2.5;X.beginPath();X.arc(px,py,sz*.65,0,Math.PI*2);X.stroke();}
 }
 
 /* HUD */
 function updateHUD(){
   if(!G)return;
-  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop'||GAMEMODE==='survivor');
+  var isRec=(GAMEMODE==='solo'||GAMEMODE==='coop'||GAMEMODE==='survivor'||GAMEMODE==='boss');
   var pairs=[[G.p1,'p1']];if(G.p2&&!isRec)pairs.push([G.p2,'p2']);
   pairs.forEach(function(pr){
     var p=pr[0],pfx=pr[1];
@@ -449,8 +706,6 @@ function updateHUD(){
   var phEl=document.getElementById('phase');
   if(G.phase==='placement'){phEl.textContent=t('placement');}
   else if(G.phase==='combat'){phEl.textContent=t('combat');}
-  // Coûts aléatoires
-  if(typeof _updateRandomCostDisplay==='function')_updateRandomCostDisplay();
   // Panneau SURVIVANT
   var _svh=document.getElementById('survivorhud');
   if(_svh){
@@ -478,10 +733,9 @@ function updateHUD(){
   }
 }
 
-function log(msg){
-  logLines.unshift(msg);if(logLines.length>3)logLines.pop();
-  for(var i=0;i<3;i++){var el=document.getElementById('l'+i);if(logLines[i]){el.textContent=logLines[i];el.className='le s';}else el.className='le';}
-}
+// Le fil de messages flottants (foreuse vide, trop loin, posé...) a été désactivé
+// définitivement : peu utile et gênant à l'écran pendant la partie.
+function log(msg){}
 
 /* Pas de son */
 function sfx(){}

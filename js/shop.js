@@ -59,8 +59,8 @@ function buyInversion(){
   var cost=6,ct=costTypes.drill;
   if((p[ct]||0)<cost){log(t('log_cancel')+' '+_cName(ct)+'!');return;}
   p[ct]-=cost;sfx('buy');closeShop();
-  _inversionPending=true;_inversionFirst=null;_inversionShopMode=true;_selectionPending=true;_selectionDelay=0.3;
-  _showPlaceInfo(t('msg_inversion_pick1'));
+  _inversionPending=true;_inversionFirst=null;_inversionShopMode=true;_selectionPending=true;_selectionDelay=0.6;
+  _showPlaceInfo(t('msg_inversion_pick1'),'inversion');
 }
 function buyUpg(upg){
   if(!shopPlayer||!G)return;

@@ -82,13 +82,13 @@ canvas{display:block;cursor:crosshair}
 /* ══════ OVERLAYS ══════ */
 .ovl{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .35s}
 #ov{
-  background:rgba(5,3,0,0.98);
+  background:#050300;
   background-image:
     radial-gradient(ellipse 75% 60% at 50% 110%,rgba(140,88,8,0.15) 0%,transparent 65%),
     radial-gradient(ellipse 45% 35% at 50% -10%,rgba(100,65,8,0.10) 0%,transparent 60%);
   pointer-events:all;
 }
-#endov{background:rgba(4,2,0,0.98);display:none;opacity:0;pointer-events:all}
+#endov{background:#040200;display:none;opacity:0;pointer-events:all}
 
 /* Titre principal */
 h1.title{
@@ -124,16 +124,8 @@ h1.title{
 /* Cartes de mode */
 .mcards{display:flex;gap:20px;margin-bottom:22px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
 .mcard{
-  border:1px solid rgba(190,140,45,0.2);
-  border-top:1px solid rgba(225,175,60,0.38);
-  border-radius:8px;padding:24px 32px;max-width:380px;text-align:center;
-  background:linear-gradient(175deg,rgba(16,10,2,0.94),rgba(10,6,1,0.97));
+  padding:24px 32px;max-width:380px;text-align:center;
   cursor:pointer;transition:all .25s;pointer-events:all;
-  box-shadow:0 6px 28px rgba(0,0,0,0.55),inset 0 1px 0 rgba(220,175,60,0.05);
-}
-.mcard:hover{
-  border-color:rgba(225,175,60,0.55);border-top-color:rgba(245,200,80,0.7);
-  box-shadow:0 10px 38px rgba(0,0,0,0.7),0 0 28px rgba(200,145,22,0.10);
 }
 .mcard h2{font-size:20px;letter-spacing:5px;margin-bottom:10px;font-weight:bold}
 .mcard p{font-size:12px;opacity:0.4;line-height:2;margin-bottom:14px}
@@ -203,6 +195,31 @@ h1.title{
   letter-spacing:3px;
   animation:placeind-glow 0.7s infinite alternate;
 }
+@keyframes placeind-glow-destruct{
+  0%{box-shadow:0 0 18px rgba(255,70,40,0.4);border-color:rgba(255,90,50,0.7);}
+  100%{box-shadow:0 0 36px rgba(255,70,40,0.9);border-color:rgba(255,140,90,1);}
+}
+@keyframes placeind-glow-ghost{
+  0%{box-shadow:0 0 18px rgba(80,200,255,0.35);border-color:rgba(80,200,255,0.6);}
+  100%{box-shadow:0 0 34px rgba(80,200,255,0.85);border-color:rgba(140,225,255,1);}
+}
+@keyframes placeind-glow-inversion{
+  0%{box-shadow:0 0 18px rgba(80,220,120,0.35);border-color:rgba(80,220,120,0.6);}
+  100%{box-shadow:0 0 34px rgba(80,220,120,0.85);border-color:rgba(140,245,170,1);}
+}
+
+/* Flammes sur les cases touchées par l'attaque du boss */
+@keyframes flame-flicker{
+  0%{transform:translateY(0) scaleY(1);opacity:0.95;}
+  25%{transform:translateY(-3px) scaleY(1.08);opacity:0.85;}
+  50%{transform:translateY(0) scaleY(0.96);opacity:1;}
+  75%{transform:translateY(-2px) scaleY(1.05);opacity:0.88;}
+  100%{transform:translateY(0) scaleY(1);opacity:0.95;}
+}
+#placeind.placeind-destruct{color:#ffb898;animation-name:placeind-glow-destruct;}
+#placeind.placeind-ghost{color:#bfe8ff;animation-name:placeind-glow-ghost;}
+#placeind.placeind-inversion{color:#bdfdd0;animation-name:placeind-glow-inversion;}
+#placeind.placeind-portal{color:#bdf3ff;}
 
 /* ══════ TOUCHES ══════ */
 #kh{position:fixed;right:12px;bottom:12px;font-size:11px;opacity:0.2;letter-spacing:1px;line-height:2.5;pointer-events:none;z-index:20;color:#a07840}

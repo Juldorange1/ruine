@@ -19,8 +19,7 @@ var _portalPending=false;   // sélection de case en cours pour poser le portail
 var _inversionPending=false;
 var _inversionFirst=null;   // 1er élément sélectionné pour l'inversion (shop)
 var _inversionShopMode=false; // true = achat shop (pas ultime)
-var randomCostMode=false;
-var winResource='diamond';  // 'coal'|'gold'|'diamond' — aléatoire si randomCostMode
+var winResource='diamond';  // 'coal'|'gold'|'diamond'
 var ultimateMode=true;      // toujours actif
 var _ultimatePool=[];       // options dans le pool ULTIME
 var _ultimateTimer=60;      // secondes avant prochain changement
@@ -49,8 +48,39 @@ var lightningBolt=[];   // points du tracé de la foudre [{x,y},...]
 var _preloadedBlocks=null;
 var _survivorWave=0;
 var _survivorKillsThisGame=0;
+var _isDaily=false;
 
-// Types de minerai requis pour chaque achat (par défaut normaux, modifiés si randomCostMode)
+/* ── DÉFI DU JOUR — seed de carte fixe par jour ; l'option ULTIME reste aléatoire ── */
+var _dailySeed=null;     // seed numérique du jour, fixe
+var _dailyDate='';       // 'YYYY-MM-DD' du jour courant
+function _todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _strHash(s){var h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h;}
+function _setupDaily(){
+  _dailyDate=_todayStr();
+  _dailySeed=_strHash(_dailyDate)||1;
+}
+
+/* ── BOSS ── */
+var BOSS_ZONE_SEED=424242; // fixe — toujours la même séquence de zones
+var _bossZoneSeq=(function(){
+  // LCG local (mkRng n'est pas encore défini à ce stade du chargement)
+  var s=BOSS_ZONE_SEED,seq=[];
+  function rr(){s=(s^(s<<13))>>>0;s=(s^(s>>17))>>>0;s=(s^(s<<5))>>>0;return s/4294967296;}
+  for(var i=0;i<300;i++)seq.push(1+Math.floor(rr()*4));
+  return seq;
+})();
+var bossHp=0,bossMaxHp=0,bossDmgDealt=0;
+var bossAttackTimer=30,bossAttackInterval=30,bossAttackIdx=0;
+var bossSafeCell=null,bossTelegraphActive=false;
+var bossFlashTimer=0;    // flash plein écran quand le boss ATTAQUE
+var bossHitFlashTimer=0; // rougissement local du boss uniquement, quand IL est touché
+var bossBurnCells=[]; // {gx,gy,life} — cases en flammes après une attaque
+var BOSS_MIN_INTERVAL=1;
+// Hitbox du boss — ellipse identique pour les 10 apparences, dimensionnée pour coller
+// approximativement à la silhouette dessinée (plus haute que large), pas un simple cercle large
+var BOSS_HITBOX_RX=0.35,BOSS_HITBOX_RY=0.55;
+
+// Types de minerai requis pour chaque achat
 var costTypes={drill:'coal',dmg:'gold',spd:'gold',block:'diamond'};
 
 /* STATE */
@@ -163,7 +193,9 @@ var I18N={
     survivor_kills:'Ennemis tués',
     survivor_survived:'Survécu',
     mode_survivor:'Survivant',
-    end_survivor:'PARTIE TERMINÉE'
+    end_survivor:'PARTIE TERMINÉE',
+    end_boss:'TU ES MORT',
+    boss_dmg:'Dégâts infligés au boss'
   },
   en:{
     placement:'PLACEMENT',combat:'COMBAT',
@@ -248,7 +280,9 @@ var I18N={
     survivor_kills:'Enemies killed',
     survivor_survived:'Survived',
     mode_survivor:'Survivor',
-    end_survivor:'GAME OVER'
+    end_survivor:'GAME OVER',
+    end_boss:'YOU DIED',
+    boss_dmg:'Damage dealt to the boss'
   }
 };
 function t(k){return(I18N[gameLanguage]||I18N.fr)[k]||k;}
@@ -266,7 +300,6 @@ function applyLanguage(){
   document.documentElement.lang=gameLanguage;
   _updateKeyDisplay();
   setTheme(gameTheme);
-  if(typeof _updateRandomCostDisplay==='function'&&typeof G!=='undefined'&&G&&gameRunning)_updateRandomCostDisplay();
 }
 function _updateKeyDisplay(){
   ['up','down','left','right'].forEach(function(d){
@@ -308,9 +341,10 @@ function setTheme(n){gameTheme=n;
   // Teinte les overlays selon le thème
   var _tBg=['rgba(4,2,0,0.97)','rgba(10,1,0,0.97)','rgba(0,3,10,0.97)'];
   var _tPause=['rgba(4,2,0,0.85)','rgba(10,1,0,0.85)','rgba(0,3,10,0.85)'];
-  var _tOvBg=['rgba(4,2,0,0.88)','rgba(10,2,0,0.92)','rgba(0,4,12,0.92)'];
+  // Menus (ov/endov) toujours totalement opaques, quel que soit le thème
+  var _tOvOpaque=['#040200','#0a0100','#000308'];
   ['rulesov','paramsov'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.background=_tBg[n]||_tBg[0];});
   var pov=document.getElementById('pauseov');if(pov)pov.style.background=_tPause[n]||_tPause[0];
-  var ov=document.getElementById('ov');if(ov)ov.style.background=_tOvBg[n]||_tOvBg[0];
-  var endov=document.getElementById('endov');if(endov)endov.style.background=_tBg[n]||_tBg[0];
+  var ov=document.getElementById('ov');if(ov)ov.style.background=_tOvOpaque[n]||_tOvOpaque[0];
+  var endov=document.getElementById('endov');if(endov)endov.style.background=_tOvOpaque[n]||_tOvOpaque[0];
 }
