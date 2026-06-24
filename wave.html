@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Entraînement Geo Dash</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:#080818; user-select:none; overflow:hidden; touch-action:none; overscroll-behavior:none; height:100%; }
+
+canvas { display:block; }
+#cvWrap { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; }
+#cv { width:100%; height:100%; display:block; touch-action:none; }
+#miniMapBar { position:fixed; left:50%; bottom:54px; transform:translateX(-50%); width:90vw; max-width:1100px; height:24px; z-index:5; display:none; }
+body.ingame #miniMapBar { display:block; }
+#miniMapCv { width:100%; height:100%; display:block; }
+
+#ui { position:fixed; top:0; left:0; right:0; z-index:10; text-align:center; padding:8px 6px 6px; }
+#row { display:flex; gap:5px; align-items:center; justify-content:center; flex-wrap:wrap; }
+#row label { color:#334455; font:.80em monospace; }
+.db { padding:4px 10px; border:2px solid #1a2030; background:rgba(11,15,26,0.85); color:#334455; cursor:pointer; border-radius:5px; font:bold .85em 'Arial Black',Arial,sans-serif; transition:.12s; backdrop-filter:blur(4px); }
+.db:hover { border-color:#7de8ff55; color:#7de8ff88; }
+.db.on { border-color:#7de8ff; color:#7de8ff; background:rgba(125,232,255,0.10); }
+.mb { padding:4px 12px; border:2px solid #334; background:rgba(11,15,26,0.85); color:#556677; cursor:pointer; border-radius:5px; font:.78em monospace; transition:.12s; backdrop-filter:blur(4px); }
+.mb.on { border-color:#dd88ff; color:#dd88ff; background:rgba(221,136,255,0.10); }
+#cadenceToggle { padding:4px 12px; border:2px solid #334; background:rgba(11,15,26,0.85); color:#556677; cursor:pointer; border-radius:5px; font:.78em monospace; transition:.12s; backdrop-filter:blur(4px); }
+#cadenceToggle.on { border-color:#ffd166; color:#ffd166; background:rgba(255,209,102,0.10); }
+#rulesBtn { padding:4px 10px; border:2px solid #334; background:rgba(11,15,26,0.85); color:#556677; cursor:pointer; border-radius:5px; font:.78em monospace; transition:.12s; backdrop-filter:blur(4px); }
+#rulesBtn:hover { border-color:#aaa; color:#aaa; }
+#settingsBtn { padding:4px 10px; border:2px solid #334; background:rgba(11,15,26,0.85); color:#556677; cursor:pointer; border-radius:5px; font:.78em monospace; transition:.12s; backdrop-filter:blur(4px); }
+#settingsBtn:hover { border-color:#aaa; color:#aaa; }
+#play { padding:5px 18px; background:#7de8ff; border:none; color:#080818; font:bold .90em 'Arial Black',Arial,sans-serif; cursor:pointer; border-radius:6px; letter-spacing:1px; transition:.12s; }
+#play:hover { background:#aaf0ff; }
+body.ingame #row { visibility:hidden; pointer-events:none; }
+
+/* Quit button — bottom of screen, only visible during play */
+#inGameBar { display:none; position:fixed; bottom:10px; left:0; right:0; justify-content:center; z-index:10; }
+body.ingame #inGameBar { display:flex; }
+body.ingame #spotifyFrame { display:block; }
+#quitBtn { padding:6px 20px; border:2px solid #553333; background:rgba(11,15,26,0.88); color:#996666; cursor:pointer; border-radius:6px; font:.80em monospace; transition:.12s; backdrop-filter:blur(4px); }
+#quitBtn:hover { border-color:#ff6666; color:#ff9999; }
+
+#hint { position:fixed; bottom:44px; left:0; right:0; text-align:center; color:#1c2430; font:.68em monospace; letter-spacing:1px; z-index:10; pointer-events:none; }
+body.ingame #hint { display:none; }
+
+#settingsPanel { display:none; position:fixed; inset:0; background:rgba(4,4,18,0.93); align-items:center; justify-content:center; z-index:100; }
+#settingsPanel.open { display:flex; }
+#settingsBox { background:#0d1120; border:2px solid #223; border-radius:12px; padding:28px 36px; width:min(360px,92vw); max-height:88vh; overflow-y:auto; text-align:center; box-shadow:0 0 60px #0008; }
+#settingsBox h2 { font-family:'Arial Black',Arial,sans-serif; font-size:1.3em; color:#7de8ff; letter-spacing:3px; margin-bottom:22px; }
+#rulesPanel { display:none; position:fixed; inset:0; background:rgba(4,4,18,0.93); align-items:center; justify-content:center; z-index:100; }
+#rulesPanel.open { display:flex; }
+#rulesBox { background:#0d1120; border:2px solid #223; border-radius:12px; padding:28px 36px; max-width:min(480px,92vw); max-height:88vh; overflow-y:auto; text-align:left; box-shadow:0 0 60px #0008; }
+#rulesBox h2 { font-family:'Arial Black',Arial,sans-serif; font-size:1.3em; color:#7de8ff; letter-spacing:3px; margin-bottom:18px; text-align:center; }
+#rulesBox h3 { color:#dd88ff; font:.85em monospace; margin:14px 0 6px; }
+#rulesBox p, #rulesBox li { color:#8899aa; font:.82em monospace; line-height:1.5; }
+#rulesBox ul { margin:0 0 0 18px; }
+#closeRules { display:block; margin:18px auto 0; padding:7px 22px; background:#7de8ff; border:none; color:#080818; font:bold .90em 'Arial Black',Arial,sans-serif; cursor:pointer; border-radius:6px; }
+#closeRules:hover { background:#aaf0ff; }
+.srow { display:flex; align-items:center; gap:10px; margin-bottom:15px; justify-content:center; flex-wrap:wrap; }
+.srow label { color:#556677; font:.82em monospace; min-width:90px; text-align:right; }
+.srow.center-label { flex-direction:column; align-items:center; }
+.srow.center-label label { min-width:0; text-align:center; margin-bottom:5px; }
+#pseudoInput { background:#080818; border:2px solid #223; border-radius:5px; color:#eee; font:.9em monospace; padding:5px 10px; width:150px; outline:none; transition:.12s; }
+#pseudoInput:focus { border-color:#7de8ff88; }
+.tb { padding:5px 14px; border:2px solid #223; background:#080818; color:#445; cursor:pointer; border-radius:5px; font:.80em monospace; transition:.12s; }
+.tb:hover { border-color:#7de8ff55; color:#7de8ff88; }
+.tb.on { border-color:#7de8ff; color:#7de8ff; background:#7de8ff12; }
+.kb { padding:4px 14px; border:2px solid #334; background:#080818; color:#aaa; cursor:pointer; border-radius:5px; font:.82em monospace; min-width:80px; transition:.12s; }
+.kb:hover { border-color:#7de8ff55; }
+.kb.recording { border-color:#ffcc00; color:#ffcc00; animation:blink .5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+#settingsSep { border:none; border-top:1px solid #1a2030; margin:16px 0; }
+#closeSettings { margin-top:6px; padding:7px 22px; background:#7de8ff; border:none; color:#080818; font:bold .90em 'Arial Black',Arial,sans-serif; cursor:pointer; border-radius:6px; }
+#closeSettings:hover { background:#aaf0ff; }
+
+/* Mobile : boutons plus compacts, panneaux moins de padding, pas de hover-only feedback nécessaire */
+@media (max-width:520px) {
+  #row { gap:4px; padding:0 4px; }
+  .mb, #cadenceToggle, #rulesBtn, #settingsBtn { padding:4px 8px; font-size:.72em; }
+  #play { padding:5px 14px; font-size:.85em; }
+  #settingsBox, #rulesBox { padding:18px 16px; }
+  .srow label { min-width:0; text-align:center; }
+  .srow { flex-direction:column; gap:5px; }
+}
+</style>
+</head>
+<body>
+
+<div id="ui">
+  <div id="row">
+    <button class="mb on" data-m="wave">1</button>
+    <button class="mb"    data-m="swing">2</button>
+    <button class="mb"    data-m="ship">3</button>
+    <button class="mb"    data-m="twokey">4</button>
+    <button id="cadenceToggle">⏱ CADENCE</button>
+    <button id="rulesBtn">📜 RÈGLES</button>
+    <button id="settingsBtn">⚙ PARAMÈTRES</button>
+    <button id="play">▶ JOUER</button>
+  </div>
+</div>
+
+<!-- Quit button at the BOTTOM — never overlaps pseudo at top -->
+<div id="inGameBar">
+  <button id="quitBtn">✕ Quitter le niveau</button>
+</div>
+
+<div id="cvWrap"><canvas id="cv" width="800" height="400"></canvas></div>
+<div id="miniMapBar"><canvas id="miniMapCv" width="1100" height="24"></canvas></div>
+<div id="hint">n'importe quelle touche / Clic : monter &nbsp;·&nbsp; relâcher : descendre</div>
+<iframe id="spotifyFrame" style="position:fixed;bottom:0;left:0;width:300px;height:80px;border:none;z-index:5;display:none;" allow="autoplay; encrypted-media" src=""></iframe>
+
+<div id="settingsPanel">
+  <div id="settingsBox">
+    <h2>⚙ PARAMÈTRES</h2>
+    <div class="srow">
+      <label>Pseudo :</label>
+      <input id="pseudoInput" type="text" maxlength="20" placeholder="Joueur">
+    </div>
+    <div class="srow center-label">
+      <label>Thème :</label>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center">
+        <button class="tb on" data-t="0">🌙 Nuit</button>
+        <button class="tb"    data-t="1">🏜 Désert</button>
+        <button class="tb"    data-t="2">⚡ Néon</button>
+        <button class="tb"    data-t="3">🌿 Forêt</button>
+        <button class="tb"    data-t="4">🌋 Volcan</button>
+      </div>
+    </div>
+    <div class="srow">
+      <label>Traînée :</label>
+      <button class="tb on" id="trailToggle">Activée</button>
+    </div>
+    <div class="srow">
+      <label>Lag (tunnel x2) :</label>
+      <button class="tb" id="lagToggle">Désactivé</button>
+    </div>
+    <div class="srow">
+      <label>Traverser les murs :</label>
+      <button class="tb" id="noclipToggle">Désactivé</button>
+    </div>
+    <div class="srow">
+      <label>Épaisseur tunnel (départ) :</label>
+      <button class="kb" id="gapMinus" style="min-width:36px">−</button>
+      <input id="gapPctInput" type="text" inputmode="numeric" maxlength="4" value="100" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
+      <span style="color:#aaa;font:.82em monospace;">%</span>
+      <button class="kb" id="gapPlus" style="min-width:36px">+</button>
+    </div>
+    <div class="srow">
+      <label>Mode Folie :</label>
+      <button class="tb" id="folieToggle">Désactivé</button>
+    </div>
+    <hr id="settingsSep">
+    <div class="srow">
+      <label>Reset niveau :</label>
+      <button class="kb" id="bindReset">R</button>
+    </div>
+    <div class="srow">
+      <label>Quitter niveau :</label>
+      <button class="kb" id="bindQuit">Q</button>
+    </div>
+    <div class="srow">
+      <label>Monter (Double) :</label>
+      <button class="kb" id="bindUp">↑</button>
+    </div>
+    <div class="srow">
+      <label>Descendre (Double) :</label>
+      <button class="kb" id="bindDown">↓</button>
+    </div>
+    <button id="closeSettings">Fermer</button>
+  </div>
+</div>
+
+<div id="rulesPanel">
+  <div id="rulesBox">
+    <h2>📜 RÈGLES</h2>
+    <h3>Score</h3>
+    <ul>
+      <li>Chaque seconde passée dans le niveau rapporte <b>30 − (nombre de morts)</b> points.</li>
+      <li>Au-delà de 30 morts, chaque seconde fait donc <b>perdre</b> des points.</li>
+      <li>Le total de la run peut devenir négatif.</li>
+      <li>Le record sauvegardé est le <b>score le plus haut</b> atteint pour chaque niveau, chaque mode, chaque réglage de Lag — et séparément <b>avec ou sans l'option Cadence</b> (2 catégories distinctes).</li>
+      <li>Un record n'est compté que si le tunnel a démarré à <b>100% de sa taille prévue</b> et que l'option <b>"Traverser les murs" était désactivée</b>.</li>
+    </ul>
+    <h3>Modes de jeu (1 à 4, renommables en cliquant sur leur bouton actif)</h3>
+    <ul>
+      <li><b>1</b> — Wave : maintenir fait monter en ligne droite, relâcher fait descendre.</li>
+      <li><b>2</b> — Swing : chaque appui inverse le sens de la gravité.</li>
+      <li><b>3</b> — Vaisseau : maintenir pousse vers le haut avec inertie, relâcher laisse retomber.</li>
+      <li><b>4</b> — Double : sans rien faire on avance tout droit ; la touche "Monter" fait monter, la touche "Descendre" fait descendre (configurables dans les Paramètres).</li>
+    </ul>
+    <h3>Option Lag</h3>
+    <ul>
+      <li>3 réglages possibles : Désactivé, 0,5s ou 1s de retard sur tous tes appuis (clics, touches).</li>
+      <li>Dès qu'un retard est actif (0,5s ou 1s), le tunnel est toujours <b>2× plus épais</b>.</li>
+      <li>Désactivé, 0,5s et 1s comptent comme <b>3 catégories de record distinctes</b> pour chaque mode.</li>
+    </ul>
+    <h3>Option Cadence (bouton dans le menu principal)</h3>
+    <ul>
+      <li>Le jeu enregistre d'abord une trajectoire en cliquant tout seul, aléatoirement (au plus 5 clics/s), avec la physique du mode actif.</li>
+      <li>Le tunnel du niveau trace ensuite EXACTEMENT cette trajectoire enregistrée.</li>
+      <li>Pour rester dedans, il faut reproduire les mêmes appuis, au même moment, à environ <b>20 millisecondes</b> près.</li>
+      <li>Chaque mode de jeu a sa propre physique, donc sa propre trajectoire enregistrée : le niveau Cadence est différent pour chaque mode.</li>
+    </ul>
+    <h3>Option Traverser les murs</h3>
+    <ul>
+      <li>Désactive toute collision avec les murs : tu ne meurs plus jamais en les touchant.</li>
+    </ul>
+    <h3>Épaisseur tunnel (départ)</h3>
+    <ul>
+      <li>Multiplie la largeur de base du tunnel de chaque niveau, de 1% à 1000% (pas multiplicatif via les boutons − / +).</li>
+      <li>S'applique aussi aux niveaux générés avec l'option Cadence.</li>
+    </ul>
+    <h3>Mode Folie</h3>
+    <ul>
+      <li>L'écran tremble en permanence et clignote au hasard (flashs blancs/rouges) pour déstabiliser le joueur. Purement visuel — ça ne change pas la physique ni les collisions.</li>
+    </ul>
+    <button id="closeRules">Fermer</button>
+  </div>
+</div>
+
+<script>
+// ─── THEMES ───────────────────────────────────────────────────────────────────
+// Each theme: bg, grid, wall, body background, overlay tint, player accent, menu particle color
+const THEMES = [
+  { bg:'#080818', grid:'rgba(160,200,255,0.022)', wall:'#0d0d24', body:'#080818',
+    overlay:'rgba(4,4,18,0.86)',  accent:'#4488ff', pCol:'#aaccff' }, // Nuit — bleu nuit
+  { bg:'#120d06', grid:'rgba(255,180,60,0.030)',  wall:'#1a1005', body:'#100c05',
+    overlay:'rgba(14,8,2,0.86)',  accent:'#ff9922', pCol:'#ffcc77' }, // Désert — sable/ocre
+  { bg:'#000008', grid:'rgba(0,255,200,0.034)',   wall:'#030318', body:'#000008',
+    overlay:'rgba(0,0,8,0.88)',   accent:'#00ffcc', pCol:'#ff00ff' }, // Néon — cyber
+  { bg:'#020e04', grid:'rgba(30,220,70,0.028)',   wall:'#061606', body:'#020e04',
+    overlay:'rgba(2,10,4,0.86)',  accent:'#33dd55', pCol:'#88ffaa' }, // Forêt — vert
+  { bg:'#130202', grid:'rgba(255,60,10,0.034)',   wall:'#200402', body:'#130202',
+    overlay:'rgba(14,2,2,0.88)',  accent:'#ff5500', pCol:'#ffaa33' }, // Volcan — braise
+];
+let themeIdx = 0;
+let trailEnabled = true;
+let cadenceEnabled = false;
+let noclipEnabled = false;
+let gapStartMul = 1; // épaisseur du tunnel au démarrage des parties (1%-1000%), aussi en mode Cadence
+let folieEnabled = false; // écran qui clignote et déstabilise le joueur
+let modeNames = {wave:'1',swing:'2',ship:'3',twokey:'4'}; // noms des modes, personnalisables en cliquant sur le bouton actif
+const LAG_LEVELS=[0,0.5,1];
+let lagDelay = 0;
+let pendingActions = [];
+function schedule(fn){ if(lagDelay>0) pendingActions.push({at:performance.now()+lagDelay*1000, fn}); else fn(); }
+function lagKey(){return String(lagDelay);}
+function lagLabel(){return lagDelay===0?'Désactivé':`${lagDelay}s`;}
+
+// ─── KEYBINDINGS ──────────────────────────────────────────────────────────────
+let keyReset = 'KeyR', keyQuit = 'KeyQ', keyUp = 'ArrowUp', keyDown = 'ArrowDown', recordingKey = null;
+function keyLabel(code) {
+  if (code.startsWith('Key'))   return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  const M={Space:'ESPACE',Escape:'ÉCHAP',ArrowUp:'↑',ArrowDown:'↓',
+           ArrowLeft:'←',ArrowRight:'→',Enter:'ENTRÉE',Tab:'TAB',
+           Backspace:'⌫',ShiftLeft:'SHIFT',ShiftRight:'SHIFT',
+           ControlLeft:'CTRL',ControlRight:'CTRL',AltLeft:'ALT'};
+  return M[code]||code;
+}
+function syncKeyLabels() {
+  document.getElementById('bindReset').textContent=keyLabel(keyReset);
+  document.getElementById('bindQuit').textContent =keyLabel(keyQuit);
+  document.getElementById('bindUp').textContent   =keyLabel(keyUp);
+  document.getElementById('bindDown').textContent =keyLabel(keyDown);
+}
+
+// ─── SETTINGS PERSISTENCE ─────────────────────────────────────────────────────
+function saveSettings() {
+  // le site doit rester jouable même si le stockage est indisponible (navigation
+  // privée, quota plein, etc.) — on perd juste la sauvegarde, pas l'accès au jeu.
+  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,keyUp,keyDown,trailEnabled,lagDelay,cadenceEnabled,noclipEnabled,gapStartMul,folieEnabled,modeNames}));}catch(_){}
+}
+function loadSettings() {
+  try {
+    const s=JSON.parse(localStorage.getItem('wave_settings'));
+    if(!s)return;
+    if(typeof s.pseudo==='string')pseudo=s.pseudo;
+    if(typeof s.themeIdx==='number'&&s.themeIdx>=0&&s.themeIdx<5)themeIdx=s.themeIdx;
+    if(typeof s.keyReset==='string')keyReset=s.keyReset;
+    if(typeof s.keyQuit==='string') keyQuit =s.keyQuit;
+    if(typeof s.keyUp==='string')   keyUp  =s.keyUp;
+    if(typeof s.keyDown==='string') keyDown=s.keyDown;
+    if(typeof s.trailEnabled==='boolean')trailEnabled=s.trailEnabled;
+    if(typeof s.lagDelay==='number'&&LAG_LEVELS.includes(s.lagDelay))lagDelay=s.lagDelay;
+    if(typeof s.cadenceEnabled==='boolean')cadenceEnabled=s.cadenceEnabled;
+    if(typeof s.noclipEnabled==='boolean')noclipEnabled=s.noclipEnabled;
+    if(typeof s.gapStartMul==='number'&&s.gapStartMul>=0.01&&s.gapStartMul<=10)gapStartMul=s.gapStartMul;
+    if(typeof s.folieEnabled==='boolean')folieEnabled=s.folieEnabled;
+    if(s.modeNames&&typeof s.modeNames==='object'){
+      MODES.forEach(m=>{if(typeof s.modeNames[m]==='string'&&s.modeNames[m].trim())modeNames[m]=s.modeNames[m].trim().slice(0,12);});
+    }
+  }catch(_){}
+}
+function applySettingsToUI() {
+  document.getElementById('pseudoInput').value=pseudo;
+  document.querySelectorAll('.mb[data-m]').forEach(b=>{b.textContent=modeNames[b.dataset.m]||b.dataset.m;});
+  const trailBtn=document.getElementById('trailToggle');
+  trailBtn.classList.toggle('on',trailEnabled);
+  trailBtn.textContent=trailEnabled?'Activée':'Désactivée';
+  const lagBtn=document.getElementById('lagToggle');
+  lagBtn.classList.toggle('on',lagDelay>0);
+  lagBtn.textContent=lagLabel();
+  const cadBtn=document.getElementById('cadenceToggle');
+  cadBtn.classList.toggle('on',cadenceEnabled);
+  cadBtn.textContent=cadenceEnabled?'⏱ CADENCE ✓':'⏱ CADENCE';
+  const noclipBtn=document.getElementById('noclipToggle');
+  noclipBtn.classList.toggle('on',noclipEnabled);
+  noclipBtn.textContent=noclipEnabled?'Activé':'Désactivé';
+  document.getElementById('gapPctInput').value=Math.round(gapStartMul*100);
+  const folieBtn=document.getElementById('folieToggle');
+  folieBtn.classList.toggle('on',folieEnabled);
+  folieBtn.textContent=folieEnabled?'Activé':'Désactivé';
+  document.querySelectorAll('.tb[data-t]').forEach(b=>{
+    const on=parseInt(b.dataset.t)===themeIdx;
+    b.classList.toggle('on',on);
+    b.style.cssText=on?'border-color:#7de8ff;color:#7de8ff;background:#7de8ff12':'';
+  });
+  document.body.style.background=THEMES[themeIdx].body;
+  syncKeyLabels();
+}
+
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const W=800,H=400,SEG=4,PLAYER_R=4,PLAYER_SX=200,BAR_H=14;
+
+// Vitesses de déplacement réduites de 30% (la durée reste 60s sur tous les
+// niveaux : ils sont juste plus courts en distance, pas plus courts en temps).
+const DCFG={
+  1:  {dur:60,speed: 98,vy:100,gap:102,col:'#7de8ff',name:'Normal'    },
+  2:  {dur:60,speed:127,vy:132,gap: 82,col:'#ffd166',name:'Difficile' },
+  3:  {dur:60,speed:162,vy:170,gap: 60,col:'#ff6b35',name:'Intense'   },
+  4:  {dur:60,speed:195,vy:202,gap: 52,col:'#ff3366',name:'Extrême'   },
+  4.5:{dur:60,speed:202,vy:206,gap: 45,col:'#ff2299',name:'Implacable'}, // entre Extrême et Légendaire
+  5:  {dur:60,speed:210,vy:210,gap: 37,col:'#cc44ff',name:'Légendaire'},
+};
+
+// ─── RECORDS ──────────────────────────────────────────────────────────────────
+// Records séparés par mode de jeu, par réglage de lag (0 / 0.5s / 1s) ET par
+// option Cadence (avec/sans) — ce sont toutes des catégories de record distinctes.
+const MODES=['wave','swing','ship','twokey'];
+const LAG_KEYS=['0','0.5','1'];
+const CAD_KEYS=['0','1']; // '0'=sans Cadence, '1'=avec Cadence
+// Marge de sécurité supplémentaire selon le mode : les modes avec inertie
+// (vaisseau/swing) ont besoin de plus de distance pour inverser leur
+// direction qu'un mode à changement instantané (wave/double) — utilisé par
+// l'option Cadence pour garantir un niveau toujours faisable selon le mode actif.
+const MODE_SAFETY={wave:1,twokey:1,swing:1.4,ship:1.5};
+function emptyRecords(){
+  const r={};MODES.forEach(m=>{r[m]={};LAG_KEYS.forEach(lk=>{r[m][lk]={};CAD_KEYS.forEach(ck=>r[m][lk][ck]={});});});return r;
+}
+function loadRecords(){
+  try{
+    const s=JSON.parse(localStorage.getItem('wave_records_v11'));
+    if(s&&typeof s==='object'){
+      const r=emptyRecords();
+      MODES.forEach(m=>LAG_KEYS.forEach(lk=>CAD_KEYS.forEach(ck=>{
+        if(s[m]&&s[m][lk]&&s[m][lk][ck]&&typeof s[m][lk][ck]==='object')r[m][lk][ck]=s[m][lk][ck];
+      })));
+      return r;
+    }
+  }catch(_){}
+  return emptyRecords();
+}
+function saveRecords(){try{localStorage.setItem('wave_records_v11',JSON.stringify(records));}catch(_){}}
+let records=loadRecords();
+function cadKey(){return cadenceEnabled?'1':'0';}
+function curRecords(){return records[mode][lagKey()][cadKey()];}
+function recordLabel(d){const r=curRecords()[d];if(r===undefined)return'--';return`${r} pts`;}
+// Un record ne compte que si le tunnel a démarré à sa taille prévue (100%)
+// et que l'option "Traverser les murs" était désactivée.
+function recordsEligible(){return gapStartMul===1&&!noclipEnabled;}
+
+// ─── MUSIQUE (une piste Spotify par niveau) ────────────────────────────────────
+const LEVEL_TRACKS={
+  1:'4fmllk44v7Oj6dfmGmWQou',
+  2:'4sjm43RcBUEzbqcuydeHCv',
+  3:'66tzNHI0wGA3C80rlCU2t2',
+  4:'4K5Y39Tc8BPunsQSDTUP6j',
+  4.5:'2ThEFszGznMxGzQWxyPWsW',
+  5:'4nD6zblNriIrIHt9hm5SPN',
+};
+function playLevelMusic(d){
+  const f=document.getElementById('spotifyFrame');
+  const id=LEVEL_TRACKS[d];
+  if(!f||!id)return;
+  f.src=`https://open.spotify.com/embed/track/${id}?utm_source=generator&autoplay=1`;
+}
+function stopLevelMusic(){
+  const f=document.getElementById('spotifyFrame');
+  if(f)f.src='';
+}
+
+// ─── EFFETS SONORES (synthétisés, pas de fichier audio nécessaire) ─────────────
+let audioCtx=null;
+function ensureAudioCtx(){
+  if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  return audioCtx;
+}
+function playClickSound(){
+  try{
+    const ctx=ensureAudioCtx();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.type='triangle';
+    osc.frequency.setValueAtTime(720,ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(420,ctx.currentTime+0.06);
+    gain.gain.setValueAtTime(0.18,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.08);
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.start();osc.stop(ctx.currentTime+0.08);
+  }catch(_){}
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+const cv=document.getElementById('cv'),cx=cv.getContext('2d');
+const mcv=document.getElementById('miniMapCv'),mcx=mcv.getContext('2d');
+let diff=5,mode='wave',state='menu',pseudo='';
+let corridor=null,waypoints=[],particles=[],trail=[],endWallWX=0;
+let cadenceTraj=[],cadenceEaseWX=0; // trajectoire enregistrée pour l'option Cadence
+let playerWX=0,playerY=H/2,cameraX=0,holding=false,hitFlash=0,deathPulse=0,shipVel=0,gravityDir=1,jumpQueued=false,upHeld=false,downHeld=false;
+let trainingDeaths=0,startMs=0,trainingTotalStartMs=0,elapsed=0,totalLen=0,lastDeathMs=-999,difficultyEase=0;
+let score=0,lastScoreSec=0;
+let raf,prevNow;
+
+function setIngame(on){document.body.classList.toggle('ingame',on);}
+
+// ─── UTILITY ──────────────────────────────────────────────────────────────────
+function smooth(t){t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);}
+
+// ─── WAYPOINTS ────────────────────────────────────────────────────────────────
+function waypointValueAt(wx,field,def){
+  if(!waypoints.length)return def;
+  const v=p=>(p[field]===undefined?def:p[field]);
+  if(wx<=waypoints[0].wx)return v(waypoints[0]);
+  const last=waypoints[waypoints.length-1];
+  if(wx>=last.wx)return v(last);
+  for(let i=0;i<waypoints.length-1;i++){
+    const a=waypoints[i],b=waypoints[i+1];
+    if(wx>=a.wx&&wx<b.wx)return v(a)+(v(b)-v(a))*smooth((wx-a.wx)/(b.wx-a.wx));
+  }
+  return def;
+}
+function corridorCenterAt(wx){return waypointValueAt(wx,'cy',H/2);}
+function gapMulAt(wx){return waypointValueAt(wx,'gMul',1);}
+function vyMulAt(wx){return waypointValueAt(wx,'vyMul',1);}
+function getCorridor(wx){
+  const maxWX=(corridor.length/2-2)*SEG;
+  const cwx=Math.max(0,Math.min(maxWX,wx));
+  const idx=cwx/SEG,i0=Math.floor(idx),t=idx-i0,j=i0*2;
+  return{top:corridor[j]+(corridor[j+2]-corridor[j])*t,
+         bot:corridor[j+1]+(corridor[j+3]-corridor[j+1])*t};
+}
+
+// ─── OBSTACLES (mode Défi Aléatoire) ───────────────────────────────────────────
+// Chaque obstacle est une petite figure qui part de MID et y revient (pour
+// s'enchaîner avec le suivant), avec une "difficulté" (h), une largeur
+// d'espacement relative (sp, plus petit = obstacle plus serré/rapide), et pour
+// chaque point une position (k) + une réduction optionnelle du couloir (g, 1=normal,
+// <1=resserré — simule des "piques"). Le code applique toujours un plancher de
+// largeur absolu (MIN_GAP) donc même les resserrements les plus forts restent
+// franchissables.
+// 14 figures de base (toutes partent et reviennent à MID pour s'enchaîner),
+// chacune déclinée en 4 "saveurs" (normale, piques, portail lent, portail
+// rapide) => jusqu'à 50 obstacles distincts au total.
+const OBSTACLE_SHAPES=[
+  ['MID','MID'],
+  ['MID','HITOP','MID'],
+  ['MID','HIBOT','MID'],
+  ['MID','TOP','MID'],
+  ['MID','BOT','MID'],
+  ['MID','TOP','BOT','MID'],
+  ['MID','HITOP','HIBOT','MID'],
+  ['MID','HITOP','MID','HITOP','MID'],
+  ['MID','HIBOT','MID','HIBOT','MID'],
+  ['MID','TOP','BOT','TOP','MID'],
+  ['MID','BOT','TOP','BOT','MID'],
+  ['MID','TOP','BOT','TOP','BOT','MID'],
+  ['MID','TOP','HIBOT','BOT','HITOP','MID'],
+  ['MID','HITOP','HIBOT','HITOP','MID'],
+];
+// g = réduction de largeur (piques), v = multiplicateur de vy (portails),
+// spMul = ajustement de l'espacement relatif, hAdd = difficulté ajoutée.
+const OBSTACLE_FLAVORS=[
+  {suffix:'',                g:1,    v:1,    spMul:1.0, hAdd:0},
+  {suffix:'_piques',         g:0.55, v:1,    spMul:0.9, hAdd:1},
+  {suffix:'_portail_lent',   g:1,    v:0.65, spMul:1.0, hAdd:1},
+  {suffix:'_portail_rapide', g:1,    v:1.5,  spMul:0.85,hAdd:1},
+];
+function buildObstaclePool(){
+  const EXTREME=new Set(['TOP','BOT']),MID_EXTREME=new Set(['HITOP','HIBOT']);
+  const pool=[];
+  for(const flavor of OBSTACLE_FLAVORS){
+    for(const keys of OBSTACLE_SHAPES){
+      let score=0,reversals=0;
+      for(let i=1;i<keys.length;i++){
+        if(EXTREME.has(keys[i]))score+=1;else if(MID_EXTREME.has(keys[i]))score+=0.5;
+        if(keys[i]!==keys[i-1])reversals++;
+      }
+      const h=Math.min(2,(score<=1?0:score<=2.5?1:2)+flavor.hAdd);
+      const sp=Math.max(0.45,Math.min(1.3,1.3-0.12*reversals))*flavor.spMul;
+      const pts=keys.map((k,i)=>(i===0||i===keys.length-1)?{k}:{k,g:flavor.g,v:flavor.v});
+      pool.push({h,sp,pts});
+      if(pool.length>=50)return pool;
+    }
+  }
+  return pool;
+}
+const OBSTACLES=buildObstaclePool();
+const MIN_GAP=32; // largeur minimale absolue garantie, quel que soit le resserrement demandé
+// Option Cadence : largeur du tunnel d'enregistrement.
+// Le couloir trace exactement la trajectoire enregistrée — il faut donc
+// reproduire les mêmes appuis au même moment, à TOLERANCE_MS près, pour
+// rester dedans. La largeur inclut le diamètre du joueur + la distance
+// parcourue à vy pendant 2×TOLERANCE_MS (marge symétrique) + un peu de jeu
+// pour rester franchissable malgré le pas de simulation (~16ms/frame).
+const CADENCE_TOLERANCE_MS=20;
+function cadenceGap(vy){
+  // ×2 : le tunnel Cadence démarre toujours deux fois plus gros que la
+  // tolérance brute calculée — cette largeur doublée est ce qu'on appelle
+  // désormais "100%" (le réglage Épaisseur tunnel multiplie ensuite celle-ci).
+  return (PLAYER_R*2 + 2*vy*(CADENCE_TOLERANCE_MS/1000) + 6)*2;
+}
+
+// Distance minimale entre deux points d'un obstacle pour que le déplacement
+// demandé reste humainement (et même physiquement) faisable : sur un segment
+// lissé (smoothstep), la vitesse instantanée au plus raide vaut 1.5× la
+// vitesse moyenne — il faut donc assez de distance pour que vy permette de
+// suivre l'amplitude demandée, avec une marge de confort (SAFETY). Un portail
+// qui ralentit (v<1) réduit la vy effective et exige donc plus d'espace.
+function requiredBaseUnit(cfg,KEY){
+  const SAFETY=1.8;
+  let need=0;
+  for(const ob of OBSTACLES){
+    let maxNeed=0;
+    for(let i=1;i<ob.pts.length;i++){
+      const edge=Math.abs(KEY[ob.pts[i].k]-KEY[ob.pts[i-1].k]);
+      const vMin=Math.min(ob.pts[i].v===undefined?1:ob.pts[i].v, ob.pts[i-1].v===undefined?1:ob.pts[i-1].v);
+      maxNeed=Math.max(maxNeed, edge*cfg.speed/(cfg.vy*vMin));
+    }
+    need=Math.max(need, SAFETY*maxNeed/ob.sp);
+  }
+  return need;
+}
+
+// Enregistre une trajectoire verticale pour l'option Cadence : simule des
+// clics aléatoires (au plus 5/s) avec la physique réelle du mode choisi, sur
+// un terrain ouvert (sans aucun mur), puis échantillonne le résultat au même
+// pas que le couloir (SEG) pour pouvoir le tracer tel quel ensuite.
+function recordCadenceTrajectory(cfg, mode, mainLen, easeWX){
+  const dt=SEG/cfg.speed; // un échantillon par pas de couloir
+  const nSamples=Math.ceil(mainLen/SEG);
+  const accel=cfg.vy/0.18;
+  let y=H/2, vel=0, holding=false, gravityDir=1, twokeyState=0; // -1=monter,0=droit,1=descendre
+  let nextClickT=0.2+Math.random()*0.5;
+  let t=0;
+  cadenceTraj=new Float32Array(nSamples);
+  cadenceEaseWX=easeWX;
+  for(let i=0;i<nSamples;i++){
+    if(t>=nextClickT){
+      if(mode==='wave'||mode==='ship'){ holding=!holding; }
+      else if(mode==='swing'){ gravityDir=-gravityDir; }
+      else if(mode==='twokey'){ const opts=[-1,0,1].filter(v=>v!==twokeyState); twokeyState=opts[Math.floor(Math.random()*opts.length)]; }
+      nextClickT=t+0.2+Math.random()*0.5; // 0.2s mini → 5 clics/s max
+    }
+    if(mode==='ship'){
+      vel+=(holding?-accel:accel)*dt;
+      vel=Math.max(-cfg.vy,Math.min(cfg.vy,vel));
+      y+=vel*dt;
+    }else if(mode==='swing'){
+      vel+=gravityDir*accel*dt;
+      vel=Math.max(-cfg.vy,Math.min(cfg.vy,vel));
+      y+=vel*dt;
+    }else if(mode==='twokey'){
+      y+=twokeyState*cfg.vy*dt;
+    }else{ // wave
+      y+=(holding?-1:1)*cfg.vy*dt;
+    }
+    y=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,y));
+    cadenceTraj[i]=y;
+    t+=dt;
+  }
+}
+
+// ─── LEVEL GENERATION ─────────────────────────────────────────────────────────
+function buildLevel(d){
+  const cfg=DCFG[d];
+  totalLen =cfg.dur*cfg.speed+W+600;
+  endWallWX=cfg.dur*cfg.speed;
+  const easeWX=cfg.speed*0.8;
+  const nSeg=Math.ceil(totalLen/SEG)+2;
+  corridor=new Float32Array(nSeg*2);
+  const gap=cfg.gap*gapStartMul,m=gap/2+10,rng=H-2*m;
+  const TOP=m+rng*.06,HITOP=m+rng*.25,MID=m+rng*.50,HIBOT=m+rng*.75,BOT=m+rng*.94;
+  const KEY={TOP,HITOP,MID,HIBOT,BOT};
+  const mainLen=totalLen-easeWX-W;
+
+  waypoints=[{wx:0,cy:MID},{wx:easeWX*.75,cy:MID}];
+
+  let wx=easeWX;
+  if(cadenceEnabled){
+    // Option Cadence (enregistrement) : on simule d'abord une session de
+    // clics ALÉATOIRES (au plus 5 clics/s) pour le mode actif, sur un
+    // terrain ouvert sans aucun mur, et on enregistre la trajectoire
+    // verticale obtenue image par image. Le tunnel du niveau trace ensuite
+    // EXACTEMENT cette trajectoire, avec une largeur calculée pour qu'il
+    // faille reproduire les mêmes appuis au même moment, à 20ms près, pour
+    // ne jamais sortir du couloir. Chaque mode produit donc un niveau
+    // différent (sa trajectoire enregistrée dépend de sa propre physique).
+    recordCadenceTrajectory(cfg, mode, mainLen, easeWX);
+    wx=easeWX+mainLen;
+  } else {
+    // Défi Aléatoire : enchaîne des obstacles tirés au hasard dans le pool,
+    // dont la difficulté possible augmente progressivement avec la distance.
+    const baseUnit=requiredBaseUnit(cfg,KEY)*MODE_SAFETY[mode];
+    while(wx<easeWX+mainLen){
+      const progress=Math.min(1,(wx-easeWX)/mainLen);
+      const maxH=progress<0.25?0:(progress<0.6?1:2);
+      const pool=OBSTACLES.filter(o=>o.h<=maxH);
+      const ob=pool[Math.floor(Math.random()*pool.length)];
+      const segLen=baseUnit*ob.sp;
+      for(let k=1;k<ob.pts.length;k++){
+        wx+=segLen;
+        const pt=ob.pts[k];
+        waypoints.push({wx,cy:KEY[pt.k],gMul:pt.g===undefined?1:pt.g,vyMul:pt.v===undefined?1:pt.v});
+      }
+    }
+  }
+  if(wx<totalLen)waypoints.push({wx:totalLen,cy:MID});
+
+  fillCorridor(d);
+}
+
+// Recalcule uniquement la largeur du couloir à partir des waypoints déjà en
+// place (le tracé/les obstacles ne changent pas) — utilisé pour l'assistance
+// progressive : chaque mort élargit un peu le couloir du reste de la run.
+function fillCorridor(d){
+  const cfg=DCFG[d];
+  const easeWX=cfg.speed*0.8;
+  const nSeg=corridor.length/2;
+  if(cadenceEnabled){
+    let gap=cadenceGap(cfg.vy)*gapStartMul+difficultyEase;
+    if(lagDelay>0)gap*=2;
+    const i0=Math.floor(cadenceEaseWX/SEG);
+    for(let i=0;i<nSeg;i++){
+      const wx=i*SEG;let cy,g=gap;
+      if(wx<cadenceEaseWX){const t=wx/cadenceEaseWX;cy=H/2;g=H*.68*(1-t)+gap*t;}
+      else{const idx=i-i0;cy=(idx>=0&&idx<cadenceTraj.length)?cadenceTraj[idx]:H/2;}
+      corridor[i*2]=cy-g/2;corridor[i*2+1]=cy+g/2;
+    }
+    return;
+  }
+  let gap=cfg.gap*gapStartMul+difficultyEase;
+  if(lagDelay>0)gap*=2;
+  for(let i=0;i<nSeg;i++){
+    const wx=i*SEG;let cy,g;
+    if(wx<easeWX){const t=wx/easeWX;cy=H/2;g=H*.68*(1-t)+gap*t;corridor[i*2]=cy-g/2;corridor[i*2+1]=cy+g/2;continue;}
+    cy=corridorCenterAt(wx);
+    g=gap;
+    corridor[i*2]=cy-g/2;corridor[i*2+1]=cy+g/2;
+  }
+}
+
+// ─── GAME CONTROL ─────────────────────────────────────────────────────────────
+function resetRun(keepDeaths){
+  playerWX=0;playerY=H/2;cameraX=-PLAYER_SX;
+  holding=false;hitFlash=0;deathPulse=0;particles=[];trail=[];elapsed=0;shipVel=0;difficultyEase=0;
+  gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;
+  pendingActions=[];
+  score=0;lastScoreSec=0;
+  prevNow=startMs=performance.now();
+  if(!keepDeaths){trainingDeaths=0;trainingTotalStartMs=performance.now();}
+}
+function startGame(){difficultyEase=0;buildLevel(diff);resetRun(false);state='playing';setIngame(true);playLevelMusic(diff);}
+function goToMenu(){state='menu';holding=false;heldKeys.clear();pendingActions=[];setIngame(false);stopLevelMusic();}
+
+function explode(px,py,col){
+  for(let i=0;i<32;i++){const a=Math.random()*Math.PI*2,s=1.5+Math.random()*6;
+    particles.push({x:px,y:py,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.2,
+      life:1,decay:.015+Math.random()*.022,r:2+Math.random()*5,col});}
+}
+function die(){
+  if(state!=='playing')return;
+  if(elapsed<3.3){hitFlash=1;return;} // invincible 3.3s
+  const now=performance.now();
+  if(now-lastDeathMs<333)return; // cooldown 0.333s entre chaque mort
+  lastDeathMs=now;
+  hitFlash=1;trainingDeaths++;
+  deathPulse=1;
+  // Assistance progressive : chaque mort élargit un peu le couloir pour le
+  // reste de la run (plafonnée pour ne jamais devenir trivial).
+  difficultyEase+=2;
+  fillCorridor(diff);
+}
+
+// ─── UPDATE ───────────────────────────────────────────────────────────────────
+function update(now){
+  const dt=Math.min((now-prevNow)/1000,.05);prevNow=now;
+  if(pendingActions.length){
+    const ready=pendingActions.filter(a=>a.at<=now);
+    if(ready.length){pendingActions=pendingActions.filter(a=>a.at>now);ready.forEach(a=>a.fn());}
+  }
+  for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=p.decay;}
+  particles=particles.filter(p=>p.life>0);
+  if(hitFlash>0)hitFlash=Math.max(0,hitFlash-dt*2.5);
+  if(deathPulse>0)deathPulse=Math.max(0,deathPulse-dt*2);
+  if(state!=='playing')return;
+  elapsed=(now-startMs)/1000;
+  const cfg=DCFG[diff];
+  if(elapsed>=cfg.dur){
+    // sauvegarder le record (score max) — uniquement si la run est éligible
+    // (tunnel démarré à 100% et option "Traverser les murs" désactivée).
+    if(recordsEligible()){
+      const rec=curRecords();
+      if(rec[diff]===undefined||score>rec[diff]){rec[diff]=score;saveRecords();}
+    }
+    difficultyEase=0;buildLevel(diff);resetRun(true);return;
+  }
+  playerWX+=cfg.speed*dt;cameraX=playerWX-PLAYER_SX;
+  // "portails" : modifient temporairement la vitesse verticale max du joueur
+  // tant qu'il traverse leur zone.
+  const vyNow=cfg.vy*vyMulAt(playerWX);
+  if(mode==='ship'){
+    // VAISSEAU (façon Geometry Dash) : pas de changement instantané de
+    // direction — une poussée vers le haut quand on maintient, sinon la
+    // gravité tire vers le bas ; la vitesse s'accumule avec inertie.
+    const accel=vyNow/0.18;
+    shipVel+=(holding?-accel:accel)*dt;
+    shipVel=Math.max(-vyNow,Math.min(vyNow,shipVel));
+    playerY+=shipVel*dt;
+  } else if(mode==='swing'){
+    // SWING : chaque appui inverse le sens de la gravité, la vitesse
+    // s'accumule avec inertie dans cette direction jusqu'au prochain appui.
+    if(jumpQueued){jumpQueued=false;gravityDir=-gravityDir;}
+    const accel=vyNow/0.18;
+    shipVel+=gravityDir*accel*dt;
+    shipVel=Math.max(-vyNow,Math.min(vyNow,shipVel));
+    playerY+=shipVel*dt;
+  } else if(mode==='twokey'){
+    // DOUBLE : sans rien faire on avance tout droit ; la touche "Monter"
+    // fait monter, la touche "Descendre" fait descendre.
+    const dir=(upHeld&&!downHeld)?-1:((downHeld&&!upHeld)?1:0);
+    playerY+=dir*vyNow*dt;
+  } else {
+    // WAVE : maintenir fait monter en ligne droite, relâcher fait descendre.
+    const dir=holding?-1:1;
+    playerY+=dir*vyNow*dt;
+  }
+  playerY=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,playerY));
+  trail.push({wx:playerWX,y:playerY});if(trail.length>28)trail.shift();
+  const{top,bot}=getCorridor(playerWX);
+  // Score : chaque seconde écoulée rapporte 30 points moins le nombre de morts
+  // (peut devenir négatif au-delà de 30 morts, et le total peut être négatif).
+  const curSec=Math.floor(elapsed);
+  if(lastScoreSec<curSec){
+    const pts=30-trainingDeaths;
+    while(lastScoreSec<curSec){lastScoreSec++;score+=pts;}
+  }
+  // Le mur ne repousse jamais le joueur : on se contente de bloquer la
+  // position exactement à sa surface (qui suit le mur s'il est en mouvement),
+  // sans lui ajouter de vitesse — juste assez pour ne jamais traverser ni
+  // rester figé "dans" le mur.
+  const inertial=mode==='ship'||mode==='swing';
+  if(noclipEnabled){
+    // Traverser les murs : aucune collision, aucune mort.
+  }else if(playerY-PLAYER_R<top){
+    playerY=top+PLAYER_R;
+    if(inertial)shipVel=Math.max(0,shipVel);
+    die();
+  }else if(playerY+PLAYER_R>bot){
+    playerY=bot-PLAYER_R;
+    if(inertial)shipVel=Math.min(0,shipVel);
+    die();
+  }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function drawBg(){
+  const th=THEMES[themeIdx];
+  cx.fillStyle=th.bg;cx.fillRect(0,0,W,H);
+  cx.strokeStyle=th.grid;cx.lineWidth=1;
+  const gx0=-(cameraX%64);
+  for(let gx=gx0;gx<W;gx+=64){cx.beginPath();cx.moveTo(gx,0);cx.lineTo(gx,H);cx.stroke();}
+  for(let gy=0;gy<H;gy+=64){cx.beginPath();cx.moveTo(0,gy);cx.lineTo(W,gy);cx.stroke();}
+}
+
+function drawWalls(){
+  const col=DCFG[diff].col,wall=THEMES[themeIdx].wall,step=4;
+  cx.beginPath();cx.moveTo(-step,-1);
+  for(let sx=-step;sx<=W+step;sx+=step)cx.lineTo(sx,getCorridor(cameraX+sx).top);
+  cx.lineTo(W+step,-1);cx.closePath();cx.fillStyle=wall;cx.fill();
+  cx.beginPath();cx.moveTo(-step,H+1);
+  for(let sx=-step;sx<=W+step;sx+=step)cx.lineTo(sx,getCorridor(cameraX+sx).bot);
+  cx.lineTo(W+step,H+1);cx.closePath();cx.fillStyle=wall;cx.fill();
+  cx.lineWidth=2.5;cx.strokeStyle=col;cx.shadowBlur=14;cx.shadowColor=col;
+  cx.beginPath();
+  for(let sx=0;sx<=W;sx+=step){const y=getCorridor(cameraX+sx).top;sx===0?cx.moveTo(sx,y):cx.lineTo(sx,y);}
+  cx.stroke();
+  cx.beginPath();
+  for(let sx=0;sx<=W;sx+=step){const y=getCorridor(cameraX+sx).bot;sx===0?cx.moveTo(sx,y):cx.lineTo(sx,y);}
+  cx.stroke();cx.shadowBlur=0;
+  // End wall
+  const endSX=endWallWX-cameraX;
+  if(endSX>-60&&endSX<W+60){
+    const{top:ty,bot:by}=getCorridor(endWallWX);
+    const prox=Math.max(0,1-Math.abs(endSX-PLAYER_SX)/(PLAYER_SX*2.5));
+    cx.fillStyle=wall;cx.fillRect(endSX,-2,W+60-endSX,H+4);
+    cx.lineWidth=5+prox*8;cx.strokeStyle=col;cx.shadowBlur=18+prox*30;cx.shadowColor=col;
+    cx.beginPath();cx.moveTo(endSX,ty-2);cx.lineTo(endSX,by+2);cx.stroke();
+    if(prox>.3){cx.globalAlpha=prox*.18;cx.fillStyle=col;cx.fillRect(endSX-prox*30,ty,prox*30,by-ty);cx.globalAlpha=1;}
+    cx.shadowBlur=0;cx.lineWidth=1;
+  }
+}
+
+function drawPlayer(){
+  const col=DCFG[diff].col,acc=THEMES[themeIdx].accent;
+  if(trailEnabled)for(let i=0;i<trail.length;i++){
+    const t=trail[i],sx=t.wx-cameraX;
+    if(sx<-20||sx>PLAYER_SX+4)continue;
+    const f=i/trail.length;
+    cx.globalAlpha=f*.45;
+    cx.beginPath();cx.arc(sx,t.y,PLAYER_R*.3+f*PLAYER_R*.9,0,Math.PI*2);
+    cx.fillStyle=col;cx.fill();
+  }
+  cx.globalAlpha=1;
+  cx.save();cx.translate(PLAYER_SX,playerY);
+  const tiltMul=mode==='swing'?.08:mode==='ship'?.22:0;
+  cx.rotate(tiltMul?-Math.PI*tiltMul*Math.max(-1,Math.min(1,shipVel/DCFG[diff].vy)):
+    mode==='twokey'?(upHeld&&!downHeld?-Math.PI*.20:(downHeld&&!upHeld?Math.PI*.20:0)):
+    (holding?-Math.PI*.20:Math.PI*.20));
+  // Theme accent outer glow
+  cx.shadowBlur=32;cx.shadowColor=acc;cx.fillStyle=acc+'55';
+  cx.beginPath();cx.moveTo(0,-PLAYER_R-3);cx.lineTo(PLAYER_R+4,0);
+  cx.lineTo(0,PLAYER_R+3);cx.lineTo(-PLAYER_R-4,0);cx.closePath();cx.fill();
+  // Level color main body
+  cx.shadowBlur=18;cx.shadowColor=col;cx.fillStyle=col;
+  cx.beginPath();cx.moveTo(0,-PLAYER_R-1);cx.lineTo(PLAYER_R+2,0);
+  cx.lineTo(0,PLAYER_R+1);cx.lineTo(-PLAYER_R-2,0);cx.closePath();cx.fill();
+  cx.shadowBlur=0;cx.fillStyle='rgba(255,255,255,.55)';
+  cx.beginPath();cx.moveTo(0,-5);cx.lineTo(5,0);cx.lineTo(0,5);cx.lineTo(-5,0);cx.closePath();cx.fill();
+  cx.restore();
+}
+
+function drawParticles(){
+  for(const p of particles){cx.globalAlpha=Math.max(0,p.life);cx.shadowBlur=7;cx.shadowColor=p.col;cx.fillStyle=p.col;
+    cx.beginPath();cx.arc(p.x,p.y,Math.max(.1,p.r*p.life),0,Math.PI*2);cx.fill();}
+  cx.globalAlpha=1;cx.shadowBlur=0;
+}
+
+function drawHUD(){
+  const cfg=DCFG[diff],col=cfg.col;
+  const pct=Math.min(1,playerWX/endWallWX);
+  const chrono=(performance.now()-trainingTotalStartMs)/1000;
+  // Bar
+  cx.fillStyle='rgba(255,255,255,.07)';cx.fillRect(0,0,W,BAR_H);
+  const g=cx.createLinearGradient(0,0,W,0);
+  g.addColorStop(0,col+'44');g.addColorStop(Math.max(0,pct-.12),col+'aa');
+  g.addColorStop(pct,col);g.addColorStop(Math.min(1,pct+.001),'transparent');
+  cx.fillStyle=g;cx.fillRect(0,0,W*pct,BAR_H);
+  cx.strokeStyle='rgba(255,255,255,.10)';cx.lineWidth=1;cx.strokeRect(0,0,W,BAR_H);
+  cx.shadowBlur=10;cx.shadowColor=col;cx.fillStyle=col;cx.fillRect(W*pct-2,0,4,BAR_H);cx.shadowBlur=0;
+  // Pseudo — top center, just below bar (far from quit button at bottom)
+  const name=pseudo.trim()||'Joueur';
+  cx.textAlign='center';cx.font='bold 13px monospace';cx.fillStyle=col+'88';
+  cx.fillText(name,W/2,BAR_H+16);
+  // Chrono — right
+  cx.textAlign='right';cx.font='bold 13px monospace';cx.fillStyle='#ffffff66';
+  cx.fillText(`${chrono.toFixed(1)}s`,W-10,BAR_H+16);
+  // Score — left (pulse rouge au moment de la mort)
+  cx.save();
+  const dscale=1+deathPulse*.6;
+  cx.textAlign='left';cx.font=`bold ${(12*dscale).toFixed(1)}px monospace`;
+  cx.fillStyle=deathPulse>0?`rgba(255,70,80,${.7+deathPulse*.3})`:'#ffffff66';
+  if(deathPulse>0){cx.shadowBlur=10*deathPulse;cx.shadowColor='#ff3366';}
+  cx.fillText(`points : ${score}`,10,BAR_H+16);
+  cx.restore();
+  const rl=recordLabel(diff);
+  cx.textAlign='left';cx.font='12px monospace';
+  cx.fillStyle=rl==='--'?'#ffffff22':col+'88';
+  cx.fillText(`record : ${rl}`,10,BAR_H+30);
+  cx.fillStyle='#ffffff44';
+  cx.fillText(`morts : ${trainingDeaths}`,10,BAR_H+44);
+  // Badge : nom du mode actif (personnalisable en cliquant sur son bouton)
+  cx.textAlign='right';cx.font='bold 11px monospace';
+  cx.shadowBlur=6;cx.shadowColor='#dd88ff';cx.fillStyle='#dd88ffbb';
+  cx.fillText(modeNames[mode]||mode,W-10,H-6);cx.shadowBlur=0;
+  if(hitFlash>0){cx.fillStyle=`rgba(255,40,40,${hitFlash*.42})`;cx.fillRect(0,0,W,H);}
+}
+
+function miniMapEnvelope(cols){
+  // Pour chaque colonne, on prend le min(top) et max(bot) réels du corridor sur la
+  // plage couverte (et non un simple échantillonnage qui raterait les zigzags rapides).
+  const nIdx=Math.floor(endWallWX/SEG),idxPerCol=nIdx/cols;
+  const tops=new Float32Array(cols+1),bots=new Float32Array(cols+1);
+  for(let c=0;c<=cols;c++){
+    const i0=Math.max(0,Math.floor(c*idxPerCol)),i1=Math.min(nIdx,Math.ceil((c+1)*idxPerCol));
+    let mn=Infinity,mx=-Infinity;
+    for(let i=i0;i<=i1&&i*2+1<corridor.length;i++){
+      const t=corridor[i*2],b=corridor[i*2+1];
+      if(t<mn)mn=t;if(b>mx)mx=b;
+    }
+    if(mn===Infinity){const g=getCorridor(c*idxPerCol*SEG);mn=g.top;mx=g.bot;}
+    tops[c]=mn;bots[c]=mx;
+  }
+  return{tops,bots};
+}
+// Dessinée sur son propre canvas (#miniMapCv), en dehors de l'écran de jeu.
+function drawMiniMap(){
+  const MW=mcv.width,MHt=mcv.height;
+  mcx.clearRect(0,0,MW,MHt);
+  const col=DCFG[diff].col,MH=MHt/2-1,MY=MHt/2,MLEN=MW,MX0=0,pct=playerWX/endWallWX;
+  const cols=Math.round(MLEN);
+  const{tops,bots}=miniMapEnvelope(cols);
+  mcx.fillStyle='rgba(255,255,255,.06)';mcx.fillRect(MX0,MY-MH,MLEN,MH*2);
+  mcx.beginPath();
+  for(let c=0;c<=cols;c++){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(tops[c]/H)*(MH*2);c===0?mcx.moveTo(sx,sy):mcx.lineTo(sx,sy);}
+  for(let c=cols;c>=0;c--){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(bots[c]/H)*(MH*2);mcx.lineTo(sx,sy);}
+  mcx.closePath();mcx.fillStyle=col+'1e';mcx.fill();
+  mcx.strokeStyle=col+'55';mcx.lineWidth=1;
+  mcx.beginPath();
+  for(let c=0;c<=cols;c++){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(tops[c]/H)*(MH*2);c===0?mcx.moveTo(sx,sy):mcx.lineTo(sx,sy);}mcx.stroke();
+  mcx.beginPath();
+  for(let c=0;c<=cols;c++){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(bots[c]/H)*(MH*2);c===0?mcx.moveTo(sx,sy):mcx.lineTo(sx,sy);}mcx.stroke();
+  const pmx=MX0+Math.min(1,pct)*MLEN,pmy=MY-MH+(playerY/H)*(MH*2);
+  mcx.beginPath();mcx.arc(pmx,pmy,2.5,0,Math.PI*2);
+  mcx.fillStyle=col;mcx.shadowBlur=6;mcx.shadowColor=col;mcx.fill();mcx.shadowBlur=0;
+}
+
+function drawOverlay(title,line1,line2,col){
+  const th=THEMES[themeIdx];
+  cx.fillStyle=th.overlay;cx.fillRect(0,0,W,H);
+  cx.textAlign='center';cx.shadowBlur=36;cx.shadowColor=col;
+  cx.fillStyle=col;cx.font='bold 48px Arial Black,Arial,sans-serif';
+  cx.fillText(title,W/2,H/2-24);cx.shadowBlur=0;
+  cx.fillStyle='rgba(255,255,255,.72)';cx.font='15px monospace';cx.fillText(line1,W/2,H/2+14);
+  cx.fillStyle='rgba(255,255,255,.30)';cx.font='12px monospace';cx.fillText(line2,W/2,H/2+38);
+}
+
+// ─── THEMED MENU ANIMATIONS ──────────────────────────────────────────────────
+function drawMenuBg(){
+  const t=performance.now()/1000,th=THEMES[themeIdx];
+  switch(themeIdx){
+    case 0: // Nuit — étoiles qui scintillent
+      for(let i=0;i<160;i++){
+        const x=(i*273.4+7)%(W+20),y=(i*189.7+3)%H;
+        const blink=.3+.7*Math.abs(Math.sin(t*.6+i*1.3));
+        cx.globalAlpha=.015+blink*.08;cx.fillStyle='#aaccff';
+        cx.fillRect(x-.5,y-.5,1,1);
+      }
+      // Quelques étoiles filantes
+      for(let i=0;i<4;i++){
+        const cycle=((t*.8+i*7.3)%12)/12;
+        const len=30+i*15;
+        cx.globalAlpha=Math.sin(cycle*Math.PI)*.15;
+        const sx=(i*234+cycle*W*2)%W,sy=(i*97)%H;
+        cx.strokeStyle='#aaccff';cx.lineWidth=1;
+        cx.beginPath();cx.moveTo(sx,sy);cx.lineTo(sx-len*.7,sy-len*.4);cx.stroke();
+      }
+      break;
+    case 1: // Désert — grains de sable qui dérivent
+      for(let i=0;i<100;i++){
+        const x=((i*137.2+t*18*(1+i%4*.4))%(W+20))-10;
+        const y=(i*89.3+Math.sin(t*.4+i)*.8)%H;
+        cx.globalAlpha=.02+(i%5)*.008;cx.fillStyle='#cc9944';
+        cx.fillRect(x,y,2+i%4,.8);
+      }
+      // Vagues de chaleur (lignes horizontales ondulantes)
+      for(let j=0;j<5;j++){
+        const yw=50+j*70+Math.sin(t*.3+j)*8;
+        cx.globalAlpha=.03;cx.strokeStyle='#ffbb55';cx.lineWidth=1;
+        cx.beginPath();
+        for(let x=0;x<=W;x+=4)cx.lineTo(x,yw+Math.sin(x*.05+t*.5+j)*6);
+        cx.stroke();
+      }
+      break;
+    case 2: // Néon — scanlines et particules
+      for(let y=0;y<H;y+=6){
+        const pulse=.5+.5*Math.sin(t*1.5+y*.04);
+        cx.globalAlpha=.008*pulse;cx.fillStyle='#00ffcc';
+        cx.fillRect(0,y,W,1);
+      }
+      for(let i=0;i<50;i++){
+        const x=(i*211.3+Math.sin(t*.5+i)*20)%W;
+        const y=(i*173.7+t*12*(i%4+1))%H;
+        const blink=.5+.5*Math.sin(t*4+i);
+        cx.globalAlpha=.04+.04*blink;
+        cx.fillStyle=i%3===0?'#00ffcc':i%3===1?'#ff00ff':'#ffff00';
+        cx.shadowBlur=4;cx.shadowColor=cx.fillStyle;
+        cx.beginPath();cx.arc(x,y,1,0,Math.PI*2);cx.fill();
+      }
+      cx.shadowBlur=0;
+      break;
+    case 3: // Forêt — lucioles
+      for(let i=0;i<55;i++){
+        const angle=t*.25*(1+i%3*.5)+i*2.4;
+        const ox=Math.cos(angle)*25,oy=Math.sin(angle*1.3)*12;
+        const x=((i*179.3+ox)%(W+40))-20;
+        const y=((i*131.7-t*6*(i%3+.5)+H*4)%H)+oy;
+        const glow=.3+.7*Math.abs(Math.sin(t*(1+i%5*.3)+i));
+        cx.globalAlpha=glow*.14;cx.shadowBlur=10;cx.shadowColor='#33dd55';
+        cx.fillStyle='#88ffaa';
+        cx.beginPath();cx.arc(x,y,1.5,0,Math.PI*2);cx.fill();
+      }
+      cx.shadowBlur=0;
+      break;
+    case 4: // Volcan — braises qui montent
+      for(let i=0;i<80;i++){
+        const spd=18+i%6*10;
+        const y=((H-(t*spd*(1+i%4*.3)+i*29)%H)+H*20)%H;
+        const x=(i*137.3+Math.sin(t*.4+i)*14)%(W+20)-10;
+        const flicker=.3+.7*Math.abs(Math.sin(t*4+i*1.7));
+        cx.globalAlpha=flicker*.10;
+        cx.fillStyle=i%3===0?'#ff4400':i%3===1?'#ff8822':'#ffcc00';
+        cx.shadowBlur=4;cx.shadowColor=cx.fillStyle;
+        cx.beginPath();cx.arc(x,y,1+i%3*.5,0,Math.PI*2);cx.fill();
+      }
+      cx.shadowBlur=0;
+      break;
+  }
+  cx.globalAlpha=1;
+}
+
+function drawMenu(){
+  drawMenuBg();
+  const col=DCFG[diff].col;
+  const mods=modeNames[mode]||mode;
+  drawOverlay(DCFG[diff].name.toUpperCase(),
+    `${DCFG[diff].dur}s${mods?' · '+mods:''}`,
+    "Cliquez JOUER ou appuyez sur n'importe quelle touche",col);
+}
+
+// ─── MAIN LOOP ────────────────────────────────────────────────────────────────
+function loop(now){
+  // rAF est replanifié en premier : même si une erreur survient plus bas, la
+  // boucle ne s'arrête jamais et le site reste jouable à l'image suivante.
+  raf=requestAnimationFrame(loop);
+  try{
+    update(now);drawBg();
+    if(state==='menu'){drawMenu();return;}
+    // Écran fixe : pas de caméra qui suit ou zoome, la vue ne bouge jamais
+    // (sauf secousse aléatoire du Mode Folie, volontaire et indépendante).
+    const folieActive=folieEnabled&&state==='playing';
+    if(folieActive){cx.save();cx.translate((Math.random()-.5)*10,(Math.random()-.5)*10);}
+    drawWalls();drawParticles();
+    if(state==='playing')drawPlayer();
+    if(folieActive){
+      cx.restore();
+      if(Math.random()<0.12){cx.fillStyle=`rgba(255,255,255,${0.15+Math.random()*0.35})`;cx.fillRect(0,0,W,H);}
+      else if(Math.random()<0.08){cx.fillStyle=`rgba(255,0,80,${0.12+Math.random()*0.25})`;cx.fillRect(0,0,W,H);}
+    }
+    if(state==='playing'){drawHUD();drawMiniMap();}
+    if(state==='dead'){drawHUD();drawMiniMap();
+      drawOverlay('✗ MORT',`${elapsed.toFixed(1)}s survécu`,`${keyLabel(keyReset)} pour réessayer`,'#ff3366');}
+    if(state==='win'){drawHUD();drawMiniMap();
+      drawOverlay('✓ VICTOIRE !',`${DCFG[diff].name} — ${DCFG[diff].dur}s !`,
+        `${keyLabel(keyReset)} pour rejouer`,DCFG[diff].col);}
+  }catch(e){console.error('Erreur d\'affichage (ignorée, le jeu continue) :',e);}
+}
+
+// ─── INPUT ────────────────────────────────────────────────────────────────────
+function pressDown(){if(state==='playing')schedule(()=>{holding=true;jumpQueued=true;});}
+function pressUp(){schedule(()=>{holding=false;});}
+// En mode Double (deux touches), la souris/le tactile n'a pas deux touches
+// séparées : on découpe l'écran en deux zones (haut = monter, bas = descendre)
+// pour que le mode reste jouable au clic/au doigt, notamment sur téléphone.
+let touchZone=null;
+function zoneFromY(clientY){
+  const r=cv.getBoundingClientRect();
+  return (clientY-r.top)<r.height/2?'up':'down';
+}
+function pressDownAt(clientY){
+  if(state!=='playing')return;
+  if(mode==='twokey'){
+    touchZone=zoneFromY(clientY);
+    if(touchZone==='up')schedule(()=>{upHeld=true;});
+    else schedule(()=>{downHeld=true;});
+  }else{
+    pressDown();
+  }
+}
+function pressUpAt(){
+  if(mode==='twokey'){
+    if(touchZone==='up')schedule(()=>{upHeld=false;});
+    else if(touchZone==='down')schedule(()=>{downHeld=false;});
+    touchZone=null;
+  }else{
+    pressUp();
+  }
+}
+cv.addEventListener('mousedown',e=>{e.preventDefault();pressDownAt(e.clientY);});
+cv.addEventListener('mouseup',()=>pressUpAt());
+cv.addEventListener('touchstart',e=>{e.preventDefault();pressDownAt(e.touches[0].clientY);},{passive:false});
+cv.addEventListener('touchend',e=>{e.preventDefault();pressUpAt();},{passive:false});
+const heldKeys=new Set();
+const BIND_IDS=['bindReset','bindQuit','bindUp','bindDown'];
+function clearRecordingUI(){BIND_IDS.forEach(id=>document.getElementById(id).classList.remove('recording'));}
+document.addEventListener('keydown',e=>{
+  if(recordingKey){e.preventDefault();e.stopPropagation();
+    if(e.code!=='Escape'){
+      if(recordingKey==='reset')keyReset=e.code;
+      else if(recordingKey==='quit')keyQuit=e.code;
+      else if(recordingKey==='up')keyUp=e.code;
+      else if(recordingKey==='down')keyDown=e.code;
+      syncKeyLabels();
+    }
+    recordingKey=null;clearRecordingUI();return;}
+  if(document.getElementById('settingsPanel').classList.contains('open'))return;
+  if(e.code==='Escape'){if(state!=='menu')goToMenu();return;}
+  if(state==='menu')return;
+  if(e.code===keyQuit){goToMenu();return;}
+  if(e.code===keyReset){startGame();return;}
+  if(e.code===keyUp)schedule(()=>{upHeld=true;});
+  if(e.code===keyDown)schedule(()=>{downHeld=true;});
+  if(state!=='playing')return;
+  if(/^F\d+$/.test(e.code))return;
+  e.preventDefault();
+  if(!heldKeys.has(e.code)){heldKeys.add(e.code);if(heldKeys.size===1)pressDown();}
+});
+document.addEventListener('keyup',e=>{
+  if(e.code===keyUp)schedule(()=>{upHeld=false;});
+  if(e.code===keyDown)schedule(()=>{downHeld=false;});
+  heldKeys.delete(e.code);if(heldKeys.size===0)pressUp();
+});
+
+document.getElementById('quitBtn').addEventListener('click',goToMenu);
+document.querySelectorAll('.mb').forEach(btn=>btn.addEventListener('click',()=>{
+  playClickSound();
+  const m=btn.dataset.m;
+  if(mode===m&&btn.classList.contains('on')){
+    // Cliquer sur le mode déjà actif permet de le renommer.
+    const cur=modeNames[m]||m;
+    const name=prompt('Nouveau nom pour ce mode :',cur);
+    if(name!==null&&name.trim()!==''){
+      modeNames[m]=name.trim().slice(0,12);
+      btn.textContent=modeNames[m];
+      saveSettings();
+    }
+    return;
+  }
+  document.querySelectorAll('.mb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');mode=m;
+  shipVel=0;gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+}));
+document.getElementById('rulesBtn').addEventListener('click',()=>document.getElementById('rulesPanel').classList.add('open'));
+document.getElementById('closeRules').addEventListener('click',()=>document.getElementById('rulesPanel').classList.remove('open'));
+document.getElementById('settingsBtn').addEventListener('click',()=>document.getElementById('settingsPanel').classList.add('open'));
+document.getElementById('closeSettings').addEventListener('click',()=>{
+  document.getElementById('settingsPanel').classList.remove('open');
+  pseudo=document.getElementById('pseudoInput').value;
+  recordingKey=null;clearRecordingUI();syncKeyLabels();saveSettings();
+});
+document.getElementById('pseudoInput').addEventListener('keydown',e=>e.stopPropagation());
+[['bindReset','reset'],['bindQuit','quit'],['bindUp','up'],['bindDown','down']].forEach(([id,key])=>{
+  document.getElementById(id).addEventListener('click',()=>{
+    recordingKey=key;clearRecordingUI();
+    const el=document.getElementById(id);el.classList.add('recording');el.textContent='Appuyez…';
+  });
+});
+document.querySelectorAll('.tb[data-t]').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.tb[data-t]').forEach(b=>{b.classList.remove('on');b.style.cssText='';});
+  btn.classList.add('on');themeIdx=parseInt(btn.dataset.t);
+  document.body.style.background=THEMES[themeIdx].body;
+  btn.style.borderColor='#7de8ff';btn.style.color='#7de8ff';btn.style.background='#7de8ff12';
+  saveSettings();
+}));
+document.getElementById('trailToggle').addEventListener('click',()=>{
+  trailEnabled=!trailEnabled;
+  applySettingsToUI();
+  saveSettings();
+});
+document.getElementById('lagToggle').addEventListener('click',()=>{
+  lagDelay=LAG_LEVELS[(LAG_LEVELS.indexOf(lagDelay)+1)%LAG_LEVELS.length];
+  applySettingsToUI();
+  saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+  else if(state==='playing')fillCorridor(diff);
+});
+document.getElementById('cadenceToggle').addEventListener('click',()=>{
+  cadenceEnabled=!cadenceEnabled;
+  applySettingsToUI();
+  saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('noclipToggle').addEventListener('click',()=>{
+  noclipEnabled=!noclipEnabled;
+  applySettingsToUI();
+  saveSettings();
+});
+document.getElementById('gapMinus').addEventListener('click',()=>{
+  // Pas multiplicatif (~15%) pour pouvoir couvrir toute la plage 1%-1000%.
+  gapStartMul=Math.max(0.01,Math.round(gapStartMul/1.15*100)/100);
+  applySettingsToUI();saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('gapPlus').addEventListener('click',()=>{
+  gapStartMul=Math.min(10,Math.round(gapStartMul*1.15*100)/100);
+  applySettingsToUI();saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('folieToggle').addEventListener('click',()=>{
+  folieEnabled=!folieEnabled;
+  applySettingsToUI();
+  saveSettings();
+});
+const gapPctInput=document.getElementById('gapPctInput');
+gapPctInput.addEventListener('keydown',e=>{
+  e.stopPropagation();
+  // Seuls les chiffres (+ touches de navigation/édition) sont autorisés.
+  if(/^\d$/.test(e.key))return;
+  const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter','Home','End'];
+  if(!allowed.includes(e.key))e.preventDefault();
+  if(e.key==='Enter')gapPctInput.blur();
+});
+gapPctInput.addEventListener('input',()=>{
+  gapPctInput.value=gapPctInput.value.replace(/\D/g,'').slice(0,4);
+});
+gapPctInput.addEventListener('blur',()=>{
+  let v=parseInt(gapPctInput.value,10);
+  if(!Number.isFinite(v))v=100;
+  v=Math.max(1,Math.min(1000,v));
+  gapStartMul=v/100;
+  applySettingsToUI();saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('play').style.background=DCFG[diff].col;
+document.getElementById('play').addEventListener('click',startGame);
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// Le site doit toujours se lancer, même si une étape (réglages sauvegardés
+// corrompus, etc.) échoue — quitte à perdre cette donnée plutôt que bloquer la page.
+try{loadSettings();}catch(_){}
+try{applySettingsToUI();}catch(_){}
+try{buildLevel(diff);}catch(_){
+  diff=1;mode='wave';
+  try{buildLevel(1);}catch(_){
+    corridor=new Float32Array([20,380,20,380]);totalLen=W;endWallWX=W;waypoints=[];
+  }
+}
+prevNow=performance.now();raf=requestAnimationFrame(loop);
+</script>
+</body>
+</html>
