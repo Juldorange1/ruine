@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Hex Defense</title>
+<style>
+/* ── RESET & BASE ─────────────────────────────── */
+*{user-select:none;-webkit-user-select:none;}
+html,body{margin:0;background:#1b1b1b;color:#eee;font-family:sans-serif;height:100%;overflow:hidden;}
+:root{
+  --side-bg:#262626;--side-border:#444;--box-bg:#333;--accent:#ffd23f;
+  --menu-bg:#1b1b1b;--btn-bg:#3a3a3a;--btn-border:#555;--btn-hover:#4a4a4a;
+}
+h2{margin:4px 0 16px;font-size:26px;color:var(--accent,#eee);}
+h3{margin:4px 0;font-size:19px;}
+button{background:var(--btn-bg);color:#eee;border:1px solid var(--btn-border);border-radius:5px;
+  padding:10px;margin:5px 0;width:100%;cursor:pointer;font-size:15px;}
+button:hover:not(:disabled){background:var(--btn-hover);}
+button:disabled{opacity:.4;cursor:default;}
+
+/* ── LAYOUT ───────────────────────────────────── */
+#wrap{display:flex;height:100vh;}
+#canvasWrap{flex:1 1 78%;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;}
+canvas{background:#222;max-width:100%;max-height:100%;}
+
+/* ── SIDEBAR ──────────────────────────────────── */
+#side{display:none;width:380px;flex:0 0 380px;background:var(--side-bg);
+  padding:18px;box-sizing:border-box;overflow-y:auto;border-left:3px solid var(--side-border);}
+.statbox{display:flex;justify-content:space-between;align-items:center;margin:8px 0;
+  background:var(--box-bg);border-radius:8px;padding:12px 16px;border:1px solid var(--side-border);}
+.statbox .lbl{color:#ddd;font-size:17px;font-weight:600;}
+.statbox .val{font-weight:bold;font-size:28px;}
+#money{color:#ffd23f;} #hp{color:#ff6666;} #chrono{color:#7fd1ff;} #point{color:#ff7fe0;}
+.row{display:flex;justify-content:space-between;margin:6px 0;font-size:16px;}
+.price{font-weight:800;color:var(--accent,#ffd23f);}
+.hint{font-size:14px;color:#9c9;margin:6px 0;}
+#offerBox{display:none;}
+#log{font-size:13px;color:#bbb;max-height:120px;overflow-y:auto;
+  margin-top:12px;border-top:1px solid var(--side-border);padding-top:6px;}
+#panel{margin-top:16px;padding-top:12px;border-top:2px solid var(--side-border);}
+#panel h3{font-size:21px;}
+#panel button{font-size:17px;padding:13px 12px;font-weight:600;}
+#panel .row{font-size:19px;padding:4px 0;}
+#boxHp,#boxWave{display:none !important;}
+
+/* ── OVERLAYS ─────────────────────────────────── */
+#overlay,#settingsOverlay,#bossSetupOverlay,#rulesOverlay{
+  position:absolute;inset:0;background:var(--menu-bg);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;}
+#settingsOverlay,#bossSetupOverlay,#rulesOverlay{display:none;z-index:5;}
+#overlay h2{font-size:42px;margin-bottom:10px;}
+#overlay p{font-size:22px;margin:4px 0 14px;}
+#overlay button{width:300px;font-size:18px;padding:14px;}
+
+/* ── DIFFICULTE ROWS ──────────────────────────── */
+.diffrow{display:flex;align-items:center;gap:14px;margin:7px 0;justify-content:center;}
+.diffbtn{font-size:18px;padding:14px 10px;width:180px;flex:0 0 180px;}
+.diffstats{font-size:14px;color:#ddd;text-align:left;min-width:200px;}
+.daily-btn{background:linear-gradient(135deg,#1a3a6b,#2a5fa8)!important;border-color:#6aabff!important;}
+.daily-btn:hover:not(:disabled){background:linear-gradient(135deg,#2a5fa8,#3a7fd8)!important;}
+
+/* ── PARAMETRES & REGLES ──────────────────────── */
+.settingsRow{margin:10px 0;font-size:15px;}
+.settingsRow select{font-size:14px;padding:4px;}
+#settingsBtn{position:absolute;width:auto;padding:8px 12px;top:10px;left:10px;}
+#rulesBtn{position:absolute;width:auto;padding:8px 12px;top:54px;left:10px;}
+.rulesCard{background:var(--box-bg);border:1px solid var(--side-border);border-radius:14px;
+  padding:28px 32px;max-width:620px;max-height:82vh;overflow-y:auto;
+  box-shadow:0 10px 36px rgba(0,0,0,.5);}
+.rulesCard h2{text-align:center;margin-top:0;}
+#rulesText{text-align:left;font-size:15px;line-height:1.7;color:#e8e0d0;}
+#rulesText b{display:block;color:var(--accent,#ffd23f);font-size:17px;margin:16px 0 4px;}
+#rulesText b:first-child{margin-top:0;}
+#rulesBossStats{margin-top:18px;padding-top:14px;border-top:1px solid var(--side-border);
+  font-size:13px;color:#ccc;}
+#rulesBossStats b{display:block;color:var(--accent,#ffd23f);font-size:15px;margin-bottom:4px;}
+
+/* ── HUD IN-GAME ──────────────────────────────── */
+#toast{position:absolute;top:16px;left:50%;transform:translateX(-50%);
+  background:rgba(20,20,20,.95);color:#ffd23f;padding:10px 22px;border-radius:8px;
+  font-size:18px;font-weight:700;opacity:0;transition:opacity .4s;
+  pointer-events:none;z-index:40;white-space:nowrap;}
+#holdDarken{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:90;}
+
+/* ── STATS DERNIERE PARTIE (affiché dans le menu) ── */
+#lastStats{position:absolute;bottom:14px;left:14px;background:rgba(0,0,0,0.82);
+  color:#eee;padding:12px 16px;border-radius:8px;font-size:14px;line-height:1.8;
+  z-index:3;display:none;pointer-events:none;border:1px solid #555;}
+#lastStats b{color:var(--accent,#ffd23f);}
+.keyBtn{width:80px!important;display:inline-block;}
+
+/* ── THEMES ───────────────────────────────────── */
+body.theme-desert{
+  --side-bg:linear-gradient(165deg,#3d2b14,#6b4423 50%,#8a5a2a);
+  --side-border:#d99b3f;--accent:#2ec4b6;--box-bg:linear-gradient(135deg,#4a341a,#6b4423);
+  --menu-bg:#2b2014;--btn-bg:linear-gradient(135deg,#5c3f1e,#7a531f);--btn-border:#d99b3f;
+  --btn-hover:linear-gradient(135deg,#7a531f,#a06a2a);}
+body.theme-forest{
+  --side-bg:linear-gradient(165deg,#0d2414,#1f3d22 50%,#2f5233);
+  --side-border:#7bc47f;--accent:#d9a441;--box-bg:linear-gradient(135deg,#16321b,#234d2a);
+  --menu-bg:#13211a;--btn-bg:linear-gradient(135deg,#1f4d24,#2e6b32);--btn-border:#7bc47f;
+  --btn-hover:linear-gradient(135deg,#2e6b32,#3c8c3c);}
+body.theme-characters{
+  --side-bg:linear-gradient(165deg,#2a1830,#44225a 50%,#5c2e78);
+  --side-border:#d8a8ff;--accent:#ffd23f;--box-bg:linear-gradient(135deg,#3a1f4a,#54306e);
+  --menu-bg:#1f1726;--btn-bg:linear-gradient(135deg,#4a2760,#6a3a8a);--btn-border:#d8a8ff;
+  --btn-hover:linear-gradient(135deg,#6a3a8a,#8a4ac0);}
+body.theme-epure{
+  --side-bg:linear-gradient(165deg,#1a2030,#28333f 50%,#34404f);
+  --side-border:#90aac0;--accent:#60d8e0;--box-bg:linear-gradient(135deg,#1e2838,#2e3c4a);
+  --menu-bg:#141c28;--btn-bg:linear-gradient(135deg,#263040,#344458);--btn-border:#90aac0;
+  --btn-hover:linear-gradient(135deg,#344458,#445870);}
+.statbox{border:1px solid var(--side-border);}
+</style>
+</head>
+<body>
+<div id="wrap">
+
+  <!-- ── ZONE CANVAS ──────────────────────────── -->
+  <div id="canvasWrap">
+    <canvas id="c"></canvas>
+    <div id="toast"></div>
+    <div id="lastStats"></div>
+    <div id="kaelList" style="display:none;position:absolute;left:8px;top:50%;transform:translateY(-50%);
+      background:rgba(18,10,30,0.94);border:2px solid #9933cc;border-radius:10px;padding:8px 6px;
+      max-height:80vh;overflow-y:auto;z-index:10;min-width:116px;"></div>
+
+    <!-- Menu principal -->
+    <div id="overlay">
+      <h2 id="ovTitle">Hex Defense</h2>
+      <button id="heroSelectBtn" style="width:260px;font-size:17px;padding:12px;margin-bottom:6px;border-color:#d8a8ff;"></button>
+      <div id="diffList"></div>
+    </div>
+
+    <!-- Selection du heros -->
+    <div id="heroSelectOverlay" style="position:absolute;inset:0;background:var(--menu-bg);
+      display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:6;overflow-y:auto;">
+      <h2 style="margin:10px 0 4px;">Choisir le Héros</h2>
+      <div id="heroCards" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;max-width:900px;padding:10px;"></div>
+      <button id="closeHeroSelect" style="width:200px;margin-top:4px;"></button>
+    </div>
+
+    <!-- Regles -->
+    <div id="rulesOverlay">
+      <div class="rulesCard">
+        <h2 id="rulesTitle"></h2>
+        <div id="rulesText"></div>
+        <div id="rulesBossStats"></div>
+        <button id="closeRules" style="width:200px;margin-top:18px;"></button>
+      </div>
+    </div>
+
+    <!-- Setup boss -->
+    <div id="bossSetupOverlay">
+      <h2 id="bossSetupTitle"></h2>
+      <p id="bossSetupLabel"></p>
+      <input type="number" id="bossMoneyInput" value="300" min="0"
+        style="width:140px;font-size:18px;padding:8px;text-align:center;margin:8px 0;">
+      <button id="bossStartBtn" style="width:200px;"></button>
+      <button id="bossCancelBtn" style="width:200px;"></button>
+    </div>
+
+    <!-- Parametres -->
+    <div id="settingsOverlay">
+      <h2 id="setTitle"></h2>
+      <div class="settingsRow">
+        <span id="langLbl"></span> :
+        <select id="langSelect">
+          <option value="fr">Francais</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <div class="settingsRow"><span id="decorLbl"></span> : <select id="decorSelect"></select></div>
+      <div class="settingsRow" style="display:none;"><span id="modeLbl"></span> : <select id="modeSelect"></select></div>
+      <div class="settingsRow">
+        <span id="volLbl"></span> :
+        <input type="range" id="volSlider" min="0" max="100" value="50">
+      </div>
+      <div class="settingsRow">
+        <span id="pauseKeyLbl"></span> :
+        <button id="pauseKeyBtn" class="keyBtn">P</button>
+      </div>
+      <button id="closeSettings"></button>
+    </div>
+
+    <div id="holdDarken"></div>
+    <button id="settingsBtn">&#9881;</button>
+    <button id="rulesBtn">&#128220;</button>
+  </div>
+
+  <!-- ── SIDEBAR ───────────────────────────────── -->
+  <div id="side">
+    <h2>Hex Defense</h2>
+    <button id="speedBtn"></button>
+    <div class="statbox" id="boxHp">
+      <span class="lbl" id="lblHp"></span><span class="val" id="hp">50/50</span>
+    </div>
+    <div class="statbox">
+      <span class="lbl" id="lblMoney"></span><span class="val" id="money">0</span>
+    </div>
+    <div class="statbox" id="boxPoint">
+      <span class="lbl" id="lblPoint"></span><span class="val" id="point">0</span>
+    </div>
+    <div id="boxDiff" style="font-size:13px;color:#bbb;text-align:center;margin:2px 0 2px;letter-spacing:.5px;"></div>
+    <div class="statbox" id="boxSpecial" style="display:none;">
+      <span class="lbl" id="lblSpecial">⏱</span><span class="val" id="specialVal">-</span>
+    </div>
+    <div class="statbox" id="boxEnzo" style="display:none;gap:6px;">
+      <span class="lbl" id="lblEnzo">Ennemis vague</span>
+      <span style="display:flex;align-items:center;gap:6px;">
+        <span class="val" id="enzoVal">0</span>
+        <button id="enzoPlus" style="width:34px;padding:2px 0;font-size:20px;font-weight:900;line-height:1;">+</button>
+      </span>
+    </div>
+    <div class="statbox" id="boxWave">
+      <span class="lbl" id="lblWave"></span><span class="val" id="wave">-</span>
+    </div>
+    <div class="statbox" id="boxTimer">
+      <span class="lbl" id="lblTimer"></span><span class="val" id="timer">-</span>
+    </div>
+    <div class="statbox" id="boxChrono">
+      <span class="lbl" id="lblChrono"></span><span class="val" id="chrono">00:00</span>
+    </div>
+    <div id="offerBox"></div>
+    <button id="summonBossBtn" style="display:none;"></button>
+    <button id="abandonBtn"></button>
+    <div id="panel"></div>
+    <div id="log"></div>
+  </div>
+
+</div>
+<script>
+(function(){
+'use strict';
+
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const SIZE           = 46;
+const HEX_R          = 5;
+const LARGE_R        = 7;
+const PAD_TILE       = SIZE * 1.6;
+const HERO_MAXHP     = 50;
+const HERO_REGEN     = 0.2;     // PV/s
+const WAVE_INTERVAL  = 20;      // s entre vagues
+const SPAWN_INTERVAL = 2;       // s entre spawns
+const MATCH_DURATION = 900;     // 15 min
+const GUARD_INIT     = 3;
+const SPEEDS         = [1, 3];
+const DIFF_HP_MULT   = [0.7, 1.1];
+const BASE_COSTS     = {guardPlace:6, point:10, swap:5};
+
+// Canvas — défini ici pour être disponible partout (applyTileData, render, events)
+const cv  = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+
+// ══════════════════════════════════════════════════════
+// I18N
+// ══════════════════════════════════════════════════════
+const I18N = {
+  fr:{
+    chooseDifficulty:'Choisis la difficulte',
+    record:'Record (points)', totalPts:'Points totaux',
+    hero:'Heros', money:'Argent', point:'Points', wave:'Vague',
+    nextWave:'Prochaine vague', chrono:'Chrono',
+    abandon:'Abandonner', abandonConfirm:'Abandonner la partie ?',
+    settings:'Parametres', language:'Langue', decor:'Decor', close:'Fermer', speed:'Vitesse',
+    buyGuard:'Placer un nouveau garde', buyMove:'Deplacer 2 gardes',
+    buyPoint:'Acheter Points (+1/s)', pointCurrent:'Points/s actuel',
+    guard:'Garde', dmg:'Degats', range:'Portee', bountyPerKill:'Bonus/kill',
+    upDmg:'+1 degats', upBounty:'+1e/kill', upRange:'+1 portee',
+    offerLabel:'Offre : -50% sur',
+    offerGuardPlace:'nouveau garde', offerMoveGuards:'deplacement gardes',
+    offerDmgAll:'degats (tous)', offerBountyAll:'bonus/kill (tous)', offerRangeAll:'portee (tous)',
+    gameOver:'Game Over', abandoned:'Partie abandonnee', timeUp:'Temps ecoule !',
+    victory:'Victoire !', totalSpent:'Argent depense', finalPoint:'Points', time:'Temps',
+    restart:'Recommencer', paused:'PAUSE',
+    chooseGuardTiles:'Place tes gardes ! ({n}/{g} — vague en cours)',
+    invalidPlacement:'Placement invalide.',
+    newGuardPlaced:'Garde place.', chooseTileForGuard:'Choisis une case pour le garde.',
+    selectTwoGuards:'Selectionne 2 gardes a deplacer.',
+    guardSelectedForMove:'Garde selectionne ({n}/2).', clickTwoNewTiles:'Clique 2 nouvelles cases.',
+    guardMoved:'Garde deplace.', pointBought:'Points +1/s.',
+    waveStart:'Vague {n} !', guardKill:'Garde tue un monstre (+{x}e)',
+    hintPlaceGuard:'Clique une case libre pour le garde',
+    desert:'Desert', forest:'Foret', characters:'Personnages', epure:'Epure',
+    gameMode:'Mode de jeu', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo',
+    heroSelectBtn:'Choisir le heros', heroSelectClose:'Retour',
+    heroDesc1:'Axel — Peut echanger la position de 2 entites (garde, monstre ou heros).',
+    heroDesc2:'Noa — Gagne des pts chaque seconde selon le nombre de cases vides adjacentes x niveau.',
+    heroDesc3:'Midas — Son argent est double automatiquement toutes les 3 minutes.',
+    heroDesc4:'Kael — La carte change toutes les 4 minutes : les ennemis disparaissent, le heros revient au centre, les gardes (avec leurs stats) doivent etre repositionnes.',
+    heroDesc5:'Enzo — Voit le nombre d\'ennemis restants a spawner cette vague. Peut en ajouter +1 a tout moment pour augmenter la frequence d\'apparition.',
+    mapChange:'Carte changee ! Replace tes gardes.', mapChangeTimer:'Prochain changement',
+    enzoRemaining:'Ennemis vague',
+    buyChrono:'+1 min de chrono', chronoBought:'Chrono +1 minute !',
+    bossMode:'Mode Boss', bossSetupLabel:'Argent de depart :', bossStart:'Commencer', bossCancel:'Annuler',
+    bossRecord:'Record (argent minimal)', bossNoRecord:'Aucune victoire', bossTotalDmg:'Degats boss totaux',
+    bossWaveLbl:'Achats', summonBoss:'Faire apparaitre le boss',
+    bossZoneIndicated:'Zone boss indiquee. Achete, puis invoque.', bossArrived:'Le boss arrive !',
+    volume:'Volume', dmgBounty:'1e/10 degats infliges', upDmgBounty:'+1e/10 degats',
+    restartKeyLbl:'Touche redemarrage (maintenir 1s)', pauseKeyLbl:'Touche pause',
+    rulesBtn:'Regles', rules:'Regles',
+    dailyChallenge:'Defi du Jour', dailyRecord:'Record du jour',
+    dailyMapInfo:'Carte du jour — {n} cases',
+    lastGame:'Derniere partie',
+    rulesText:'<b>But</b> : proteger le heros contre les monstres avec des gardes. Max de points (Boss : moins d argent depense).<br><br>'+
+      '<b>Vagues</b> : toutes les 20s. Monstres spawne des le debut. Heros regenere 0,2 PV/s.<br><br>'+
+      '<b>Types</b> : Rapide (x1.5 vitesse, bleu) · PV (x1.5 vie, jaune) · Degats (x1.5 dmg, rouge) · Portee (tire a distance, bloque par les gardes, violet).<br><br>'+
+      '<b>Modes</b> : Debutant (pas d offre, pas de deplacement, pas de portee) · Normal · Avance (tout + chrono).<br><br>'+
+      '<b>Boss</b> : 600 PV, degats/3. Invoque-le apres preparation. Achat garde special : 1e/10 degats.<br><br>'+
+      '<b>Defi du Jour</b> : carte unique chaque jour (80-120 cases connexes). Difficulte 2, mode Normal.<br><br>'+
+      '<b>Touches</b> : Maintenir 1s = redemarrer. Pause = 1 fois/partie.'
+  },
+  en:{
+    chooseDifficulty:'Choose difficulty',
+    record:'Record (points)', totalPts:'Total points',
+    hero:'Hero', money:'Money', point:'Points', wave:'Wave',
+    nextWave:'Next wave', chrono:'Timer',
+    abandon:'Abandon', abandonConfirm:'Abandon the game?',
+    settings:'Settings', language:'Language', decor:'Decor', close:'Close', speed:'Speed',
+    buyGuard:'Place new guard', buyMove:'Move 2 guards',
+    buyPoint:'Buy Points (+1/s)', pointCurrent:'Current pts/s',
+    guard:'Guard', dmg:'Damage', range:'Range', bountyPerKill:'Bounty/kill',
+    upDmg:'+1 damage', upBounty:'+1e/kill', upRange:'+1 range',
+    offerLabel:'Offer: -50% on',
+    offerGuardPlace:'new guard', offerMoveGuards:'moving guards',
+    offerDmgAll:'damage (all)', offerBountyAll:'kill bounty (all)', offerRangeAll:'range (all)',
+    gameOver:'Game Over', abandoned:'Game abandoned', timeUp:"Time's up!",
+    victory:'Victory!', totalSpent:'Money spent', finalPoint:'Points', time:'Time',
+    restart:'Restart', paused:'PAUSED',
+    chooseGuardTiles:'Place guards! ({n}/{g} — wave is live)',
+    invalidPlacement:'Invalid placement.',
+    newGuardPlaced:'Guard placed.', chooseTileForGuard:'Choose a tile for the guard.',
+    selectTwoGuards:'Select 2 guards to move.',
+    guardSelectedForMove:'Guard selected ({n}/2).', clickTwoNewTiles:'Click 2 new tiles.',
+    guardMoved:'Guard moved.', pointBought:'Points +1/s.',
+    waveStart:'Wave {n}!', guardKill:'Guard killed monster (+{x}e)',
+    hintPlaceGuard:'Click a free tile to place the guard',
+    desert:'Desert', forest:'Forest', characters:'Characters',
+    gameMode:'Game mode', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo',
+    heroSelectBtn:'Choose hero', heroSelectClose:'Back',
+    heroDesc1:'Axel — Can swap 2 entities (guard, monster or hero).',
+    heroDesc2:'Noa — Earns pts each second based on adjacent empty tiles x level.',
+    heroDesc3:'Midas — Money doubles automatically every 3 minutes.',
+    heroDesc4:'Kael — Map changes every 4 minutes: enemies vanish, hero recenters, guards (with stats) must be repositioned.',
+    heroDesc5:'Enzo — Sees remaining enemies to spawn this wave. Can add +1 anytime to increase spawn rate.',
+    mapChange:'Map changed! Reposition your guards.', mapChangeTimer:'Next change',
+    enzoRemaining:'Wave enemies',
+    buyChrono:'+1 min timer', chronoBought:'Timer +1 minute!',
+    bossMode:'Boss Mode', bossSetupLabel:'Starting money:', bossStart:'Start', bossCancel:'Cancel',
+    bossRecord:'Record (lowest money)', bossNoRecord:'No win yet', bossTotalDmg:'Total boss damage',
+    bossWaveLbl:'Purchases', summonBoss:'Summon the boss',
+    bossZoneIndicated:'Boss zone marked. Shop then summon.', bossArrived:'The boss arrives!',
+    volume:'Volume', dmgBounty:'1e/10 damage dealt', upDmgBounty:'+1e/10 damage',
+    restartKeyLbl:'Restart key (hold 1s)', pauseKeyLbl:'Pause key',
+    rulesBtn:'Rules', rules:'Rules',
+    dailyChallenge:'Daily Challenge', dailyRecord:"Today's record",
+    dailyMapInfo:'Daily map — {n} tiles',
+    lastGame:'Last game',
+    rulesText:'<b>Goal</b>: protect your hero with guards. Max Points (Boss: least money spent).<br><br>'+
+      '<b>Waves</b>: every 20s. Monsters spawn right away. Hero regens 0.2 HP/s.<br><br>'+
+      '<b>Types</b>: Fast (x1.5 speed, blue) · HP (x1.5 health, yellow) · Damage (x1.5 dmg, red) · Range (ranged, blocked by guards, purple).<br><br>'+
+      '<b>Modes</b>: Beginner (no offer, no move, no range) · Normal · Advanced (all + timer).<br><br>'+
+      '<b>Boss</b>: 600 HP, dmg/3. Summon after shopping. Special: 1e/10 damage dealt.<br><br>'+
+      '<b>Daily</b>: unique map each day (80-120 connected tiles). Difficulty 2, Normal.<br><br>'+
+      '<b>Keys</b>: Hold 1s = restart. Pause = once per game.'
+  }
+};
+let lang = 'fr';
+function t(key, vars){
+  let s = (I18N[lang] || {})[key] || key;
+  if(vars) for(const k in vars) s = s.replace('{'+k+'}', vars[k]);
+  return s;
+}
+
+
+// ══════════════════════════════════════════════════════
+// THEMES / DECORS
+// ══════════════════════════════════════════════════════
+const DECORS = [
+  { key:'desert', emoji:false,
+    tile:'#5a4022', tile2:'#71532b', spawnTile:'#7a2e1c',
+    heroColor:'#1f9c8a', heroStroke:'#7be0d0',
+    guardColor:'#9c7a2a', guardStroke:'#e6c46a',
+    guardSelColor:'#cc8822', guardSelStroke:'#ffcc66',
+    monsterColor:'#a8311f', monsterStroke:'#ff9a6a' },
+  { key:'forest', emoji:false,
+    tile:'#1c3a22', tile2:'#274d2c', spawnTile:'#5a2d2d',
+    heroColor:'#3a5fae', heroStroke:'#a8c4ff',
+    guardColor:'#3c8c3c', guardStroke:'#bfe6a0',
+    guardSelColor:'#d9a441', guardSelStroke:'#ffd27a',
+    monsterColor:'#8c2c2c', monsterStroke:'#ff9a9a' },
+  { key:'characters', emoji:false, characters:true,
+    tile:'#7ab84a', tile2:'#6aaa3c', spawnTile:'#c83838',
+    heroColor:'#3388ee', heroStroke:'#88ccff',
+    guardColor:'#dd8822', guardStroke:'#ffcc66',
+    guardSelColor:'#ffaa44', guardSelStroke:'#ffe090',
+    monsterColor:'#cc4422', monsterStroke:'#ff8855' },
+  { key:'epure', emoji:false, characters:true,
+    tile:'#7a8090', tile2:'#6a7080', spawnTile:'#882222',
+    heroColor:'#4488cc', heroStroke:'#aaddff',
+    guardColor:'#cc8833', guardStroke:'#ffcc66',
+    guardSelColor:'#ffaa44', guardSelStroke:'#ffee99',
+    monsterColor:'#aa3322', monsterStroke:'#ff7755' }
+];
+let decorIndex = 0;
+function applyTheme(){ document.body.className = 'theme-' + DECORS[decorIndex].key; }
+
+
+// ══════════════════════════════════════════════════════
+// GEOMETRIE HEX (coordonnees axiales)
+// ══════════════════════════════════════════════════════
+const DIRS = [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const SPEED_PX = SIZE * Math.sqrt(3); // px/s a vitesse x1
+
+function axKey(q, r){ return q+','+r; }
+
+function axToPxRel(q, r){
+  return [SIZE * 1.5 * q, SIZE * Math.sqrt(3) * (r + q/2)];
+}
+
+function hexCorner(cx, cy, i){
+  const a = Math.PI / 180 * (60 * i);
+  return [cx + SIZE*Math.cos(a), cy + SIZE*Math.sin(a)];
+}
+
+function hexDist(q1, r1, q2, r2){
+  return (Math.abs(q1-q2)+Math.abs(r1-r2)+Math.abs(q1+r1-q2-r2)) / 2;
+}
+
+// Construit un dict de tuiles {key:{q,r,pxRel,pyRel}} pour un rayon donne
+function buildTileData(Rv){
+  const d = {};
+  for(let q=-Rv; q<=Rv; q++)
+    for(let r=-Rv; r<=Rv; r++)
+      if(Math.max(Math.abs(q),Math.abs(r),Math.abs(q+r)) <= Rv){
+        const [px,py] = axToPxRel(q,r);
+        d[axKey(q,r)] = {q,r,pxRel:px,pyRel:py};
+      }
+  return d;
+}
+
+const normalTileData = buildTileData(HEX_R);
+const largeTileData  = buildTileData(LARGE_R);
+
+// Tuiles actives + offsets canvas (muables selon le mode)
+let tiles = {};
+let CX=0, CY=0;
+
+// Applique un jeu de tuiles et redimensionne le canvas
+function applyTileData(tdata){
+  let mnX=Infinity,mxX=-Infinity,mnY=Infinity,mxY=-Infinity;
+  for(const k in tdata){
+    mnX=Math.min(mnX,tdata[k].pxRel); mxX=Math.max(mxX,tdata[k].pxRel);
+    mnY=Math.min(mnY,tdata[k].pyRel); mxY=Math.max(mxY,tdata[k].pyRel);
+  }
+  cv.width  = Math.ceil(mxX-mnX+PAD_TILE*2);
+  cv.height = Math.ceil(mxY-mnY+PAD_TILE*2);
+  CX = PAD_TILE-mnX; CY = PAD_TILE-mnY;
+  tiles = {};
+  for(const k in tdata)
+    tiles[k] = {q:tdata[k].q, r:tdata[k].r,
+                px:tdata[k].pxRel+CX, py:tdata[k].pyRel+CY};
+}
+applyTileData(normalTileData);
+
+function axToPx(q,r){ const [p,q2]=axToPxRel(q,r); return [p+CX, q2+CY]; }
+function neighbors(q,r){ return DIRS.map(([dq,dr])=>axKey(q+dq,r+dr)).filter(k=>tiles[k]); }
+
+
+// ══════════════════════════════════════════════════════
+// DEFI DU JOUR — RNG deterministe + generation de carte
+// ══════════════════════════════════════════════════════
+function seededRng(seed){
+  let s = seed|0;
+  return ()=>{ s=Math.imul(1664525,s)+1013904223|0; return (s>>>0)/4294967296; };
+}
+function dailySeed(){
+  const d=new Date();
+  return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate();
+}
+function dailyDateStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+// Genere un sous-ensemble connexe de 80-120 tuiles via BFS aleatoire
+function generateDailyMap(){
+  const rng=seededRng(dailySeed());
+  const target=80+Math.floor(rng()*41);
+  const active=new Set(['0,0']), frontier=['0,0'];
+  while(active.size<target){
+    if(!frontier.length) break;
+    const fi=Math.floor(rng()*frontier.length), cur=frontier[fi];
+    const [q,r]=cur.split(',').map(Number);
+    const ns=DIRS.map(([dq,dr])=>axKey(q+dq,r+dr)).filter(k=>largeTileData[k]&&!active.has(k));
+    if(!ns.length){ frontier.splice(fi,1); continue; }
+    const nk=ns[Math.floor(rng()*ns.length)];
+    active.add(nk); frontier.push(nk);
+    if(rng()<0.12) frontier.splice(fi,1);
+  }
+  const res={};
+  for(const k of active) res[k]=largeTileData[k];
+  return res;
+}
+
+
+// ══════════════════════════════════════════════════════
+// ETAT DU JEU
+// ══════════════════════════════════════════════════════
+let state='difficulty'; // 'difficulty' | 'playing' | 'gameover'
+let initialPlacement=false;
+let difficulty=1, gameMode='gameplay1', sessionMode='gameplay1';
+let dailyMode=false, bossMode=false, bossSpawned=false, bossStartMoney=0, bossKillCount=0, bossDmgDealt=0;
+let midasTimer=0, mapChangeTimer=240;
+let kaelPendingGuards=[], kaelSelectedPending=null;
+let waveSpawnTotal=9999, waveSpawnCount=0;
+
+// Ressources & chrono
+let money=0, point=0, pointRate=0, pointIncomeAcc=0;
+let swapTargets=[];
+let totalSpent=0, elapsedSeconds=0, matchTimer=MATCH_DURATION;
+
+// Entites
+let hero={q:0,r:0,hp:HERO_MAXHP,maxhp:HERO_MAXHP};
+let guards=[], monsters=[], spawnPoints=[];
+let waveNum=0, waveTimer=0, spawnAcc=0;
+let currentMonsterType='hp';
+let costs={...BASE_COSTS};
+
+// Selection UI
+let selected=null, pendingAction=null, moveSelected=[];
+
+// Effets visuels
+let attackFx=[];         // attaques gardes (jaune)
+let monsterAttackFx=[];  // attaques monstres (rouge)
+let heroHitFlash=0;      // secondes restantes du flash sur le heros
+let hoverMonster=null;
+
+// Boucle
+let lastT=performance.now(), realDt=0;
+let speedIndex=0, gameRunning=false;
+let paused=false, pauseUsed=false;
+let pauseKey='p', listeningFor=null;
+
+
+// ══════════════════════════════════════════════════════
+// AUDIO — synthese WebAudio
+// ══════════════════════════════════════════════════════
+let audioCtx=null, sfxVolume=0.5;
+const SFX={
+  attack:{freq:880,dur:0.05,wave:'square'}, kill:{freq:220,dur:0.12,wave:'sawtooth'},
+  hit:{freq:140,dur:0.15,wave:'triangle'}, buy:{freq:660,dur:0.06,wave:'sine'},
+  wave:{freq:523,dur:0.2,wave:'sine'},     boss:{freq:110,dur:0.45,wave:'sawtooth'},
+  win:{freq:784,dur:0.3,wave:'sine'},      lose:{freq:98,dur:0.5,wave:'sawtooth'}
+};
+function ensureAudio(){
+  if(!audioCtx) try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume();
+}
+function playSfx(type){
+  if(sfxVolume<=0) return; ensureAudio(); if(!audioCtx) return;
+  const p=SFX[type]; if(!p) return;
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.type=p.wave; o.frequency.value=p.freq; o.connect(g); g.connect(audioCtx.destination);
+  const now=audioCtx.currentTime;
+  g.gain.value=sfxVolume*0.3; g.gain.exponentialRampToValueAtTime(0.0001,now+p.dur);
+  o.start(now); o.stop(now+p.dur+0.02);
+}
+let toastTimer=null;
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.opacity='1';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{el.style.opacity='0';},2200);
+}
+function log(msg){
+  const d=document.getElementById('log'), div=document.createElement('div');
+  div.textContent=msg; d.prepend(div);
+}
+
+
+// ══════════════════════════════════════════════════════
+// HELPERS GRILLE
+// ══════════════════════════════════════════════════════
+function occupiedSet(){
+  const s=new Set(); s.add(axKey(hero.q,hero.r));
+  guards.forEach(g=>s.add(axKey(g.q,g.r))); return s;
+}
+
+// Verifie que poser un garde en (q,r) ne deconnecte pas la grille
+function canPlaceGuard(q,r){
+  const k=axKey(q,r);
+  if(!tiles[k]||spawnPoints.includes(k)) return false;
+  const occ=occupiedSet(); if(occ.has(k)) return false;
+  occ.add(k);
+  const reach=new Set([axKey(hero.q,hero.r)]), queue=[axKey(hero.q,hero.r)];
+  while(queue.length){
+    const cur=queue.shift(); const tt=tiles[cur];
+    for(const nk of neighbors(tt.q,tt.r)){
+      if(!occ.has(nk)&&!reach.has(nk)){ reach.add(nk); queue.push(nk); }
+    }
+  }
+  for(const k2 in tiles) if(!occ.has(k2)&&!reach.has(k2)) return false;
+  return true;
+}
+
+// BFS du point A vers B en evitant blocked (sauf destination)
+function bfsPath(fq,fr,tq,tr,blocked){
+  const start=axKey(fq,fr), goal=axKey(tq,tr);
+  if(start===goal) return [];
+  const came={}, visited=new Set([start]), queue=[start];
+  while(queue.length){
+    const cur=queue.shift(); if(cur===goal) break;
+    const tt=tiles[cur];
+    for(const nk of neighbors(tt.q,tt.r)){
+      if(visited.has(nk)||blocked.has(nk)&&nk!==goal) continue;
+      visited.add(nk); came[nk]=cur; queue.push(nk);
+    }
+  }
+  if(!visited.has(goal)) return null;
+  const path=[]; let cur=goal;
+  while(cur!==start){ path.unshift(cur); cur=came[cur]; }
+  return path;
+}
+
+// Verifie si un garde intercepte la ligne monstre->heros
+function pointNearSegment(px,py,x1,y1,x2,y2,thr){
+  const dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy;
+  if(len2===0) return Math.hypot(px-x1,py-y1)<thr;
+  const t2=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/len2));
+  return Math.hypot(px-(x1+t2*dx),py-(y1+t2*dy))<thr;
+}
+function guardBlocksLOS(m,heroPx){
+  if(!m.rangeBonus) return false;
+  for(const g of guards){
+    const [gx,gy]=axToPx(g.q,g.r);
+    if(pointNearSegment(gx,gy,m.px,m.py,heroPx[0],heroPx[1],SIZE*0.85)) return true;
+  }
+  return false;
+}
+
+function pxToHex(mx,my){
+  let best=null,bestD=Infinity;
+  for(const k in tiles){
+    const tt=tiles[k], d=(tt.px-mx)**2+(tt.py-my)**2;
+    if(d<bestD){bestD=d;best=tt;}
+  }
+  return bestD<=SIZE*SIZE?best:null;
+}
+function canvasScale(){
+  const rect=cv.getBoundingClientRect();
+  return {sx:cv.width/rect.width,sy:cv.height/rect.height,rect};
+}
+
+
+// ══════════════════════════════════════════════════════
+// VAGUES & MONSTRES
+// ══════════════════════════════════════════════════════
+const MONSTER_TYPES=['fast','hp','dmg'];
+
+function monsterStats(){
+  const hp = Math.max(1, Math.ceil(2 * Math.pow(1.1, waveNum - 1) * DIFF_HP_MULT[difficulty-1]));
+  const dmg = 1;
+  return {hp,dmg};
+}
+
+function pickRandomSpawnPoints(){
+  const occ=occupiedSet();
+  const cands=Object.keys(tiles).filter(k=>{
+    if(occ.has(k)) return false;
+    const tt=tiles[k]; return hexDist(tt.q,tt.r,hero.q,hero.r)>4;
+  });
+  spawnPoints=[];
+  while(spawnPoints.length<2&&cands.length){
+    spawnPoints.push(cands.splice(Math.floor(Math.random()*cands.length),1)[0]);
+  }
+}
+function pickBossSpawnPoint(){
+  const occ=occupiedSet();
+  const cands=Object.keys(tiles).filter(k=>{
+    if(occ.has(k)) return false;
+    const tt=tiles[k]; return hexDist(tt.q,tt.r,hero.q,hero.r)>4;
+  });
+  spawnPoints=cands.length?[cands[Math.floor(Math.random()*cands.length)]]:[];
+}
+
+function priceFor(cat,baseCost){
+  return baseCost;
+}
+
+function startWave(){
+  waveNum++; waveTimer=WAVE_INTERVAL;
+  currentMonsterType=MONSTER_TYPES[Math.floor(Math.random()*MONSTER_TYPES.length)];
+  waveSpawnCount=0; spawnAcc=0;
+  waveSpawnTotal=sessionMode==='gameplay5' ? Math.max(2, Math.floor(waveNum*1.5)+1) : 9999;
+  pickRandomSpawnPoints();
+  document.getElementById('wave').textContent=waveNum;
+  log(t('waveStart',{n:waveNum})); showToast(t('waveStart',{n:waveNum})); playSfx('wave');
+  updateHUD();
+}
+
+function spawnMonster(){
+  if(!spawnPoints.length) return;
+  const k=spawnPoints[Math.floor(Math.random()*spawnPoints.length)];
+  const tt=tiles[k]; if(!tt) return;
+  let {hp,dmg}=monsterStats(), speedMult=1, rangeBonus=0;
+  switch(currentMonsterType){
+    case 'fast': speedMult=1.5; break;
+    case 'hp':   hp=Math.round(hp*1.5); break;
+    case 'dmg':  dmg=Math.round(dmg*1.5); break;
+  }
+  monsters.push({q:tt.q,r:tt.r,px:tt.px,py:tt.py,hp,maxhp:hp,dmg,
+    speedMult,rangeBonus,type:currentMonsterType,pathKeys:null,attackAcc:0,isBoss:false});
+}
+
+function recomputePath(m){
+  const blocked=new Set();
+  guards.forEach(g=>blocked.add(axKey(g.q,g.r)));
+  m.pathKeys=bfsPath(m.q,m.r,hero.q,hero.r,blocked);
+}
+
+function newGuard(){
+  return {dmg:1,range:1,bounty:1,dmgBountyLevel:0,dmgAcc:0,
+          costDmgBounty:5,cooldown:1,costUpgrade:4,costDmg:2,costBounty:4};
+}
+
+
+// ══════════════════════════════════════════════════════
+// BOUCLE DE JEU — update
+// ══════════════════════════════════════════════════════
+function update(dt){
+  if(state!=='playing') return;
+  elapsedSeconds+=realDt;
+
+  // Chrono de partie
+  if(!bossMode){
+    matchTimer-=dt;
+    document.getElementById('chrono').textContent=formatTime(Math.max(0,matchTimer));
+    if(matchTimer<=0){ matchTimer=0; endGame('timeup'); return; }
+  }
+
+  // Regeneration heros
+  if(hero.hp<hero.maxhp) hero.hp=Math.min(hero.maxhp,hero.hp+HERO_REGEN*dt);
+
+  // Revenu adjacent (Noa)
+  if(pointRate>0&&!bossMode&&sessionMode==='gameplay2'){
+    pointIncomeAcc+=dt;
+    while(pointIncomeAcc>=1){
+      pointIncomeAcc-=1;
+      const occ=occupiedSet();
+      const adj=neighbors(hero.q,hero.r).filter(nk=>tiles[nk]&&!occ.has(nk)).length;
+      point+=pointRate*adj; updateHUD();
+    }
+  }
+  // Doublement automatique toutes les 3 min (Midas)
+  if(sessionMode==='gameplay3'&&!bossMode){
+    midasTimer+=dt;
+    const midasLeft=Math.max(0,Math.ceil(180-midasTimer));
+    document.getElementById('specialVal').textContent=midasLeft+'s';
+    if(midasTimer>=180){midasTimer-=180;money*=2;updateHUD();log('Midas : argent double !');showToast('x2 Argent !');}
+  }
+  // Changement de carte toutes les 4 min (Kael)
+  if(sessionMode==='gameplay4'&&!bossMode){
+    if(kaelPendingGuards.length===0){
+      mapChangeTimer-=dt;
+      document.getElementById('specialVal').textContent=Math.max(0,Math.ceil(mapChangeTimer))+'s';
+    } else {
+      document.getElementById('specialVal').textContent='En cours...';
+    }
+    if(mapChangeTimer<=0&&kaelPendingGuards.length===0){
+      kaelPendingGuards=guards.map(g=>Object.assign({},g));
+      applyTileData(generateRandomMap());
+      hero.q=0;hero.r=0;
+      guards=[];monsters=[];swapTargets=[];kaelSelectedPending=null;
+      mapChangeTimer=240;
+      pickRandomSpawnPoints();
+      renderKaelList();
+      log(t('mapChange'));showToast(t('mapChange'));
+    }
+  }
+  // Points accumulés (autres modes)
+  if(pointRate>0&&!bossMode&&sessionMode!=='gameplay2'){
+    point+=pointRate*dt;
+  }
+
+  // Vagues
+  if(!bossMode){
+    waveTimer-=dt;
+    document.getElementById('timer').textContent=Math.max(0,Math.ceil(waveTimer))+'s';
+    if(waveTimer<=0){ startWave(); return; }
+    const kaelBlocking=sessionMode==='gameplay4'&&kaelPendingGuards.length>0;
+    if(!kaelBlocking){
+      if(sessionMode==='gameplay5'){
+        const remaining=waveSpawnTotal-waveSpawnCount;
+        if(remaining>0&&waveTimer>0){
+          const dynInterval=Math.max(0.05,waveTimer/remaining);
+          spawnAcc+=dt;
+          if(spawnAcc>=dynInterval){spawnAcc=0;spawnMonster();waveSpawnCount++;updateEnzoDisplay();}
+        }
+      } else {
+        spawnAcc+=dt;
+        if(spawnAcc>=SPAWN_INTERVAL&&waveSpawnCount<waveSpawnTotal){
+          spawnAcc-=SPAWN_INTERVAL; spawnMonster(); waveSpawnCount++;
+        }
+      }
+    }
+  }
+
+  const heroPx=axToPx(hero.q,hero.r);
+
+  // ── Monstres : attaque / deplacement ──
+  for(const m of monsters){
+    const atkRange=SIZE*1.8+(m.rangeBonus?m.rangeBonus*SIZE*Math.sqrt(3):0);
+    const distHero=Math.hypot(heroPx[0]-m.px,heroPx[1]-m.py);
+
+    if(distHero<=atkRange&&!guardBlocksLOS(m,heroPx)){
+      m.attackAcc+=dt;
+      while(m.attackAcc>=1){
+        m.attackAcc-=1; hero.hp-=m.dmg;
+        heroHitFlash=0.35;
+        monsterAttackFx.push({x1:m.px,y1:m.py,x2:heroPx[0],y2:heroPx[1],life:0.3});
+        playSfx('hit');
+      }
+      continue;
+    }
+
+    if(!m.pathKeys||!m.pathKeys.length) recomputePath(m);
+    if(!m.pathKeys||!m.pathKeys.length) continue;
+    let rem=SPEED_PX*(m.speedMult||1)*dt;
+    while(rem>0&&m.pathKeys&&m.pathKeys.length){
+      const nk=m.pathKeys[0];
+      if(guards.some(g=>axKey(g.q,g.r)===nk)){m.pathKeys=null;break;}
+      const nt=tiles[nk];
+      const dx=nt.px-m.px,dy=nt.py-m.py,d=Math.hypot(dx,dy);
+      if(d<=rem){
+        m.px=nt.px;m.py=nt.py;m.q=nt.q;m.r=nt.r;rem-=d;m.pathKeys.shift();
+        if(Math.hypot(heroPx[0]-m.px,heroPx[1]-m.py)<=atkRange) break;
+      } else {
+        m.px+=dx/d*rem;m.py+=dy/d*rem;rem=0;
+      }
+    }
+  }
+
+  // ── Gardes : attaque des monstres ──
+  for(const g of guards){
+    g.cooldown-=dt; if(g.cooldown>0) continue; g.cooldown+=1;
+    const [gx,gy]=axToPx(g.q,g.r);
+    const maxR=g.range*SIZE*Math.sqrt(3)+SIZE*0.5;
+    let target=null;
+    for(const m of monsters){
+      const d=Math.hypot(gx-m.px,gy-m.py);
+      if(d<=maxR&&(!target||m.hp<target.hp)){target=m;}
+    }
+    if(!target) continue;
+    attackFx.push({x1:gx,y1:gy,x2:target.px,y2:target.py,life:0.25});
+    target.hp-=g.dmg;
+    if(g.dmgBountyLevel>0){
+      g.dmgAcc=(g.dmgAcc||0)+g.dmg;
+      while(g.dmgAcc>=10){g.dmgAcc-=10;money+=g.dmgBountyLevel;}
+    }
+    playSfx('attack');
+    if(target.hp<=0){
+      const boss=!!target.isBoss; money+=g.bounty;
+      monsters=monsters.filter(m=>m!==target);
+      if(boss){
+        playSfx('win');bossKillCount++;
+        if(bossKillCount>=BOSS_HPS.length){endGame('bossWin');return;}
+        // Boss N mort — phase d'achat
+        bossSpawned=false;
+        const nextN=bossKillCount+1;
+        // Midas : argent doublé après boss 1
+        if(bossKillCount===1&&sessionMode==='gameplay3'){money*=2;log('Midas : argent double !');showToast('x2 Argent !');}
+        // Kael : changement de carte après boss 1
+        if(bossKillCount===1&&sessionMode==='gameplay4'){
+          kaelPendingGuards=guards.map(g=>Object.assign({},g));
+          applyTileData(generateRandomMap());
+          hero.q=0;hero.r=0;
+          guards=[];monsters=[];swapTargets=[];kaelSelectedPending=null;
+          pickBossSpawnPoint();
+          renderKaelList();
+          log('Carte changee ! Replace tes gardes.');showToast('Carte changee !');
+          document.getElementById('summonBossBtn').style.display='block';
+          renderPanel();return;
+        }
+        document.getElementById('summonBossBtn').style.display='block';
+        log('Boss '+bossKillCount+' vaincu ! Prepare le boss '+nextN+'...');
+        showToast('Boss '+bossKillCount+' vaincu !');
+        pickBossSpawnPoint();renderPanel();return;
+      } else{playSfx('kill');log(t('guardKill',{x:g.bounty}));}
+    } else if(target.isBoss){
+      bossDmgDealt+=g.dmg;
+    }
+  }
+
+  // Decrementation effets
+  for(const fx of attackFx) fx.life-=dt;
+  for(const fx of monsterAttackFx) fx.life-=dt;
+  attackFx=attackFx.filter(fx=>fx.life>0);
+  monsterAttackFx=monsterAttackFx.filter(fx=>fx.life>0);
+  if(heroHitFlash>0) heroHitFlash-=realDt;
+
+  if(hero.hp<=0){hero.hp=0;playSfx('lose');endGame();return;}
+  updateHUD();
+}
+
+function formatTime(s){
+  const m=Math.floor(s/60),sec=Math.floor(s%60);
+  return (m<10?'0':'')+m+':'+(sec<10?'0':'')+sec;
+}
+
+
+// ══════════════════════════════════════════════════════
+// PERSISTANCE — localStorage
+// ══════════════════════════════════════════════════════
+function loadStats(d,mode){
+  try{return JSON.parse(localStorage.getItem('hexdefense_d'+d+'_'+mode))||{best:0,totalPts:0};}
+  catch(e){return{best:0,totalPts:0};}
+}
+function saveStats(d,mode,s){ localStorage.setItem('hexdefense_d'+d+'_'+mode,JSON.stringify(s)); }
+function recordNormalResult(d,mode,pts){
+  const s=loadStats(d,mode);
+  s.totalPts=(s.totalPts||0)+Math.floor(pts);
+  if(pts>s.best) s.best=Math.floor(pts);
+  saveStats(d,mode,s);
+}
+function loadBossStats(){
+  try{return JSON.parse(localStorage.getItem('hexdefense_boss'))||{best:null,totalDmg:0};}
+  catch(e){return{best:null,totalDmg:0};}
+}
+function recordBossResult(won,startMoney,dmg){
+  const s=loadBossStats();
+  s.totalDmg=(s.totalDmg||0)+Math.floor(dmg);
+  if(won&&(s.best===null||startMoney<s.best)) s.best=startMoney;
+  localStorage.setItem('hexdefense_boss',JSON.stringify(s));
+}
+function loadDailyStats(){
+  try{return JSON.parse(localStorage.getItem('hexdefense_daily_'+dailyDateStr()))||{best:0};}
+  catch(e){return{best:0};}
+}
+function recordDailyResult(pts){
+  const s=loadDailyStats(); if(pts>s.best) s.best=pts;
+  localStorage.setItem('hexdefense_daily_'+dailyDateStr(),JSON.stringify(s));
+}
+function loadSettings(){
+  try{
+    const s=JSON.parse(localStorage.getItem('hexdefense_settings')); if(!s) return;
+    if(s.lang) lang=s.lang;
+    if(s.decorIndex!==undefined) decorIndex=s.decorIndex;
+    if(s.gameMode&&s.gameMode!=='beginner'){
+      // migrer anciens noms de mode
+      if(s.gameMode==='normal') gameMode='gameplay1';
+      else if(s.gameMode==='hardcore') gameMode='gameplay2';
+      else gameMode=s.gameMode;
+    }
+    if(s.sfxVolume!==undefined) sfxVolume=s.sfxVolume;
+    if(s.pauseKey) pauseKey=s.pauseKey;
+  }catch(e){}
+}
+function saveSettings(){
+  localStorage.setItem('hexdefense_settings',
+    JSON.stringify({lang,decorIndex,gameMode,sfxVolume,pauseKey}));
+}
+
+
+// ══════════════════════════════════════════════════════
+// FLOW DE JEU — demarrage, fin, menu
+// ══════════════════════════════════════════════════════
+function spend(amount){ money-=amount; totalSpent+=amount; }
+
+function resetGameState(){
+  point=0;pointRate=0;pointIncomeAcc=0;swapTargets=[];totalSpent=0;elapsedSeconds=0;
+  midasTimer=0;mapChangeTimer=240;bossKillCount=0;bossDmgDealt=0;
+  kaelPendingGuards=[];kaelSelectedPending=null;
+  waveSpawnTotal=9999;waveSpawnCount=0;
+  hero={q:0,r:0,hp:HERO_MAXHP,maxhp:HERO_MAXHP};
+  guards=[];monsters=[];spawnPoints=[];
+  waveNum=0;waveTimer=0;spawnAcc=0;matchTimer=MATCH_DURATION;
+  attackFx=[];monsterAttackFx=[];heroHitFlash=0;
+  selected=null;pendingAction=null;moveSelected=[];hoverMonster=null;
+  costs={...BASE_COSTS};bossSpawned=false;
+  paused=false;pauseUsed=false;
+  document.getElementById('chrono').textContent=formatTime(MATCH_DURATION);
+}
+
+// Demarre la session (placement initial + vague immediate)
+function startGameSession(){
+  state='playing';gameRunning=true;
+  waveNum=0;waveTimer=0.5;spawnAcc=0;initialPlacement=true;
+  if(!bossMode) pickRandomSpawnPoints();
+}
+
+// Prepare la sidebar selon le type de partie
+function prepareGameUI(showPoint,showTimer,showChrono){
+  document.getElementById('boxPoint').style.display   =showPoint  ?'':'none';
+  document.getElementById('boxTimer').style.display   =showTimer  ?'':'none';
+  document.getElementById('boxChrono').style.display  =showChrono ?'':'none';
+  const showSpecial=sessionMode==='gameplay3'||sessionMode==='gameplay4';
+  const specBox=document.getElementById('boxSpecial');
+  specBox.style.display=showSpecial?'flex':'none';
+  if(sessionMode==='gameplay3') document.getElementById('lblSpecial').textContent='x2 dans';
+  if(sessionMode==='gameplay4') document.getElementById('lblSpecial').textContent=t('mapChangeTimer');
+  const enzoBox=document.getElementById('boxEnzo');
+  enzoBox.style.display=(sessionMode==='gameplay5'&&!bossMode)?'flex':'none';
+  document.getElementById('summonBossBtn').style.display='none';
+  document.getElementById('side').style.display       ='block';
+  document.getElementById('settingsBtn').style.display='none';
+  document.getElementById('rulesBtn').style.display   ='none';
+  document.getElementById('overlay').style.display    ='none';
+  document.getElementById('lastStats').style.display  ='none';
+}
+
+function heroName(mode){
+  if(mode==='gameplay1') return t('modeNormal');
+  if(mode==='gameplay2') return t('modeHardcore');
+  if(mode==='gameplay3') return t('modeMidas');
+  if(mode==='gameplay4') return t('modeKael');
+  if(mode==='gameplay5') return t('modeEnzo');
+  return mode;
+}
+
+function generateRandomMap(){
+  const rng=seededRng(Math.floor(Math.random()*2147483647));
+  const target=80+Math.floor(rng()*41);
+  const active=new Set(['0,0']), frontier=['0,0'];
+  while(active.size<target){
+    if(!frontier.length) break;
+    const fi=Math.floor(rng()*frontier.length), cur=frontier[fi];
+    const [q,r]=cur.split(',').map(Number);
+    const ns=DIRS.map(([dq,dr])=>axKey(q+dq,r+dr)).filter(k=>largeTileData[k]&&!active.has(k));
+    if(!ns.length){frontier.splice(fi,1);continue;}
+    const nk=ns[Math.floor(rng()*ns.length)];
+    active.add(nk);frontier.push(nk);
+    if(rng()<0.12) frontier.splice(fi,1);
+  }
+  const res={};for(const k of active) res[k]=largeTileData[k];
+  return res;
+}
+
+function startNormalGame(d){
+  difficulty=d;sessionMode=gameMode;bossMode=false;dailyMode=false;
+  applyTileData(generateRandomMap());
+  money=0;resetGameState();
+  prepareGameUI(true,true,true);
+  document.getElementById('boxDiff').textContent=heroName(gameMode)+' — Difficulté '+d;
+  startGameSession();updateHUD();renderPanel();
+}
+
+function startDailyGame(){
+  const dailyTileData=generateDailyMap();
+  const count=Object.keys(dailyTileData).length;
+  applyTileData(dailyTileData);
+  dailyMode=true;difficulty=2;sessionMode=gameMode;bossMode=false;
+  money=0;resetGameState();
+  prepareGameUI(true,true,true);
+  document.getElementById('boxDiff').textContent='Défi du Jour';
+  showToast(t('dailyMapInfo',{n:count}));
+  startGameSession();updateHUD();renderPanel();
+}
+
+function showMenu(){
+  state='difficulty';gameRunning=false;initialPlacement=false;
+  kaelPendingGuards=[];kaelSelectedPending=null;
+  document.getElementById('kaelList').style.display='none';
+  document.getElementById('boxEnzo').style.display='none';
+  dailyMode=false;applyTileData(normalTileData);
+  document.getElementById('side').style.display       ='none';
+  document.getElementById('settingsBtn').style.display='';
+  document.getElementById('rulesBtn').style.display   ='';
+  document.getElementById('overlay').style.display    ='flex';
+  renderDifficultyList();
+}
+
+// Termine la partie — retour direct au menu + stats en bas a gauche
+function endGame(reason){
+  state='gameover';gameRunning=false;
+  const won=(!bossMode&&reason==='timeup')||reason==='bossWin';
+  if(dailyMode) recordDailyResult(Math.floor(point));
+  else if(bossMode) recordBossResult(reason==='bossWin',bossStartMoney,bossDmgDealt);
+  else recordNormalResult(difficulty,sessionMode,Math.floor(point));
+
+  const label=reason==='abandon'?t('abandoned'):reason==='timeup'?t('timeUp')
+    :reason==='bossWin'?('&#127942; '+t('victory')):t('gameOver');
+
+  // Construction HTML des stats
+  let html='<b>'+t('lastGame')+' &mdash; '+label+'</b><br>';
+  if(!bossMode) html+=t('finalPoint')+' : '+Math.floor(point)+'<br>';
+  if(bossMode) html+='Argent initial : '+bossStartMoney+'&euro;<br>';
+  if(bossMode) html+='Boss vaincus : '+bossKillCount+'/'+BOSS_HPS.length+'<br>';
+  html+=t('totalSpent')+' : '+Math.floor(totalSpent)+'&euro;<br>';
+  html+=t('time')+' : '+formatTime(elapsedSeconds);
+
+  showMenu();
+  const el=document.getElementById('lastStats');
+  el.innerHTML=html; el.style.display='block';
+}
+
+// ── Mode Boss ──
+function beginBossPrep(){
+  waveNum=1;
+  document.getElementById('wave').textContent=waveNum;
+  document.getElementById('summonBossBtn').style.display='block';
+  log(t('bossZoneIndicated'));showToast(t('bossZoneIndicated'));updateHUD();
+}
+function onBossPurchaseMade(){
+  if(!bossMode||bossSpawned) return;
+  waveNum++;
+  document.getElementById('wave').textContent=waveNum;playSfx('wave');
+}
+const BOSS_HPS=[150,250,380,550,800];
+function spawnBoss(){
+  if(bossSpawned||!spawnPoints.length) return;
+  const tt=tiles[spawnPoints[0]];
+  const hp=BOSS_HPS[Math.min(bossKillCount,BOSS_HPS.length-1)];
+  monsters=[{q:tt.q,r:tt.r,px:tt.px,py:tt.py,hp,maxhp:hp,dmg:1,
+    speedMult:1,rangeBonus:0,type:'boss',pathKeys:null,attackAcc:0,isBoss:true}];
+  bossSpawned=true;spawnPoints=[];
+  document.getElementById('summonBossBtn').style.display='none';
+  log(t('bossArrived')+' (Boss '+(bossKillCount+1)+'/'+BOSS_HPS.length+')');playSfx('boss');
+}
+
+
+// ══════════════════════════════════════════════════════
+// RENDU CANVAS
+// ══════════════════════════════════════════════════════
+function drawHex(px,py,fill,stroke){
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const [x,y]=hexCorner(px,py,i); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  ctx.strokeStyle=stroke||'#444';ctx.lineWidth=2;ctx.stroke();
+}
+
+// Héros — vue de dessus style RPG, couleurs selon le héros actif
+function drawCharacterHero(px,py){
+  const s=SIZE;
+  // Couleurs selon le héros
+  let shirt='#3388ee',shirtLine='#1166cc',hair='#7a4418',pants='#1a3b8c',shoes='#3a2010';
+  if(sessionMode==='gameplay2'){shirt='#2aaa6a';shirtLine='#1a7a4a';hair='#d4a820';pants='#1a4a2a';shoes='#3a2808';}
+  if(sessionMode==='gameplay3'){shirt='#cc9922';shirtLine='#aa7700';hair='#1a1a1a';pants='#2a2a2a';shoes='#111';}
+  if(sessionMode==='gameplay4'){shirt='#9933cc';shirtLine='#7722aa';hair='#f0f0f0';pants='#4a1a6a';shoes='#2a0a3a';}
+  if(sessionMode==='gameplay5'){shirt='#ee4411';shirtLine='#cc2200';hair='#222233';pants='#331100';shoes='#1a0800';}
+  if(bossMode){shirt='#882222';shirtLine='#661111';hair='#222';pants='#220a0a';shoes='#1a0000';}
+  // ombre
+  ctx.fillStyle='rgba(0,0,0,0.18)';
+  ctx.beginPath();ctx.ellipse(px,py+s*0.46,s*0.22,s*0.08,0,0,Math.PI*2);ctx.fill();
+  // jambes
+  ctx.fillStyle=pants;
+  ctx.fillRect(px-s*0.14,py+s*0.14,s*0.11,s*0.24);
+  ctx.fillRect(px+s*0.03,py+s*0.14,s*0.11,s*0.24);
+  // chaussures
+  ctx.fillStyle=shoes;
+  ctx.fillRect(px-s*0.17,py+s*0.34,s*0.14,s*0.09);
+  ctx.fillRect(px+s*0.03,py+s*0.34,s*0.14,s*0.09);
+  // corps
+  ctx.fillStyle=shirt;
+  ctx.beginPath();ctx.ellipse(px,py+s*0.03,s*0.22,s*0.2,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=shirtLine;ctx.lineWidth=1.5;ctx.stroke();
+  // bras gauche
+  ctx.fillStyle='#ffcc99';
+  ctx.beginPath();ctx.ellipse(px-s*0.3,py+s*0.04,s*0.08,s*0.14,0.2,0,Math.PI*2);ctx.fill();
+  // bras droit
+  ctx.beginPath();ctx.ellipse(px+s*0.3,py+s*0.04,s*0.08,s*0.14,-0.2,0,Math.PI*2);ctx.fill();
+  // cou
+  ctx.fillStyle='#ffcc99';
+  ctx.fillRect(px-s*0.07,py-s*0.13,s*0.14,s*0.09);
+  // tête
+  ctx.fillStyle='#ffcc99';
+  ctx.beginPath();ctx.arc(px,py-s*0.22,s*0.17,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.15)';ctx.lineWidth=1;ctx.stroke();
+  // cheveux
+  ctx.fillStyle=hair;
+  ctx.beginPath();ctx.arc(px,py-s*0.26,s*0.15,Math.PI,0);ctx.fill();
+  ctx.fillRect(px-s*0.15,py-s*0.28,s*0.04,s*0.09);
+  ctx.fillRect(px+s*0.11,py-s*0.28,s*0.04,s*0.09);
+  // couronne (distinctif héros)
+  ctx.fillStyle='#ffd700'; ctx.strokeStyle='#aa8800'; ctx.lineWidth=1.5;
+  ctx.fillRect(px-s*0.13,py-s*0.43,s*0.26,s*0.06);
+  ctx.strokeRect(px-s*0.13,py-s*0.43,s*0.26,s*0.06);
+  ctx.beginPath();
+  ctx.moveTo(px-s*0.13,py-s*0.43);ctx.lineTo(px-s*0.09,py-s*0.52);ctx.lineTo(px-s*0.05,py-s*0.43);
+  ctx.moveTo(px-s*0.04,py-s*0.43);ctx.lineTo(px,py-s*0.57);ctx.lineTo(px+s*0.04,py-s*0.43);
+  ctx.moveTo(px+s*0.05,py-s*0.43);ctx.lineTo(px+s*0.09,py-s*0.52);ctx.lineTo(px+s*0.13,py-s*0.43);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#ff3388';ctx.beginPath();ctx.arc(px,py-s*0.4,s*0.022,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#55bbff';ctx.beginPath();ctx.arc(px-s*0.08,py-s*0.4,s*0.018,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(px+s*0.08,py-s*0.4,s*0.018,0,Math.PI*2);ctx.fill();
+  // yeux
+  ctx.fillStyle='#222';
+  ctx.beginPath();ctx.arc(px-s*0.06,py-s*0.23,s*0.03,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(px+s*0.06,py-s*0.23,s*0.03,0,Math.PI*2);ctx.fill();
+  // sourire
+  ctx.strokeStyle='#aa5533';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(px,py-s*0.18,s*0.055,0.15,Math.PI-0.15);ctx.stroke();
+  // étoile sur la poitrine
+  ctx.fillStyle='#ffee44';
+  ctx.beginPath();ctx.arc(px,py+s*0.03,s*0.05,0,Math.PI*2);ctx.fill();
+}
+
+// Garde — personnage en armure avec bouclier et lance
+function drawCharacterGuard(px,py,isSel,isMoving){
+  const s=SIZE;
+  // ombre
+  ctx.fillStyle='rgba(0,0,0,0.15)';
+  ctx.beginPath();ctx.ellipse(px,py+s*0.46,s*0.2,s*0.08,0,0,Math.PI*2);ctx.fill();
+  // jambes (armure)
+  ctx.fillStyle='#6a5028';
+  ctx.fillRect(px-s*0.14,py+s*0.14,s*0.11,s*0.24);
+  ctx.fillRect(px+s*0.03,py+s*0.14,s*0.11,s*0.24);
+  // bottes
+  ctx.fillStyle='#2e1c08';
+  ctx.fillRect(px-s*0.17,py+s*0.34,s*0.14,s*0.09);
+  ctx.fillRect(px+s*0.03,py+s*0.34,s*0.14,s*0.09);
+  // corps (armure orange-dorée)
+  const bodyCol=isSel?'#ffaa44':'#cc7722';
+  ctx.fillStyle=bodyCol;
+  ctx.beginPath();ctx.ellipse(px,py+s*0.03,s*0.23,s*0.21,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#884400';ctx.lineWidth=2;ctx.stroke();
+  // bouclier (bras gauche)
+  ctx.fillStyle='#3355bb';
+  ctx.beginPath();
+  ctx.moveTo(px-s*0.28,py-s*0.1);ctx.lineTo(px-s*0.44,py-s*0.04);
+  ctx.lineTo(px-s*0.44,py+s*0.2);ctx.lineTo(px-s*0.28,py+s*0.24);
+  ctx.closePath();ctx.fill();ctx.strokeStyle='#1133aa';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(px-s*0.36,py+s*0.08);ctx.lineTo(px-s*0.36,py+s*0.16);ctx.stroke();
+  // lance (bras droit, verticale)
+  ctx.strokeStyle='#6a3e10';ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.moveTo(px+s*0.34,py-s*0.46);ctx.lineTo(px+s*0.34,py+s*0.3);ctx.stroke();
+  ctx.fillStyle='#cc3322';
+  ctx.beginPath();ctx.moveTo(px+s*0.34,py-s*0.46);
+  ctx.lineTo(px+s*0.27,py-s*0.33);ctx.lineTo(px+s*0.41,py-s*0.33);
+  ctx.closePath();ctx.fill();
+  // tête (heaume)
+  ctx.fillStyle='#cc9944';
+  ctx.beginPath();ctx.arc(px,py-s*0.22,s*0.17,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.2)';ctx.lineWidth=1;ctx.stroke();
+  // casque métal
+  ctx.fillStyle='#aaaabc';
+  ctx.beginPath();ctx.arc(px,py-s*0.28,s*0.15,Math.PI,0);ctx.fill();
+  ctx.fillRect(px-s*0.15,py-s*0.3,s*0.3,s*0.09);
+  // visière
+  ctx.fillStyle='rgba(0,0,0,0.45)';
+  ctx.fillRect(px-s*0.11,py-s*0.25,s*0.22,s*0.07);
+  // yeux (lueur bleue à travers la visière)
+  ctx.fillStyle='#66ddff';
+  ctx.beginPath();ctx.arc(px-s*0.055,py-s*0.225,s*0.028,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(px+s*0.055,py-s*0.225,s*0.028,0,Math.PI*2);ctx.fill();
+}
+
+// Formes des monstres selon leur type
+function drawMonsterShape(m){
+  const px=m.px,py=m.py,r=SIZE*0.38*(m.isBoss?1.7:1);
+  if(m.isBoss){
+    ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);
+    ctx.fillStyle='#8a1a1a';ctx.fill();ctx.strokeStyle='#ffd23f';ctx.lineWidth=4;ctx.stroke();
+    return;
+  }
+  switch(m.type){
+    case 'fast':
+      ctx.beginPath();
+      ctx.moveTo(px,py-r*1.7);ctx.lineTo(px+r*0.55,py);
+      ctx.lineTo(px,py+r*0.75);ctx.lineTo(px-r*0.55,py);ctx.closePath();
+      ctx.fillStyle='#0899bb';ctx.fill();ctx.strokeStyle='#66ddff';ctx.lineWidth=2;ctx.stroke();break;
+    case 'hp':
+      ctx.beginPath();ctx.arc(px,py,r*1.28,0,Math.PI*2);
+      ctx.fillStyle='#aa8800';ctx.fill();ctx.strokeStyle='#ffdd44';ctx.lineWidth=3;ctx.stroke();
+      ctx.beginPath();ctx.arc(px,py,r*0.75,0,Math.PI*2);
+      ctx.strokeStyle='rgba(255,220,60,0.4)';ctx.lineWidth=1.5;ctx.stroke();break;
+    case 'dmg':
+      ctx.beginPath();
+      for(let i=0;i<12;i++){
+        const ang=i/12*Math.PI*2-Math.PI/2,rad=i%2===0?r*1.35:r*0.52;
+        const x=px+rad*Math.cos(ang),y=py+rad*Math.sin(ang);
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.closePath();ctx.fillStyle='#aa1111';ctx.fill();ctx.strokeStyle='#ff5544';ctx.lineWidth=2;ctx.stroke();break;
+    case 'fly':
+      // corps central violet clair
+      ctx.beginPath();ctx.arc(px,py,r*0.7,0,Math.PI*2);
+      ctx.fillStyle='#cc44cc';ctx.fill();ctx.strokeStyle='#ff88ff';ctx.lineWidth=2;ctx.stroke();
+      // ailes gauche et droite
+      ctx.fillStyle='rgba(220,150,255,0.7)';
+      ctx.beginPath();ctx.ellipse(px-r*1.3,py-r*0.3,r*0.85,r*0.4,0.5,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(px+r*1.3,py-r*0.3,r*0.85,r*0.4,-0.5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(255,180,255,0.8)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.ellipse(px-r*1.3,py-r*0.3,r*0.85,r*0.4,0.5,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath();ctx.ellipse(px+r*1.3,py-r*0.3,r*0.85,r*0.4,-0.5,0,Math.PI*2);ctx.stroke();break;
+    default:
+      ctx.beginPath();ctx.arc(px,py,r,0,Math.PI*2);
+      ctx.fillStyle='#a8311f';ctx.fill();ctx.strokeStyle='#ff9a6a';ctx.lineWidth=2;ctx.stroke();
+  }
+}
+
+function monsterEmoji(m){
+  if(m.isBoss) return '👿';
+  return {fast:'💨',hp:'🐉',dmg:'🔥',fly:'🦋'}[m.type]||'👹';
+}
+
+// Tooltip au survol d un ennemi
+function drawTooltip(m){
+  const names=lang==='en'
+    ?{fast:'Fast',hp:'HP',dmg:'Damage',range:'Range'}
+    :{fast:'Rapide',hp:'PV',dmg:'Degats',range:'Portee'};
+  const lines=['❤ '+Math.round(m.hp)+' / '+m.maxhp, '⚔ '+m.dmg+' dmg/s',
+    (lang==='en'?'Type: ':'Type : ')+(m.isBoss?'BOSS':(names[m.type]||'?'))];
+  if(m.speedMult>1) lines.push('x'+m.speedMult.toFixed(1)+' vitesse');
+  if(m.rangeBonus>0) lines.push('+'+m.rangeBonus+' portee');
+  const fw=150,lh=17,pad=8,fh=lines.length*lh+pad*2;
+  let tx=m.px+SIZE*0.55,ty=m.py-fh-SIZE*0.3;
+  if(tx+fw>cv.width-4) tx=m.px-fw-SIZE*0.55;
+  if(ty<4) ty=m.py+SIZE*0.55;
+  ctx.fillStyle='rgba(0,0,0,0.88)';
+  ctx.beginPath();const rx=5;
+  ctx.moveTo(tx+rx,ty);ctx.lineTo(tx+fw-rx,ty);ctx.arcTo(tx+fw,ty,tx+fw,ty+rx,rx);
+  ctx.lineTo(tx+fw,ty+fh-rx);ctx.arcTo(tx+fw,ty+fh,tx+fw-rx,ty+fh,rx);
+  ctx.lineTo(tx+rx,ty+fh);ctx.arcTo(tx,ty+fh,tx,ty+fh-rx,rx);
+  ctx.lineTo(tx,ty+rx);ctx.arcTo(tx,ty,tx+rx,ty,rx);ctx.closePath();
+  ctx.fill();ctx.strokeStyle='rgba(200,200,200,0.3)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='#eee';ctx.font='12px sans-serif';ctx.textAlign='left';
+  lines.forEach((l,i)=>ctx.fillText(l,tx+pad,ty+pad+12+i*lh));
+}
+
+// Rendu principal (appelee chaque frame)
+function render(){
+  const d=DECORS[decorIndex];
+  ctx.clearRect(0,0,cv.width,cv.height);
+
+  // Tuiles
+  const spawnSet=new Set(spawnPoints);
+  for(const k in tiles){
+    const tt=tiles[k];
+    let fill=((tt.q+tt.r)%2===0)?d.tile:(d.tile2||d.tile);
+    if(spawnSet.has(k)) fill=d.spawnTile;
+    drawHex(tt.px,tt.py,fill,'#3a3a3a');
+  }
+
+  // Heros
+  const hpx=axToPx(hero.q,hero.r);
+  if(d.characters){
+    drawCharacterHero(hpx[0],hpx[1]);
+  } else if(d.emoji){
+    ctx.font=(SIZE*1.2)+'px sans-serif';ctx.textAlign='center';
+    ctx.fillText(d.heroEmoji||'🧑',hpx[0],hpx[1]+SIZE*0.35);
+  } else {
+    const hColors={gameplay1:['#3388ee','#88ccff'],gameplay2:['#2aaa6a','#7be0b0'],
+      gameplay3:['#cc9922','#ffe070'],gameplay4:['#9933cc','#dd88ff'],gameplay5:['#ee4411','#ffaa55']};
+    const [hFill,hStroke]=(hColors[sessionMode]||[d.heroColor,d.heroStroke]);
+    drawHex(hpx[0],hpx[1],hFill,hStroke);
+    ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText(heroName(sessionMode).toUpperCase(),hpx[0],hpx[1]-4);
+  }
+  if(selected&&selected.type==='hero'){
+    ctx.save();ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=2;
+    ctx.setLineDash([5,4]);ctx.beginPath();
+    ctx.arc(hpx[0],hpx[1],SIZE*0.76,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+  if(swapTargets.some(t=>t.obj===hero)){
+    ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
+    ctx.setLineDash([]);ctx.beginPath();
+    ctx.arc(hpx[0],hpx[1],SIZE*0.78,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+  ctx.fillText(Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp,hpx[0],hpx[1]+(d.emoji?SIZE*0.7:12));
+
+  // Flash rouge sur le heros uniquement
+  if(heroHitFlash>0){
+    const a=Math.min(1,heroHitFlash/0.35)*0.88;
+    const grad=ctx.createRadialGradient(hpx[0],hpx[1],SIZE*0.15,hpx[0],hpx[1],SIZE*1.15);
+    grad.addColorStop(0,'rgba(255,50,50,'+a+')');
+    grad.addColorStop(1,'rgba(255,0,0,0)');
+    ctx.fillStyle=grad;
+    ctx.beginPath();ctx.arc(hpx[0],hpx[1],SIZE*1.2,0,Math.PI*2);ctx.fill();
+  }
+
+  // Gardes
+  for(const g of guards){
+    const [px,py]=axToPx(g.q,g.r);
+    const isSel=selected&&selected.g===g;
+    const isMoving=pendingAction==='moveSelect'&&moveSelected.includes(g);
+    if(d.characters){
+      drawCharacterGuard(px,py,isSel,isMoving);
+    } else {
+      drawHex(px,py,isSel?d.guardSelColor:d.guardColor,isSel?d.guardSelStroke:d.guardStroke);
+    }
+    if(isSel){
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;
+      ctx.setLineDash([5,4]);ctx.beginPath();
+      ctx.arc(px,py,SIZE*0.76,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+    if(swapTargets.some(t=>t.obj===g)){
+      ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
+      ctx.setLineDash([]);ctx.beginPath();
+      ctx.arc(px,py,SIZE*0.78,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('d'+g.dmg+' p'+g.range+' +'+g.bounty+'€',px,py+(d.emoji?SIZE*0.65:14));
+  }
+
+  // Effets attaques gardes (jaune)
+  for(const fx of attackFx){
+    const a=Math.max(0,fx.life/0.25);
+    ctx.strokeStyle='rgba(255,220,80,'+a+')';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(fx.x1,fx.y1);ctx.lineTo(fx.x2,fx.y2);ctx.stroke();
+    ctx.beginPath();ctx.arc(fx.x2,fx.y2,SIZE*0.5*a+4,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,220,80,'+a+')';ctx.lineWidth=2;ctx.stroke();
+  }
+
+  // Effets attaques monstres (rouge pointille)
+  for(const fx of monsterAttackFx){
+    const a=Math.max(0,fx.life/0.3);
+    ctx.save();ctx.setLineDash([6,4]);
+    ctx.strokeStyle='rgba(255,60,60,'+a+')';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(fx.x1,fx.y1);ctx.lineTo(fx.x2,fx.y2);ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();ctx.arc(fx.x2,fx.y2,SIZE*0.5*a,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,80,80,'+a*0.6+')';ctx.lineWidth=2;ctx.stroke();
+  }
+
+  // Monstres
+  for(const m of monsters){
+    const sc=m.isBoss?1.7:1;
+    if(d.emoji){
+      ctx.font=(SIZE*0.85*sc)+'px sans-serif';ctx.textAlign='center';
+      ctx.fillText(monsterEmoji(m),m.px,m.py+SIZE*0.28*sc);
+    } else {
+      drawMonsterShape(m);
+    }
+    ctx.fillStyle='#fff';ctx.textAlign='center';
+    ctx.font=(m.isBoss?'bold 13px':'bold 11px')+' sans-serif';
+    ctx.fillText(Math.round(m.hp),m.px,m.py+(d.emoji?SIZE*0.6*sc:3));
+    if(swapTargets.some(t=>t.obj===m)){
+      ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
+      ctx.setLineDash([]);ctx.beginPath();
+      ctx.arc(m.px,m.py,SIZE*0.78*sc,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Tooltip hover ennemi
+  if(hoverMonster&&monsters.includes(hoverMonster)) drawTooltip(hoverMonster);
+
+  // Bandeau placement initial (supprimé)
+  if(false&&initialPlacement&&state==='playing'){
+    const txt=t('chooseGuardTiles',{n:guards.length,g:GUARD_INIT});
+    const tw=ctx.measureText(txt).width+24;
+    ctx.fillStyle='rgba(255,220,80,0.95)';
+    ctx.fillRect(cv.width/2-tw/2,4,tw,26);
+    ctx.fillStyle='#111';ctx.font='bold 14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(txt,cv.width/2,22);
+  }
+  if(pendingAction==='placeGuard'){
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(t('hintPlaceGuard'),cv.width/2,24);
+  }
+  if(paused){
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#fff';ctx.font='bold 32px sans-serif';ctx.textAlign='center';
+    ctx.fillText(t('paused'),cv.width/2,cv.height/2);
+  }
+}
+
+// Boucle principale
+function loop(ts){
+  const dtRaw=(ts-lastT)/1000;lastT=ts;
+  realDt=Math.min(dtRaw,0.25);
+  abandonTick(realDt);
+  if(!paused&&gameRunning) update(Math.min(dtRaw,0.2)*SPEEDS[speedIndex]);
+  refreshAffordability();
+  render();
+  requestAnimationFrame(loop);
+}
+
+
+// ══════════════════════════════════════════════════════
+// HUD
+// ══════════════════════════════════════════════════════
+function updateHUD(){
+  document.getElementById('hp').textContent   =Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp;
+  document.getElementById('money').textContent=Math.floor(money);
+  document.getElementById('point').textContent=Math.floor(point);
+  if(sessionMode==='gameplay5') updateEnzoDisplay();
+}
+
+
+// ══════════════════════════════════════════════════════
+// PANEL SIDEBAR
+// ══════════════════════════════════════════════════════
+function refreshAffordability(){
+  if(!selected) return;
+  const q=id=>document.getElementById(id);
+  if(selected.type==='hero'){
+    if(q('buyGuard'))  q('buyGuard').disabled =money<priceFor('guardPlace',costs.guardPlace);
+    if(q('buySwap'))   q('buySwap').disabled  =money<costs.swap;
+    if(q('buyPoint'))  q('buyPoint').disabled =money<costs.point;
+  } else if(selected.type==='guard'){
+    const g=selected.g;
+    if(q('upDmg'))       q('upDmg').disabled      =money<priceFor('dmgAll',g.costUpgrade);
+    if(q('upBounty'))    q('upBounty').disabled    =money<priceFor('bountyAll',g.costUpgrade);
+    if(q('upDmgBoss'))   q('upDmgBoss').disabled   =money<priceFor('dmgAll',g.costDmg);
+    if(q('upDmgBounty')) q('upDmgBounty').disabled =money<g.costDmgBounty;
+  }
+}
+
+function renderPanel(){
+  const panel=document.getElementById('panel');
+  if(!selected){panel.innerHTML='';return;}
+  const bossAlive=bossMode&&bossSpawned&&monsters.some(m=>m.isBoss);
+  if(bossAlive&&sessionMode==='gameplay1'&&selected.type==='hero'){
+    const disS=money<costs.swap?'disabled':'';
+    panel.innerHTML=`<h3>&#10084; ${heroName(sessionMode)}</h3>
+      <p style="font-size:11px;color:#aaa;text-align:center;margin:0 0 6px;">Boss actif — echange uniquement</p>
+      <button id="buySwap" ${disS}>Echanger 2 entites (<span class="price">${costs.swap}&euro;</span>)</button>`;
+    document.getElementById('buySwap').onclick=()=>{
+      if(money<costs.swap) return;
+      spend(costs.swap);pendingAction='swapSelect';swapTargets=[];
+      log('Selectionne 2 entites a echanger.');updateHUD();renderPanel();
+    };
+    return;
+  }
+  if(bossAlive){panel.innerHTML='<p style="color:#ff8888;text-align:center;margin-top:12px;">Boss en cours —<br>impossible d\'acheter</p>';return;}
+  const canPoint   =!bossMode;
+  const canSwap    =sessionMode==='gameplay1';
+  const canCombo   =!bossMode;
+  const canDmgBnty =bossMode;
+
+  if(selected.type==='hero'){
+    const pG=priceFor('guardPlace',costs.guardPlace);
+    const disG=money<pG?'disabled':'';
+    const disS=money<costs.swap?'disabled':'';
+    const disP=money<costs.point?'disabled':'';
+    const ptLabel=sessionMode==='gameplay2'?'+1 adj./pts':'+1 pt/s';
+    const ptHint=sessionMode==='gameplay2'?`Pts/s adj. : +${pointRate}/case vide/s`:`Points : +${pointRate}/s`;
+    let h=`<h3>&#10084; ${heroName(sessionMode)}</h3>
+      <button id="buyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>`;
+    if(canSwap)   h+=`<button id="buySwap" ${disS}>Echanger 2 entites (<span class="price">${costs.swap}&euro;</span>)</button>`;
+    if(canPoint)  h+=`<button id="buyPoint" ${disP}>${ptLabel} (<span class="price">${costs.point}&euro;</span>)</button>`;
+    if(canPoint)  h+=`<p class="hint">${ptHint}</p>`;
+    panel.innerHTML=h;
+    document.getElementById('buyGuard').onclick=()=>{
+      if(money<priceFor('guardPlace',costs.guardPlace)) return;
+      pendingAction='placeGuard';log(t('chooseTileForGuard'));
+    };
+    if(canSwap) document.getElementById('buySwap').onclick=()=>{
+      if(money<costs.swap) return;
+      spend(costs.swap);pendingAction='swapSelect';swapTargets=[];
+      log('Selectionne 2 entites a echanger.');updateHUD();renderPanel();
+    };
+    if(canPoint) document.getElementById('buyPoint').onclick=()=>{
+      if(money<costs.point) return;
+      spend(costs.point);costs.point=Math.ceil(costs.point*1.2);pointRate++;
+      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();log(t('pointBought'));
+    };
+
+  } else if(selected.type==='guard'){
+    const g=selected.g;
+    const pD=priceFor('dmgAll',g.costDmg);
+    const pU=priceFor('dmgAll',g.costUpgrade);
+    let h=`<h3>${t('guard')}</h3>
+      <div class="row"><span>${t('dmg')}</span><span>${g.dmg}</span></div>
+      <div class="row"><span>${t('range')}</span><span>${g.range}</span></div>`;
+    if(canCombo)   h+=`<div class="row"><span>${t('bountyPerKill')}</span><span>+${g.bounty}&euro;</span></div>`;
+    if(canDmgBnty) h+=`<div class="row"><span>${t('dmgBounty')}</span><span>lv.${g.dmgBountyLevel}</span></div>`;
+    const disU=money<g.costUpgrade?'disabled':'';
+    const disDmgB=money<pD?'disabled':'';
+    const disDmgBounty=money<g.costDmgBounty?'disabled':'';
+    if(canCombo)   h+=`<button id="upDmg" ${disU}>${t('upDmg')} (<span class="price">${pU}&euro;</span>)</button>`;
+    if(canCombo)   h+=`<button id="upBounty" ${disU}>${t('upBounty')} (<span class="price">${pU}&euro;</span>)</button>`;
+    if(canDmgBnty) h+=`<button id="upDmgBoss" ${disDmgB}>${t('upDmg')} (<span class="price">${pD}&euro;</span>)</button>`;
+    if(canDmgBnty) h+=`<button id="upDmgBounty" ${disDmgBounty}>${t('upDmgBounty')} (<span class="price">${g.costDmgBounty}&euro;</span>)</button>`;
+    panel.innerHTML=h;
+    if(canCombo) document.getElementById('upDmg').onclick=()=>{
+      if(money<g.costUpgrade) return;spend(g.costUpgrade);g.costUpgrade=Math.ceil(g.costUpgrade*1.2);g.dmg++;
+      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
+    };
+    if(canCombo) document.getElementById('upBounty').onclick=()=>{
+      if(money<g.costUpgrade) return;spend(g.costUpgrade);g.costUpgrade=Math.ceil(g.costUpgrade*1.2);g.bounty++;
+      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
+    };
+    if(canDmgBnty) document.getElementById('upDmgBoss').onclick=()=>{
+      if(money<pD) return;spend(pD);g.costDmg=Math.ceil(g.costDmg*1.2);g.dmg++;
+      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
+    };
+    if(canDmgBnty) document.getElementById('upDmgBounty').onclick=()=>{
+      if(money<g.costDmgBounty) return;spend(g.costDmgBounty);g.costDmgBounty=Math.ceil(g.costDmgBounty*1.2);g.dmgBountyLevel++;
+      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
+    };
+  }
+}
+
+
+// ══════════════════════════════════════════════════════
+// EVENEMENTS
+// ══════════════════════════════════════════════════════
+
+// Hover monstres (tooltip)
+cv.addEventListener('mousemove',e=>{
+  const {sx,sy,rect}=canvasScale();
+  const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+  hoverMonster=null;
+  for(const m of monsters)
+    if(Math.hypot(m.px-mx,m.py-my)<=SIZE*(m.isBoss?0.7:0.52)){hoverMonster=m;break;}
+});
+cv.addEventListener('mouseleave',()=>{hoverMonster=null;});
+
+// Clic canvas
+cv.addEventListener('click',e=>{
+  const {sx,sy,rect}=canvasScale();
+  const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
+  const tt=pxToHex(mx,my); if(!tt) return;
+
+  // Placement initial des gardes
+  if(initialPlacement){
+    const k=axKey(tt.q,tt.r);
+    if(occupiedSet().has(k)) return;
+    if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
+    const g=newGuard();g.q=tt.q;g.r=tt.r;guards.push(g);
+    if(guards.length>=GUARD_INIT) initialPlacement=false;
+    return;
+  }
+  if(!gameRunning) return;
+
+  // Placement garde Kael depuis la liste
+  if(sessionMode==='gameplay4'&&kaelPendingGuards.length>0&&kaelSelectedPending!==null){
+    if(occupiedSet().has(axKey(tt.q,tt.r))){log(t('invalidPlacement'));return;}
+    if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
+    const g=kaelPendingGuards.splice(kaelSelectedPending,1)[0];
+    g.q=tt.q;g.r=tt.r;guards.push(g);
+    kaelSelectedPending=null;
+    renderKaelList();
+    if(kaelPendingGuards.length===0){log('Tous les gardes places !');showToast('Gardes places !');}
+    return;
+  }
+
+  if(pendingAction==='placeGuard'){
+    if(occupiedSet().has(axKey(tt.q,tt.r))) return;
+    if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
+    const price=priceFor('guardPlace',costs.guardPlace);
+    const g=newGuard();g.q=tt.q;g.r=tt.r;guards.push(g);
+    spend(price);costs.guardPlace=Math.ceil(costs.guardPlace*1.2);
+    pendingAction=null;playSfx('buy');onBossPurchaseMade();
+    log(t('newGuardPlaced'));updateHUD();renderPanel();return;
+  }
+
+  if(pendingAction==='swapSelect'){
+    // Detect which entity was clicked (hero, guard, monster)
+    let entity=null;
+    const dist=SIZE*0.76;
+    if(Math.hypot(hero.px-mx,hero.py-my)<=dist) entity={type:'hero',obj:hero};
+    if(!entity){
+      const g=guards.find(g=>{const[px,py]=axToPx(g.q,g.r);return Math.hypot(px-mx,py-my)<=dist;});
+      if(g) entity={type:'guard',obj:g};
+    }
+    if(!entity){
+      const m=monsters.find(m=>Math.hypot(m.px-mx,m.py-my)<=dist);
+      if(m) entity={type:'monster',obj:m};
+    }
+    if(!entity) return;
+    // Avoid duplicate selection
+    if(swapTargets.some(t=>t.obj===entity.obj)) return;
+    swapTargets.push(entity);
+    if(swapTargets.length===2){
+      // Execute swap: exchange q,r between all; snap monsters' px,py to new hex
+      const a=swapTargets[0],b=swapTargets[1];
+      const aq=a.obj.q,ar=a.obj.r,bq=b.obj.q,br=b.obj.r;
+      a.obj.q=bq;a.obj.r=br;b.obj.q=aq;b.obj.r=ar;
+      if(a.type==='monster'){const[px,py]=axToPx(a.obj.q,a.obj.r);a.obj.px=px;a.obj.py=py;a.obj.pathKeys=null;}
+      if(b.type==='monster'){const[px,py]=axToPx(b.obj.q,b.obj.r);b.obj.px=px;b.obj.py=py;b.obj.pathKeys=null;}
+      // Recompute paths for all monsters
+      monsters.forEach(m=>recomputePath(m));
+      // Anti-blocage boss : annuler si le boss n'a plus de chemin
+      if(bossMode&&bossSpawned){
+        const boss=monsters.find(m=>m.isBoss);
+        if(boss&&boss.pathKeys===null){
+          a.obj.q=aq;a.obj.r=ar;b.obj.q=bq;b.obj.r=br;
+          if(a.type==='monster'){const[px,py]=axToPx(a.obj.q,a.obj.r);a.obj.px=px;a.obj.py=py;a.obj.pathKeys=null;}
+          if(b.type==='monster'){const[px,py]=axToPx(b.obj.q,b.obj.r);b.obj.px=px;b.obj.py=py;b.obj.pathKeys=null;}
+          monsters.forEach(m=>recomputePath(m));
+          money+=costs.swap; // remboursement
+          pendingAction=null;swapTargets=[];
+          log('Impossible : le boss serait bloque !');showToast('Echange impossible !');renderPanel();return;
+        }
+      }
+      pendingAction=null;swapTargets=[];
+      log('Echange effectue !');renderPanel();
+    } else {
+      log('Selectionne une 2eme entite.');
+    }
+    return;
+  }
+
+  // Selection hero / garde
+  if(tt.q===hero.q&&tt.r===hero.r){selected={type:'hero'};}
+  else {
+    const g=guards.find(g=>g.q===tt.q&&g.r===tt.r);
+    selected=g?{type:'guard',g}:null;
+  }
+  renderPanel();
+});
+
+// Clavier
+document.addEventListener('keydown',e=>{
+  if(listeningFor){
+    pauseKey=e.key.toLowerCase();
+    document.getElementById('pauseKeyBtn').textContent=pauseKey.toUpperCase();
+    listeningFor=null;saveSettings();return;
+  }
+  const k=e.key.toLowerCase();
+  if(k===pauseKey&&state==='playing'){
+    if(!paused){if(pauseUsed)return;paused=true;pauseUsed=true;}else paused=false;return;
+  }
+});
+
+document.getElementById('speedBtn').addEventListener('click',()=>{
+  speedIndex=(speedIndex+1)%SPEEDS.length;
+  document.getElementById('speedBtn').textContent=t('speed')+' x'+SPEEDS[speedIndex];
+});
+document.getElementById('summonBossBtn').addEventListener('click',spawnBoss);
+document.getElementById('enzoPlus').addEventListener('click',()=>{
+  if(!gameRunning||sessionMode!=='gameplay5') return;
+  waveSpawnTotal++;
+  updateEnzoDisplay();
+});
+
+// Parametres
+document.getElementById('settingsBtn').addEventListener('click',()=>{
+  if(state!=='difficulty') return;
+  document.getElementById('settingsOverlay').style.display='flex';
+});
+document.getElementById('closeSettings').addEventListener('click',()=>{
+  document.getElementById('settingsOverlay').style.display='none';
+});
+document.getElementById('heroSelectBtn').addEventListener('click',()=>{
+  if(state!=='difficulty') return;
+  document.getElementById('heroSelectOverlay').style.display='flex';
+});
+document.getElementById('closeHeroSelect').addEventListener('click',()=>{
+  document.getElementById('heroSelectOverlay').style.display='none';
+});
+document.getElementById('langSelect').addEventListener('change',e=>{lang=e.target.value;applyStaticTexts();saveSettings();});
+document.getElementById('decorSelect').addEventListener('change',e=>{decorIndex=parseInt(e.target.value,10);applyTheme();saveSettings();});
+document.getElementById('modeSelect').addEventListener('change',e=>{gameMode=e.target.value;renderDifficultyList();saveSettings();});
+document.getElementById('volSlider').addEventListener('input',e=>{sfxVolume=parseInt(e.target.value,10)/100;ensureAudio();saveSettings();});
+document.getElementById('pauseKeyBtn').addEventListener('click',()=>{listeningFor='pause';document.getElementById('pauseKeyBtn').textContent='...';});
+let abandonHoldT=0,abandonHoldActive=false;
+const abandonBtn=document.getElementById('abandonBtn');
+function abandonTick(dt){
+  if(!abandonHoldActive) return;
+  abandonHoldT+=dt;
+  const pct=Math.min(1,abandonHoldT/1.2);
+  abandonBtn.style.background=`linear-gradient(to right,#a33 ${pct*100}%,#333 ${pct*100}%)`;
+  if(abandonHoldT>=1.2){abandonHoldActive=false;abandonBtn.style.background='';endGame('abandon');}
+}
+abandonBtn.addEventListener('pointerdown',e=>{
+  if(state!=='playing') return;
+  e.preventDefault();abandonHoldActive=true;abandonHoldT=0;
+});
+function stopAbandonHold(){abandonHoldActive=false;abandonHoldT=0;abandonBtn.style.background='';}
+abandonBtn.addEventListener('pointerup',stopAbandonHold);
+abandonBtn.addEventListener('pointerleave',stopAbandonHold);
+
+// Regles
+document.getElementById('rulesBtn').addEventListener('click',()=>{
+  if(state!=='difficulty') return;
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('rulesOverlay').style.display='flex';
+  renderRulesBossStats();
+});
+document.getElementById('closeRules').addEventListener('click',()=>{
+  document.getElementById('rulesOverlay').style.display='none';
+  document.getElementById('overlay').style.display='flex';
+});
+
+// Setup Boss
+document.getElementById('bossCancelBtn').addEventListener('click',()=>{
+  document.getElementById('bossSetupOverlay').style.display='none';
+  document.getElementById('overlay').style.display='flex';
+});
+document.getElementById('bossStartBtn').addEventListener('click',()=>{
+  bossStartMoney=Math.max(0,parseInt(document.getElementById('bossMoneyInput').value,10)||0);
+  bossMode=true;difficulty=1;
+  document.getElementById('bossSetupOverlay').style.display='none';
+  document.getElementById('lblWave').textContent=t('bossWaveLbl');
+  applyTileData(generateRandomMap());
+  resetGameState();money=bossStartMoney;
+  prepareGameUI(false,false,false);
+  document.getElementById('boxDiff').textContent='Mode Boss';
+  state='playing';gameRunning=true;initialPlacement=true;paused=false;pauseUsed=false;
+  pickBossSpawnPoint();beginBossPrep();
+  updateHUD();renderPanel();
+});
+
+
+// ══════════════════════════════════════════════════════
+// MENU — rendu des listes
+// ══════════════════════════════════════════════════════
+function renderHeroCards(){
+  const container=document.getElementById('heroCards');
+  if(!container) return;
+  const heroes=[
+    {mode:'gameplay1',color:'#3388ee',border:'#88ccff',descKey:'heroDesc1'},
+    {mode:'gameplay2',color:'#2aaa6a',border:'#7be0b0',descKey:'heroDesc2'},
+    {mode:'gameplay3',color:'#cc9922',border:'#ffe070',descKey:'heroDesc3'},
+    {mode:'gameplay4',color:'#9933cc',border:'#dd88ff',descKey:'heroDesc4'},
+    {mode:'gameplay5',color:'#ee4411',border:'#ffaa55',descKey:'heroDesc5'},
+  ];
+  container.innerHTML='';
+  heroes.forEach(h=>{
+    const name=heroName(h.mode);
+    const isSelected=gameMode===h.mode;
+    const card=document.createElement('div');
+    card.style.cssText=`background:#2a2a2a;border:2px solid ${isSelected?h.border:'#555'};border-radius:12px;
+      padding:18px 20px;width:190px;cursor:pointer;text-align:center;transition:border .2s;
+      ${isSelected?'box-shadow:0 0 12px '+h.border+';':''}`;
+    card.innerHTML=`<div style="width:44px;height:44px;border-radius:50%;background:${h.color};
+        border:3px solid ${h.border};margin:0 auto 10px;"></div>
+      <div style="font-size:20px;font-weight:700;color:${h.border};margin-bottom:8px;">${name}</div>
+      <div style="font-size:12px;color:#ccc;line-height:1.5;">${t(h.descKey)}</div>
+      <button style="margin-top:12px;background:${isSelected?h.color:'#333'};border-color:${h.border};
+        font-weight:${isSelected?'700':'400'};">${isSelected?'✓ Sélectionné':'Choisir'}</button>`;
+    card.querySelector('button').addEventListener('click',()=>{
+      gameMode=h.mode;saveSettings();
+      renderHeroCards();
+      const hsb=document.getElementById('heroSelectBtn');
+      if(hsb) hsb.textContent='⚔ '+t('heroSelectBtn')+' : '+heroName(gameMode);
+      renderDifficultyList();
+    });
+    container.appendChild(card);
+  });
+}
+
+function renderKaelList(){
+  const el=document.getElementById('kaelList');
+  if(sessionMode!=='gameplay4'||kaelPendingGuards.length===0){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML='<div style="color:#dd88ff;font-weight:700;font-size:13px;text-align:center;margin-bottom:6px;">Gardes a placer</div>';
+  kaelPendingGuards.forEach((g,i)=>{
+    const isSel=kaelSelectedPending===i;
+    const btn=document.createElement('div');
+    btn.style.cssText=`background:${isSel?'#5a1a8a':'#2a1a3a'};border:2px solid ${isSel?'#dd88ff':'#7733aa'};
+      border-radius:8px;padding:8px 10px;margin:4px 0;cursor:pointer;font-size:12px;color:#eee;text-align:center;`;
+    btn.innerHTML=`<div style="font-weight:700;color:#dd88ff;margin-bottom:3px;">Garde ${i+1}</div>
+      <div>⚔ ${g.dmg} &nbsp; 🎯 ${g.range} &nbsp; 💰 +${g.bounty}€</div>`;
+    btn.addEventListener('click',()=>{
+      kaelSelectedPending=isSel?null:i;
+      renderKaelList();
+    });
+    el.appendChild(btn);
+  });
+}
+
+function updateEnzoDisplay(){
+  const rem=Math.max(0,waveSpawnTotal-waveSpawnCount);
+  const el=document.getElementById('enzoVal');
+  if(el) el.textContent=rem;
+}
+
+function renderDifficultyList(){
+  const list=document.getElementById('diffList');
+  list.innerHTML='';
+  const lbl=lang==='en'?'Difficulty':'Difficulte';
+
+  for(let d=1;d<=2;d++){
+    const stats=loadStats(d,gameMode);
+    const row=document.createElement('div');row.className='diffrow';
+    row.innerHTML=`<button class="diffbtn" data-d="${d}">${lbl} ${d}</button>
+      <div class="diffstats">${t('record')} : ${stats.best}<br>${t('totalPts')} : ${stats.totalPts||0}</div>`;
+    list.appendChild(row);
+  }
+  list.querySelectorAll('.diffbtn').forEach(b=>{
+    b.addEventListener('click',()=>startNormalGame(parseInt(b.dataset.d,10)));
+  });
+
+  // Defi du jour
+  const dSt=loadDailyStats();
+  const dRow=document.createElement('div');dRow.className='diffrow';
+  dRow.innerHTML=`<button class="diffbtn daily-btn" id="dailyBtn">&#128197; ${t('dailyChallenge')}</button>
+    <div class="diffstats">${t('record')} : ${dSt.best>0?dSt.best:'&mdash;'}<br>${dailyDateStr()}</div>`;
+  list.appendChild(dRow);
+  document.getElementById('dailyBtn').addEventListener('click',startDailyGame);
+
+  // Mode Boss
+  const bSt=loadBossStats();
+  const bRow=document.createElement('div');bRow.className='diffrow';
+  bRow.innerHTML=`<button class="diffbtn" id="bossModeBtn">${t('bossMode')}</button>
+    <div class="diffstats">${t('bossRecord')} : ${bSt.best===null?t('bossNoRecord'):bSt.best+'&euro;'}<br>${t('bossTotalDmg')} : ${bSt.totalDmg||0}</div>`;
+  list.appendChild(bRow);
+  document.getElementById('bossModeBtn').addEventListener('click',()=>{
+    document.getElementById('overlay').style.display='none';
+    document.getElementById('bossSetupOverlay').style.display='flex';
+  });
+}
+
+function renderRulesBossStats(){
+  const s=loadBossStats();
+  document.getElementById('rulesBossStats').innerHTML=
+    '<b>'+t('bossMode')+'</b> '+t('bossRecord')+' : '+
+    (s.best===null?t('bossNoRecord'):s.best+'&euro;')+'<br>'+t('bossTotalDmg')+' : '+(s.totalDmg||0);
+}
+
+function buildDecorOptions(){
+  const sel=document.getElementById('decorSelect');sel.innerHTML='';
+  DECORS.forEach((d,i)=>{
+    const opt=document.createElement('option');opt.value=i;opt.textContent=t(d.key);sel.appendChild(opt);
+  });
+  sel.value=decorIndex;
+}
+function buildModeOptions(){
+  const sel=document.getElementById('modeSelect');sel.innerHTML='';
+  [['gameplay1','modeNormal'],['gameplay2','modeHardcore'],['gameplay3','modeMidas'],['gameplay4','modeKael'],['gameplay5','modeEnzo']].forEach(([v,k])=>{
+    const opt=document.createElement('option');opt.value=v;opt.textContent=t(k);sel.appendChild(opt);
+  });
+  sel.value=gameMode;
+}
+
+function applyStaticTexts(){
+  const E=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
+  E('setTitle',t('settings'));
+  E('langLbl',t('language')); E('decorLbl',t('decor')); E('modeLbl',t('gameMode'));
+  E('closeSettings',t('close')); E('lblHp',t('hero')); E('lblMoney',t('money'));
+  E('lblPoint',t('point')); E('lblWave',bossMode?t('bossWaveLbl'):t('wave'));
+  E('lblTimer',t('nextWave')); E('lblChrono',t('chrono'));
+  E('abandonBtn',t('abandon'));
+  E('speedBtn',t('speed')+' x'+SPEEDS[speedIndex]);
+  E('volLbl',t('volume')); E('pauseKeyLbl',t('pauseKeyLbl'));
+  E('rulesBtn',t('rulesBtn')); E('rulesTitle',t('rules')); E('closeRules',t('close'));
+  E('bossSetupTitle',t('bossMode')); E('bossSetupLabel',t('bossSetupLabel'));
+  E('bossStartBtn',t('bossStart')); E('bossCancelBtn',t('bossCancel'));
+  E('summonBossBtn',t('summonBoss'));
+  document.getElementById('rulesText').innerHTML=t('rulesText');
+  const hsb=document.getElementById('heroSelectBtn');
+  if(hsb) hsb.textContent='⚔ '+t('heroSelectBtn')+' : '+heroName(gameMode);
+  document.getElementById('closeHeroSelect').textContent=t('heroSelectClose');
+  buildDecorOptions();buildModeOptions();renderHeroCards();renderDifficultyList();
+}
+
+
+// ══════════════════════════════════════════════════════
+// INITIALISATION
+// ══════════════════════════════════════════════════════
+loadSettings();
+document.getElementById('langSelect').value=lang;
+document.getElementById('volSlider').value=Math.round(sfxVolume*100);
+document.getElementById('pauseKeyBtn').textContent=pauseKey.toUpperCase();
+applyStaticTexts();
+applyTheme();
+updateHUD();
+document.getElementById('chrono').textContent=formatTime(MATCH_DURATION);
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
