@@ -249,7 +249,8 @@ const MATCH_DURATION = 900;     // 15 min
 const GUARD_INIT     = 3;
 const SPEEDS         = [1, 3];
 const DIFF_HP_MULT   = [0.7, 1.1];
-const BASE_COSTS     = {guardPlace:6, point:10, swap:5};
+const BASE_COSTS     = {guardPlace:6, point:10, swap:5, summonAlly:15};
+const ALLY_MAXHP     = 10;
 
 // Canvas — défini ici pour être disponible partout (applyTileData, render, events)
 const cv  = document.getElementById('c');
@@ -286,13 +287,16 @@ const I18N = {
     waveStart:'Vague {n} !', guardKill:'Garde tue un monstre (+{x}e)',
     hintPlaceGuard:'Clique une case libre pour le garde',
     desert:'Desert', forest:'Foret', characters:'Personnages', epure:'Epure',
-    gameMode:'Mode de jeu', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo',
+    gameMode:'Mode de jeu', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo', modeIris:'Iris',
     heroSelectBtn:'Choisir le heros', heroSelectClose:'Retour',
     heroDesc1:'Axel — Peut echanger la position de 2 entites (garde, monstre ou heros).',
     heroDesc2:'Noa — Gagne des pts chaque seconde selon le nombre de cases vides adjacentes x niveau.',
     heroDesc3:'Midas — Son argent est double automatiquement toutes les 3 minutes.',
     heroDesc4:'Kael — La carte change toutes les 4 minutes : les ennemis disparaissent, le heros revient au centre, les gardes (avec leurs stats) doivent etre repositionnes.',
     heroDesc5:'Enzo — Voit le nombre d\'ennemis restants a spawner cette vague. Peut en ajouter +1 a tout moment pour augmenter la frequence d\'apparition.',
+    heroDesc6:'Iris — Peut invoquer un allie (10 PV) a placer sur le terrain. Ses couts d\'achat propres demarrent toujours au prix de base. S\'il meurt, il disparait sans consequence.',
+    summonAlly:'Invoquer un allie', allyPlaced:'Allie invoque !', allyDown:'Un allie est tombe !',
+    chooseTileForAlly:'Clique une case libre pour l\'allie', ally:'Allie',
     mapChange:'Carte changee ! Replace tes gardes.', mapChangeTimer:'Prochain changement',
     enzoRemaining:'Ennemis vague',
     buyChrono:'+1 min de chrono', chronoBought:'Chrono +1 minute !',
@@ -340,13 +344,16 @@ const I18N = {
     waveStart:'Wave {n}!', guardKill:'Guard killed monster (+{x}e)',
     hintPlaceGuard:'Click a free tile to place the guard',
     desert:'Desert', forest:'Forest', characters:'Characters',
-    gameMode:'Game mode', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo',
+    gameMode:'Game mode', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo', modeIris:'Iris',
     heroSelectBtn:'Choose hero', heroSelectClose:'Back',
     heroDesc1:'Axel — Can swap 2 entities (guard, monster or hero).',
     heroDesc2:'Noa — Earns pts each second based on adjacent empty tiles x level.',
     heroDesc3:'Midas — Money doubles automatically every 3 minutes.',
     heroDesc4:'Kael — Map changes every 4 minutes: enemies vanish, hero recenters, guards (with stats) must be repositioned.',
     heroDesc5:'Enzo — Sees remaining enemies to spawn this wave. Can add +1 anytime to increase spawn rate.',
+    heroDesc6:'Iris — Can summon an ally (10 HP) to place on the field. Its own purchase costs always start at base price. If it dies, it just vanishes with no consequence.',
+    summonAlly:'Summon an ally', allyPlaced:'Ally summoned!', allyDown:'An ally has fallen!',
+    chooseTileForAlly:'Click a free tile for the ally', ally:'Ally',
     mapChange:'Map changed! Reposition your guards.', mapChangeTimer:'Next change',
     enzoRemaining:'Wave enemies',
     buyChrono:'+1 min timer', chronoBought:'Timer +1 minute!',
@@ -517,6 +524,8 @@ let dailyMode=false, bossMode=false, bossSpawned=false, bossStartMoney=0, bossKi
 let midasTimer=0, mapChangeTimer=240;
 let kaelPendingGuards=[], kaelSelectedPending=null;
 let waveSpawnTotal=9999, waveSpawnCount=0;
+let allies=[];
+let pendingAllySource=null;
 
 // Ressources & chrono
 let money=0, point=0, pointRate=0, pointIncomeAcc=0;
@@ -586,7 +595,9 @@ function log(msg){
 // ══════════════════════════════════════════════════════
 function occupiedSet(){
   const s=new Set(); s.add(axKey(hero.q,hero.r));
-  guards.forEach(g=>s.add(axKey(g.q,g.r))); return s;
+  guards.forEach(g=>s.add(axKey(g.q,g.r)));
+  allies.forEach(a=>s.add(axKey(a.q,a.r)));
+  return s;
 }
 
 // Verifie que poser un garde en (q,r) ne deconnecte pas la grille
@@ -723,7 +734,7 @@ function recomputePath(m){
 
 function newGuard(){
   return {dmg:1,range:1,bounty:1,dmgBountyLevel:0,dmgAcc:0,
-          costDmgBounty:5,cooldown:1,costUpgrade:4,costDmg:2,costBounty:4};
+          costDmgBounty:5,cooldown:1,costDmgUp:4,costBountyUp:4,costDmg:2};
 }
 
 
@@ -815,12 +826,20 @@ function update(dt){
     const atkRange=SIZE*1.8+(m.rangeBonus?m.rangeBonus*SIZE*Math.sqrt(3):0);
     const distHero=Math.hypot(heroPx[0]-m.px,heroPx[1]-m.py);
 
-    if(distHero<=atkRange&&!guardBlocksLOS(m,heroPx)){
+    let atkTarget=null, atkPx=null, atkDist=Infinity;
+    if(distHero<=atkRange&&!guardBlocksLOS(m,heroPx)){atkTarget=hero;atkPx=heroPx;atkDist=distHero;}
+    for(const al of allies){
+      const [apx,apy]=axToPx(al.q,al.r);
+      const dA=Math.hypot(apx-m.px,apy-m.py);
+      if(dA<=atkRange&&dA<atkDist&&!guardBlocksLOS(m,[apx,apy])){atkTarget=al;atkPx=[apx,apy];atkDist=dA;}
+    }
+
+    if(atkTarget){
       m.attackAcc+=dt;
       while(m.attackAcc>=1){
-        m.attackAcc-=1; hero.hp-=m.dmg;
-        heroHitFlash=0.35;
-        monsterAttackFx.push({x1:m.px,y1:m.py,x2:heroPx[0],y2:heroPx[1],life:0.3});
+        m.attackAcc-=1; atkTarget.hp-=m.dmg;
+        if(atkTarget===hero) heroHitFlash=0.35;
+        monsterAttackFx.push({x1:m.px,y1:m.py,x2:atkPx[0],y2:atkPx[1],life:0.3});
         playSfx('hit');
       }
       continue;
@@ -901,6 +920,11 @@ function update(dt){
   monsterAttackFx=monsterAttackFx.filter(fx=>fx.life>0);
   if(heroHitFlash>0) heroHitFlash-=realDt;
 
+  if(allies.some(a=>a.hp<=0)){
+    allies.filter(a=>a.hp<=0).forEach(()=>{log('Un allie est tombe !');});
+    allies=allies.filter(a=>a.hp>0);
+    if(selected&&selected.type==='ally'&&!allies.includes(selected.a)){selected=null;renderPanel();}
+  }
   if(hero.hp<=0){hero.hp=0;playSfx('lose');endGame();return;}
   updateHUD();
 }
@@ -975,10 +999,10 @@ function resetGameState(){
   kaelPendingGuards=[];kaelSelectedPending=null;
   waveSpawnTotal=9999;waveSpawnCount=0;
   hero={q:0,r:0,hp:HERO_MAXHP,maxhp:HERO_MAXHP};
-  guards=[];monsters=[];spawnPoints=[];
+  guards=[];monsters=[];spawnPoints=[];allies=[];
   waveNum=0;waveTimer=0;spawnAcc=0;matchTimer=MATCH_DURATION;
   attackFx=[];monsterAttackFx=[];heroHitFlash=0;
-  selected=null;pendingAction=null;moveSelected=[];hoverMonster=null;
+  selected=null;pendingAction=null;pendingAllySource=null;moveSelected=[];hoverMonster=null;
   costs={...BASE_COSTS};bossSpawned=false;
   paused=false;pauseUsed=false;
   document.getElementById('chrono').textContent=formatTime(MATCH_DURATION);
@@ -1017,6 +1041,7 @@ function heroName(mode){
   if(mode==='gameplay3') return t('modeMidas');
   if(mode==='gameplay4') return t('modeKael');
   if(mode==='gameplay5') return t('modeEnzo');
+  if(mode==='gameplay6') return t('modeIris');
   return mode;
 }
 
@@ -1054,7 +1079,7 @@ function startDailyGame(){
   dailyMode=true;difficulty=2;sessionMode=gameMode;bossMode=false;
   money=0;resetGameState();
   prepareGameUI(true,true,true);
-  document.getElementById('boxDiff').textContent='Défi du Jour';
+  document.getElementById('boxDiff').textContent=heroName(gameMode)+' — Difficulté '+difficulty+' — Défi du Jour';
   showToast(t('dailyMapInfo',{n:count}));
   startGameSession();updateHUD();renderPanel();
 }
@@ -1143,6 +1168,7 @@ function drawCharacterHero(px,py){
   if(sessionMode==='gameplay3'){shirt='#cc9922';shirtLine='#aa7700';hair='#1a1a1a';pants='#2a2a2a';shoes='#111';}
   if(sessionMode==='gameplay4'){shirt='#9933cc';shirtLine='#7722aa';hair='#f0f0f0';pants='#4a1a6a';shoes='#2a0a3a';}
   if(sessionMode==='gameplay5'){shirt='#ee4411';shirtLine='#cc2200';hair='#222233';pants='#331100';shoes='#1a0800';}
+  if(sessionMode==='gameplay6'){shirt='#22ccaa';shirtLine='#118866';hair='#eeeecc';pants='#0f4a3c';shoes='#0a2c22';}
   if(bossMode){shirt='#882222';shirtLine='#661111';hair='#222';pants='#220a0a';shoes='#1a0000';}
   // ombre
   ctx.fillStyle='rgba(0,0,0,0.18)';
@@ -1347,7 +1373,8 @@ function render(){
     ctx.fillText(d.heroEmoji||'🧑',hpx[0],hpx[1]+SIZE*0.35);
   } else {
     const hColors={gameplay1:['#3388ee','#88ccff'],gameplay2:['#2aaa6a','#7be0b0'],
-      gameplay3:['#cc9922','#ffe070'],gameplay4:['#9933cc','#dd88ff'],gameplay5:['#ee4411','#ffaa55']};
+      gameplay3:['#cc9922','#ffe070'],gameplay4:['#9933cc','#dd88ff'],gameplay5:['#ee4411','#ffaa55'],
+      gameplay6:['#22ccaa','#88ffe0']};
     const [hFill,hStroke]=(hColors[sessionMode]||[d.heroColor,d.heroStroke]);
     drawHex(hpx[0],hpx[1],hFill,hStroke);
     ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
@@ -1367,6 +1394,20 @@ function render(){
   }
   ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
   ctx.fillText(Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp,hpx[0],hpx[1]+(d.emoji?SIZE*0.7:12));
+
+  // Allies (Iris)
+  for(const al of allies){
+    const [apx,apy]=axToPx(al.q,al.r);
+    drawHex(apx,apy,'#22ccaa','#88ffe0');
+    ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('❤ '+Math.round(Math.max(0,al.hp))+'/'+al.maxhp,apx,apy+4);
+    if(selected&&selected.type==='ally'&&selected.a===al){
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=2;
+      ctx.setLineDash([5,4]);ctx.beginPath();
+      ctx.arc(apx,apy,SIZE*0.76,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+  }
 
   // Flash rouge sur le heros uniquement
   if(heroHitFlash>0){
@@ -1460,6 +1501,10 @@ function render(){
     ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='14px sans-serif';ctx.textAlign='center';
     ctx.fillText(t('hintPlaceGuard'),cv.width/2,24);
   }
+  if(pendingAction==='placeAlly'){
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(t('chooseTileForAlly'),cv.width/2,24);
+  }
   if(paused){
     ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,cv.width,cv.height);
     ctx.fillStyle='#fff';ctx.font='bold 32px sans-serif';ctx.textAlign='center';
@@ -1500,10 +1545,15 @@ function refreshAffordability(){
     if(q('buyGuard'))  q('buyGuard').disabled =money<priceFor('guardPlace',costs.guardPlace);
     if(q('buySwap'))   q('buySwap').disabled  =money<costs.swap;
     if(q('buyPoint'))  q('buyPoint').disabled =money<costs.point;
+    if(q('buyAlly'))   q('buyAlly').disabled  =money<priceFor('summonAlly',costs.summonAlly);
+  } else if(selected.type==='ally'){
+    const al=selected.a;
+    if(q('allyBuyGuard')) q('allyBuyGuard').disabled=money<priceFor('guardPlace',al.costs.guardPlace);
+    if(q('allyBuyPoint')) q('allyBuyPoint').disabled=money<al.costs.point;
   } else if(selected.type==='guard'){
     const g=selected.g;
-    if(q('upDmg'))       q('upDmg').disabled      =money<priceFor('dmgAll',g.costUpgrade);
-    if(q('upBounty'))    q('upBounty').disabled    =money<priceFor('bountyAll',g.costUpgrade);
+    if(q('upDmg'))       q('upDmg').disabled      =money<priceFor('dmgAll',g.costDmgUp);
+    if(q('upBounty'))    q('upBounty').disabled    =money<priceFor('bountyAll',g.costBountyUp);
     if(q('upDmgBoss'))   q('upDmgBoss').disabled   =money<priceFor('dmgAll',g.costDmg);
     if(q('upDmgBounty')) q('upDmgBounty').disabled =money<g.costDmgBounty;
   }
@@ -1538,11 +1588,15 @@ function renderPanel(){
     const disP=money<costs.point?'disabled':'';
     const ptLabel=sessionMode==='gameplay2'?'+1 adj./pts':'+1 pt/s';
     const ptHint=sessionMode==='gameplay2'?`Pts/s adj. : +${pointRate}/case vide/s`:`Points : +${pointRate}/s`;
+    const canAlly=canPoint&&sessionMode==='gameplay6';
+    const pA=priceFor('summonAlly',costs.summonAlly);
+    const disA=money<pA?'disabled':'';
     let h=`<h3>&#10084; ${heroName(sessionMode)}</h3>
       <button id="buyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>`;
     if(canSwap)   h+=`<button id="buySwap" ${disS}>Echanger 2 entites (<span class="price">${costs.swap}&euro;</span>)</button>`;
     if(canPoint)  h+=`<button id="buyPoint" ${disP}>${ptLabel} (<span class="price">${costs.point}&euro;</span>)</button>`;
     if(canPoint)  h+=`<p class="hint">${ptHint}</p>`;
+    if(canAlly)   h+=`<button id="buyAlly" ${disA}>${t('summonAlly')} (<span class="price">${pA}&euro;</span>)</button>`;
     panel.innerHTML=h;
     document.getElementById('buyGuard').onclick=()=>{
       if(money<priceFor('guardPlace',costs.guardPlace)) return;
@@ -1558,30 +1612,56 @@ function renderPanel(){
       spend(costs.point);costs.point=Math.ceil(costs.point*1.2);pointRate++;
       playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();log(t('pointBought'));
     };
+    if(canAlly) document.getElementById('buyAlly').onclick=()=>{
+      if(money<priceFor('summonAlly',costs.summonAlly)) return;
+      pendingAction='placeAlly';log(t('chooseTileForAlly'));
+    };
+
+  } else if(selected.type==='ally'){
+    const al=selected.a;
+    const pG=priceFor('guardPlace',al.costs.guardPlace);
+    const disG=money<pG?'disabled':'';
+    const disP=money<al.costs.point?'disabled':'';
+    let h=`<h3>&#10084; ${t('ally')} (${Math.round(Math.max(0,al.hp))}/${al.maxhp} PV)</h3>
+      <button id="allyBuyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>
+      <button id="allyBuyPoint" ${disP}>+1 pt/s (<span class="price">${al.costs.point}&euro;</span>)</button>
+      <p class="hint">Points : +${pointRate}/s</p>`;
+    panel.innerHTML=h;
+    document.getElementById('allyBuyGuard').onclick=()=>{
+      if(money<priceFor('guardPlace',al.costs.guardPlace)) return;
+      pendingAction='placeGuard';pendingAllySource=al;log(t('chooseTileForGuard'));
+    };
+    document.getElementById('allyBuyPoint').onclick=()=>{
+      if(money<al.costs.point) return;
+      spend(al.costs.point);al.costs.point=Math.ceil(al.costs.point*1.2);pointRate++;
+      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();log(t('pointBought'));
+    };
 
   } else if(selected.type==='guard'){
     const g=selected.g;
     const pD=priceFor('dmgAll',g.costDmg);
-    const pU=priceFor('dmgAll',g.costUpgrade);
+    const pUd=priceFor('dmgAll',g.costDmgUp);
+    const pUb=priceFor('bountyAll',g.costBountyUp);
     let h=`<h3>${t('guard')}</h3>
       <div class="row"><span>${t('dmg')}</span><span>${g.dmg}</span></div>
       <div class="row"><span>${t('range')}</span><span>${g.range}</span></div>`;
     if(canCombo)   h+=`<div class="row"><span>${t('bountyPerKill')}</span><span>+${g.bounty}&euro;</span></div>`;
     if(canDmgBnty) h+=`<div class="row"><span>${t('dmgBounty')}</span><span>lv.${g.dmgBountyLevel}</span></div>`;
-    const disU=money<g.costUpgrade?'disabled':'';
+    const disUd=money<g.costDmgUp?'disabled':'';
+    const disUb=money<g.costBountyUp?'disabled':'';
     const disDmgB=money<pD?'disabled':'';
     const disDmgBounty=money<g.costDmgBounty?'disabled':'';
-    if(canCombo)   h+=`<button id="upDmg" ${disU}>${t('upDmg')} (<span class="price">${pU}&euro;</span>)</button>`;
-    if(canCombo)   h+=`<button id="upBounty" ${disU}>${t('upBounty')} (<span class="price">${pU}&euro;</span>)</button>`;
+    if(canCombo)   h+=`<button id="upDmg" ${disUd}>${t('upDmg')} (<span class="price">${pUd}&euro;</span>)</button>`;
+    if(canCombo)   h+=`<button id="upBounty" ${disUb}>${t('upBounty')} (<span class="price">${pUb}&euro;</span>)</button>`;
     if(canDmgBnty) h+=`<button id="upDmgBoss" ${disDmgB}>${t('upDmg')} (<span class="price">${pD}&euro;</span>)</button>`;
     if(canDmgBnty) h+=`<button id="upDmgBounty" ${disDmgBounty}>${t('upDmgBounty')} (<span class="price">${g.costDmgBounty}&euro;</span>)</button>`;
     panel.innerHTML=h;
     if(canCombo) document.getElementById('upDmg').onclick=()=>{
-      if(money<g.costUpgrade) return;spend(g.costUpgrade);g.costUpgrade=Math.ceil(g.costUpgrade*1.2);g.dmg++;
+      if(money<g.costDmgUp) return;spend(g.costDmgUp);g.costDmgUp=Math.ceil(g.costDmgUp*1.2);g.dmg++;
       playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
     };
     if(canCombo) document.getElementById('upBounty').onclick=()=>{
-      if(money<g.costUpgrade) return;spend(g.costUpgrade);g.costUpgrade=Math.ceil(g.costUpgrade*1.2);g.bounty++;
+      if(money<g.costBountyUp) return;spend(g.costBountyUp);g.costBountyUp=Math.ceil(g.costBountyUp*1.2);g.bounty++;
       playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
     };
     if(canDmgBnty) document.getElementById('upDmgBoss').onclick=()=>{
@@ -1642,11 +1722,22 @@ cv.addEventListener('click',e=>{
   if(pendingAction==='placeGuard'){
     if(occupiedSet().has(axKey(tt.q,tt.r))) return;
     if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
-    const price=priceFor('guardPlace',costs.guardPlace);
+    const costObj=pendingAllySource?pendingAllySource.costs:costs;
+    const price=priceFor('guardPlace',costObj.guardPlace);
     const g=newGuard();g.q=tt.q;g.r=tt.r;guards.push(g);
-    spend(price);costs.guardPlace=Math.ceil(costs.guardPlace*1.2);
-    pendingAction=null;playSfx('buy');onBossPurchaseMade();
+    spend(price);costObj.guardPlace=Math.ceil(costObj.guardPlace*1.2);
+    pendingAction=null;pendingAllySource=null;playSfx('buy');onBossPurchaseMade();
     log(t('newGuardPlaced'));updateHUD();renderPanel();return;
+  }
+
+  if(pendingAction==='placeAlly'){
+    if(occupiedSet().has(axKey(tt.q,tt.r))) return;
+    if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
+    const price=priceFor('summonAlly',costs.summonAlly);
+    allies.push({q:tt.q,r:tt.r,hp:ALLY_MAXHP,maxhp:ALLY_MAXHP,costs:{guardPlace:BASE_COSTS.guardPlace,point:BASE_COSTS.point}});
+    spend(price);costs.summonAlly=Math.ceil(costs.summonAlly*1.2);
+    pendingAction=null;playSfx('buy');onBossPurchaseMade();
+    log(t('allyPlaced'));updateHUD();renderPanel();return;
   }
 
   if(pendingAction==='swapSelect'){
@@ -1696,11 +1787,15 @@ cv.addEventListener('click',e=>{
     return;
   }
 
-  // Selection hero / garde
+  // Selection hero / allie / garde
   if(tt.q===hero.q&&tt.r===hero.r){selected={type:'hero'};}
   else {
-    const g=guards.find(g=>g.q===tt.q&&g.r===tt.r);
-    selected=g?{type:'guard',g}:null;
+    const al=allies.find(a=>a.q===tt.q&&a.r===tt.r);
+    if(al){selected={type:'ally',a:al};}
+    else{
+      const g=guards.find(g=>g.q===tt.q&&g.r===tt.r);
+      selected=g?{type:'guard',g}:null;
+    }
   }
   renderPanel();
 });
@@ -1810,6 +1905,7 @@ function renderHeroCards(){
     {mode:'gameplay3',color:'#cc9922',border:'#ffe070',descKey:'heroDesc3'},
     {mode:'gameplay4',color:'#9933cc',border:'#dd88ff',descKey:'heroDesc4'},
     {mode:'gameplay5',color:'#ee4411',border:'#ffaa55',descKey:'heroDesc5'},
+    {mode:'gameplay6',color:'#22ccaa',border:'#88ffe0',descKey:'heroDesc6'},
   ];
   container.innerHTML='';
   heroes.forEach(h=>{
@@ -1914,7 +2010,7 @@ function buildDecorOptions(){
 }
 function buildModeOptions(){
   const sel=document.getElementById('modeSelect');sel.innerHTML='';
-  [['gameplay1','modeNormal'],['gameplay2','modeHardcore'],['gameplay3','modeMidas'],['gameplay4','modeKael'],['gameplay5','modeEnzo']].forEach(([v,k])=>{
+  [['gameplay1','modeNormal'],['gameplay2','modeHardcore'],['gameplay3','modeMidas'],['gameplay4','modeKael'],['gameplay5','modeEnzo'],['gameplay6','modeIris']].forEach(([v,k])=>{
     const opt=document.createElement('option');opt.value=v;opt.textContent=t(k);sel.appendChild(opt);
   });
   sel.value=gameMode;
