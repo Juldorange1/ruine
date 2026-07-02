@@ -45,10 +45,10 @@ canvas{background:#222;max-width:100%;max-height:100%;}
 #boxHp,#boxWave{display:none !important;}
 
 /* ── OVERLAYS ─────────────────────────────────── */
-#overlay,#settingsOverlay,#bossSetupOverlay,#rulesOverlay{
+#overlay,#settingsOverlay,#detteSetupOverlay,#rulesOverlay{
   position:absolute;inset:0;background:var(--menu-bg);
   display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;}
-#settingsOverlay,#bossSetupOverlay,#rulesOverlay{display:none;z-index:5;}
+#settingsOverlay,#detteSetupOverlay,#rulesOverlay{display:none;z-index:5;}
 #overlay h2{font-size:42px;margin-bottom:10px;}
 #overlay p{font-size:22px;margin:4px 0 14px;}
 #overlay button{width:300px;font-size:18px;padding:14px;}
@@ -72,9 +72,6 @@ canvas{background:#222;max-width:100%;max-height:100%;}
 #rulesText{text-align:left;font-size:15px;line-height:1.7;color:#e8e0d0;}
 #rulesText b{display:block;color:var(--accent,#ffd23f);font-size:17px;margin:16px 0 4px;}
 #rulesText b:first-child{margin-top:0;}
-#rulesBossStats{margin-top:18px;padding-top:14px;border-top:1px solid var(--side-border);
-  font-size:13px;color:#ccc;}
-#rulesBossStats b{display:block;color:var(--accent,#ffd23f);font-size:15px;margin-bottom:4px;}
 
 /* ── HUD IN-GAME ──────────────────────────────── */
 #toast{position:absolute;top:16px;left:50%;transform:translateX(-50%);
@@ -146,19 +143,18 @@ body.theme-epure{
       <div class="rulesCard">
         <h2 id="rulesTitle"></h2>
         <div id="rulesText"></div>
-        <div id="rulesBossStats"></div>
         <button id="closeRules" style="width:200px;margin-top:18px;"></button>
       </div>
     </div>
 
-    <!-- Setup boss -->
-    <div id="bossSetupOverlay">
-      <h2 id="bossSetupTitle"></h2>
-      <p id="bossSetupLabel"></p>
-      <input type="number" id="bossMoneyInput" value="300" min="0"
+    <!-- Setup dette (Otto) -->
+    <div id="detteSetupOverlay">
+      <h2 id="detteSetupTitle"></h2>
+      <p id="detteSetupLabel"></p>
+      <input type="number" id="detteAmountInput" value="100" min="0" step="100"
         style="width:140px;font-size:18px;padding:8px;text-align:center;margin:8px 0;">
-      <button id="bossStartBtn" style="width:200px;"></button>
-      <button id="bossCancelBtn" style="width:200px;"></button>
+      <button id="detteStartBtn" style="width:200px;"></button>
+      <button id="detteCancelBtn" style="width:200px;"></button>
     </div>
 
     <!-- Parametres -->
@@ -223,7 +219,9 @@ body.theme-epure{
       <span class="lbl" id="lblChrono"></span><span class="val" id="chrono">00:00</span>
     </div>
     <div id="offerBox"></div>
-    <button id="summonBossBtn" style="display:none;"></button>
+    <div class="statbox" id="boxDette" style="display:none;">
+      <span class="lbl" id="lblDette">Dette</span><span class="val" id="detteVal">0/0&euro;</span>
+    </div>
     <button id="abandonBtn"></button>
     <div id="panel"></div>
     <div id="log"></div>
@@ -249,7 +247,7 @@ const MATCH_DURATION = 900;     // 15 min
 const GUARD_INIT     = 3;
 const SPEEDS         = [1, 3];
 const DIFF_HP_MULT   = [0.7, 1.1];
-const BASE_COSTS     = {guardPlace:6, point:10, swap:5, summonAlly:15};
+const BASE_COSTS     = {guardPlace:6, point:10, swap:5, summonAlly:10};
 const ALLY_MAXHP     = 10;
 
 // Canvas — défini ici pour être disponible partout (applyTileData, render, events)
@@ -295,26 +293,25 @@ const I18N = {
     heroDesc4:'Kael — La carte change toutes les 4 minutes : les ennemis disparaissent, le heros revient au centre, les gardes (avec leurs stats) doivent etre repositionnes.',
     heroDesc5:'Enzo — Voit le nombre d\'ennemis restants a spawner cette vague. Peut en ajouter +1 a tout moment pour augmenter la frequence d\'apparition.',
     heroDesc6:'Iris — Peut invoquer un allie (10 PV) a placer sur le terrain. Ses couts d\'achat propres demarrent toujours au prix de base. S\'il meurt, il disparait sans consequence.',
+    heroDesc7:'Otto — Choisit une dette a rembourser avant le debut de la partie. Clique la case doree pour y deposer tout son argent actuel. Si la dette est totalement remboursee a la fin, ses points sont multiplies par (dette/100). Sinon, tous ses points sont perdus.',
     summonAlly:'Invoquer un allie', allyPlaced:'Allie invoque !', allyDown:'Un allie est tombe !',
     chooseTileForAlly:'Clique une case libre pour l\'allie', ally:'Allie',
     mapChange:'Carte changee ! Replace tes gardes.', mapChangeTimer:'Prochain changement',
     enzoRemaining:'Ennemis vague',
     buyChrono:'+1 min de chrono', chronoBought:'Chrono +1 minute !',
-    bossMode:'Mode Boss', bossSetupLabel:'Argent de depart :', bossStart:'Commencer', bossCancel:'Annuler',
-    bossRecord:'Record (argent minimal)', bossNoRecord:'Aucune victoire', bossTotalDmg:'Degats boss totaux',
-    bossWaveLbl:'Achats', summonBoss:'Faire apparaitre le boss',
-    bossZoneIndicated:'Zone boss indiquee. Achete, puis invoque.', bossArrived:'Le boss arrive !',
+    detteMode:'Otto', detteSetupLabel:'Dette a rembourser (par tranche de 100e) :', detteStart:'Commencer', detteCancel:'Annuler',
+    detteTileHint:'Case de remboursement', detteRepaid:'Argent verse au remboursement !',
+    detteFail:'Dette non remboursee — tous les points sont perdus.', detteSuccess:'Dette remboursee ! Points multiplies.',
     volume:'Volume', dmgBounty:'1e/10 degats infliges', upDmgBounty:'+1e/10 degats',
     restartKeyLbl:'Touche redemarrage (maintenir 1s)', pauseKeyLbl:'Touche pause',
     rulesBtn:'Regles', rules:'Regles',
     dailyChallenge:'Defi du Jour', dailyRecord:'Record du jour',
     dailyMapInfo:'Carte du jour — {n} cases',
     lastGame:'Derniere partie',
-    rulesText:'<b>But</b> : proteger le heros contre les monstres avec des gardes. Max de points (Boss : moins d argent depense).<br><br>'+
+    rulesText:'<b>But</b> : proteger le heros contre les monstres avec des gardes. Max de points.<br><br>'+
       '<b>Vagues</b> : toutes les 20s. Monstres spawne des le debut. Heros regenere 0,2 PV/s.<br><br>'+
       '<b>Types</b> : Rapide (x1.5 vitesse, bleu) · PV (x1.5 vie, jaune) · Degats (x1.5 dmg, rouge) · Portee (tire a distance, bloque par les gardes, violet).<br><br>'+
       '<b>Modes</b> : Debutant (pas d offre, pas de deplacement, pas de portee) · Normal · Avance (tout + chrono).<br><br>'+
-      '<b>Boss</b> : 600 PV, degats/3. Invoque-le apres preparation. Achat garde special : 1e/10 degats.<br><br>'+
       '<b>Defi du Jour</b> : carte unique chaque jour (80-120 cases connexes). Difficulte 2, mode Normal.<br><br>'+
       '<b>Touches</b> : Maintenir 1s = redemarrer. Pause = 1 fois/partie.'
   },
@@ -352,26 +349,25 @@ const I18N = {
     heroDesc4:'Kael — Map changes every 4 minutes: enemies vanish, hero recenters, guards (with stats) must be repositioned.',
     heroDesc5:'Enzo — Sees remaining enemies to spawn this wave. Can add +1 anytime to increase spawn rate.',
     heroDesc6:'Iris — Can summon an ally (10 HP) to place on the field. Its own purchase costs always start at base price. If it dies, it just vanishes with no consequence.',
+    heroDesc7:'Otto — Picks a debt to repay before the match starts. Click the gold tile to deposit all current money into repayment. If fully repaid by the end, points are multiplied by (debt/100). Otherwise all points are lost.',
     summonAlly:'Summon an ally', allyPlaced:'Ally summoned!', allyDown:'An ally has fallen!',
     chooseTileForAlly:'Click a free tile for the ally', ally:'Ally',
     mapChange:'Map changed! Reposition your guards.', mapChangeTimer:'Next change',
     enzoRemaining:'Wave enemies',
     buyChrono:'+1 min timer', chronoBought:'Timer +1 minute!',
-    bossMode:'Boss Mode', bossSetupLabel:'Starting money:', bossStart:'Start', bossCancel:'Cancel',
-    bossRecord:'Record (lowest money)', bossNoRecord:'No win yet', bossTotalDmg:'Total boss damage',
-    bossWaveLbl:'Purchases', summonBoss:'Summon the boss',
-    bossZoneIndicated:'Boss zone marked. Shop then summon.', bossArrived:'The boss arrives!',
+    detteMode:'Otto', detteSetupLabel:'Debt to repay (in steps of 100):', detteStart:'Start', detteCancel:'Cancel',
+    detteTileHint:'Repayment tile', detteRepaid:'Money deposited into repayment!',
+    detteFail:'Debt not repaid — all points lost.', detteSuccess:'Debt repaid! Points multiplied.',
     volume:'Volume', dmgBounty:'1e/10 damage dealt', upDmgBounty:'+1e/10 damage',
     restartKeyLbl:'Restart key (hold 1s)', pauseKeyLbl:'Pause key',
     rulesBtn:'Rules', rules:'Rules',
     dailyChallenge:'Daily Challenge', dailyRecord:"Today's record",
     dailyMapInfo:'Daily map — {n} tiles',
     lastGame:'Last game',
-    rulesText:'<b>Goal</b>: protect your hero with guards. Max Points (Boss: least money spent).<br><br>'+
+    rulesText:'<b>Goal</b>: protect your hero with guards. Max Points.<br><br>'+
       '<b>Waves</b>: every 20s. Monsters spawn right away. Hero regens 0.2 HP/s.<br><br>'+
       '<b>Types</b>: Fast (x1.5 speed, blue) · HP (x1.5 health, yellow) · Damage (x1.5 dmg, red) · Range (ranged, blocked by guards, purple).<br><br>'+
       '<b>Modes</b>: Beginner (no offer, no move, no range) · Normal · Advanced (all + timer).<br><br>'+
-      '<b>Boss</b>: 600 HP, dmg/3. Summon after shopping. Special: 1e/10 damage dealt.<br><br>'+
       '<b>Daily</b>: unique map each day (80-120 connected tiles). Difficulty 2, Normal.<br><br>'+
       '<b>Keys</b>: Hold 1s = restart. Pause = once per game.'
   }
@@ -520,12 +516,14 @@ function generateDailyMap(){
 let state='difficulty'; // 'difficulty' | 'playing' | 'gameover'
 let initialPlacement=false;
 let difficulty=1, gameMode='gameplay1', sessionMode='gameplay1';
-let dailyMode=false, bossMode=false, bossSpawned=false, bossStartMoney=0, bossKillCount=0, bossDmgDealt=0;
+let dailyMode=false;
 let midasTimer=0, mapChangeTimer=240;
 let kaelPendingGuards=[], kaelSelectedPending=null;
 let waveSpawnTotal=9999, waveSpawnCount=0;
 let allies=[];
 let pendingAllySource=null;
+let debtGoal=0, debtPaid=0, debtTileKey=null;
+let pendingGameStart=null;
 
 // Ressources & chrono
 let money=0, point=0, pointRate=0, pointIncomeAcc=0;
@@ -597,6 +595,7 @@ function occupiedSet(){
   const s=new Set(); s.add(axKey(hero.q,hero.r));
   guards.forEach(g=>s.add(axKey(g.q,g.r)));
   allies.forEach(a=>s.add(axKey(a.q,a.r)));
+  if(debtTileKey) s.add(debtTileKey);
   return s;
 }
 
@@ -688,13 +687,10 @@ function pickRandomSpawnPoints(){
     spawnPoints.push(cands.splice(Math.floor(Math.random()*cands.length),1)[0]);
   }
 }
-function pickBossSpawnPoint(){
+function pickDebtTile(){
   const occ=occupiedSet();
-  const cands=Object.keys(tiles).filter(k=>{
-    if(occ.has(k)) return false;
-    const tt=tiles[k]; return hexDist(tt.q,tt.r,hero.q,hero.r)>4;
-  });
-  spawnPoints=cands.length?[cands[Math.floor(Math.random()*cands.length)]]:[];
+  const cands=Object.keys(tiles).filter(k=>!occ.has(k)&&!spawnPoints.includes(k));
+  debtTileKey=cands.length?cands[Math.floor(Math.random()*cands.length)]:null;
 }
 
 function priceFor(cat,baseCost){
@@ -723,7 +719,7 @@ function spawnMonster(){
     case 'dmg':  dmg=Math.round(dmg*1.5); break;
   }
   monsters.push({q:tt.q,r:tt.r,px:tt.px,py:tt.py,hp,maxhp:hp,dmg,
-    speedMult,rangeBonus,type:currentMonsterType,pathKeys:null,attackAcc:0,isBoss:false});
+    speedMult,rangeBonus,type:currentMonsterType,pathKeys:null,attackAcc:0});
 }
 
 function recomputePath(m){
@@ -733,8 +729,7 @@ function recomputePath(m){
 }
 
 function newGuard(){
-  return {dmg:1,range:1,bounty:1,dmgBountyLevel:0,dmgAcc:0,
-          costDmgBounty:5,cooldown:1,costDmgUp:4,costBountyUp:4,costDmg:2};
+  return {dmg:1,range:1,bounty:1,cooldown:1,costDmgUp:4,costBountyUp:4};
 }
 
 
@@ -746,17 +741,15 @@ function update(dt){
   elapsedSeconds+=realDt;
 
   // Chrono de partie
-  if(!bossMode){
-    matchTimer-=dt;
-    document.getElementById('chrono').textContent=formatTime(Math.max(0,matchTimer));
-    if(matchTimer<=0){ matchTimer=0; endGame('timeup'); return; }
-  }
+  matchTimer-=dt;
+  document.getElementById('chrono').textContent=formatTime(Math.max(0,matchTimer));
+  if(matchTimer<=0){ matchTimer=0; endGame('timeup'); return; }
 
   // Regeneration heros
   if(hero.hp<hero.maxhp) hero.hp=Math.min(hero.maxhp,hero.hp+HERO_REGEN*dt);
 
   // Revenu adjacent (Noa)
-  if(pointRate>0&&!bossMode&&sessionMode==='gameplay2'){
+  if(pointRate>0&&sessionMode==='gameplay2'){
     pointIncomeAcc+=dt;
     while(pointIncomeAcc>=1){
       pointIncomeAcc-=1;
@@ -766,14 +759,14 @@ function update(dt){
     }
   }
   // Doublement automatique toutes les 3 min (Midas)
-  if(sessionMode==='gameplay3'&&!bossMode){
+  if(sessionMode==='gameplay3'){
     midasTimer+=dt;
     const midasLeft=Math.max(0,Math.ceil(180-midasTimer));
     document.getElementById('specialVal').textContent=midasLeft+'s';
     if(midasTimer>=180){midasTimer-=180;money*=2;updateHUD();log('Midas : argent double !');showToast('x2 Argent !');}
   }
   // Changement de carte toutes les 4 min (Kael)
-  if(sessionMode==='gameplay4'&&!bossMode){
+  if(sessionMode==='gameplay4'){
     if(kaelPendingGuards.length===0){
       mapChangeTimer-=dt;
       document.getElementById('specialVal').textContent=Math.max(0,Math.ceil(mapChangeTimer))+'s';
@@ -792,29 +785,27 @@ function update(dt){
     }
   }
   // Points accumulés (autres modes)
-  if(pointRate>0&&!bossMode&&sessionMode!=='gameplay2'){
+  if(pointRate>0&&sessionMode!=='gameplay2'){
     point+=pointRate*dt;
   }
 
   // Vagues
-  if(!bossMode){
-    waveTimer-=dt;
-    document.getElementById('timer').textContent=Math.max(0,Math.ceil(waveTimer))+'s';
-    if(waveTimer<=0){ startWave(); return; }
-    const kaelBlocking=sessionMode==='gameplay4'&&kaelPendingGuards.length>0;
-    if(!kaelBlocking){
-      if(sessionMode==='gameplay5'){
-        const remaining=waveSpawnTotal-waveSpawnCount;
-        if(remaining>0&&waveTimer>0){
-          const dynInterval=Math.max(0.05,waveTimer/remaining);
-          spawnAcc+=dt;
-          if(spawnAcc>=dynInterval){spawnAcc=0;spawnMonster();waveSpawnCount++;updateEnzoDisplay();}
-        }
-      } else {
+  waveTimer-=dt;
+  document.getElementById('timer').textContent=Math.max(0,Math.ceil(waveTimer))+'s';
+  if(waveTimer<=0){ startWave(); return; }
+  const kaelBlocking=sessionMode==='gameplay4'&&kaelPendingGuards.length>0;
+  if(!kaelBlocking){
+    if(sessionMode==='gameplay5'){
+      const remaining=waveSpawnTotal-waveSpawnCount;
+      if(remaining>0&&waveTimer>0){
+        const dynInterval=Math.max(0.05,waveTimer/remaining);
         spawnAcc+=dt;
-        if(spawnAcc>=SPAWN_INTERVAL&&waveSpawnCount<waveSpawnTotal){
-          spawnAcc-=SPAWN_INTERVAL; spawnMonster(); waveSpawnCount++;
-        }
+        if(spawnAcc>=dynInterval){spawnAcc=0;spawnMonster();waveSpawnCount++;updateEnzoDisplay();}
+      }
+    } else {
+      spawnAcc+=dt;
+      if(spawnAcc>=SPAWN_INTERVAL&&waveSpawnCount<waveSpawnTotal){
+        spawnAcc-=SPAWN_INTERVAL; spawnMonster(); waveSpawnCount++;
       }
     }
   }
@@ -875,41 +866,11 @@ function update(dt){
     if(!target) continue;
     attackFx.push({x1:gx,y1:gy,x2:target.px,y2:target.py,life:0.25});
     target.hp-=g.dmg;
-    if(g.dmgBountyLevel>0){
-      g.dmgAcc=(g.dmgAcc||0)+g.dmg;
-      while(g.dmgAcc>=10){g.dmgAcc-=10;money+=g.dmgBountyLevel;}
-    }
     playSfx('attack');
     if(target.hp<=0){
-      const boss=!!target.isBoss; money+=g.bounty;
+      money+=g.bounty;
       monsters=monsters.filter(m=>m!==target);
-      if(boss){
-        playSfx('win');bossKillCount++;
-        if(bossKillCount>=BOSS_HPS.length){endGame('bossWin');return;}
-        // Boss N mort — phase d'achat
-        bossSpawned=false;
-        const nextN=bossKillCount+1;
-        // Midas : argent doublé après boss 1
-        if(bossKillCount===1&&sessionMode==='gameplay3'){money*=2;log('Midas : argent double !');showToast('x2 Argent !');}
-        // Kael : changement de carte après boss 1
-        if(bossKillCount===1&&sessionMode==='gameplay4'){
-          kaelPendingGuards=guards.map(g=>Object.assign({},g));
-          applyTileData(generateRandomMap());
-          hero.q=0;hero.r=0;
-          guards=[];monsters=[];swapTargets=[];kaelSelectedPending=null;
-          pickBossSpawnPoint();
-          renderKaelList();
-          log('Carte changee ! Replace tes gardes.');showToast('Carte changee !');
-          document.getElementById('summonBossBtn').style.display='block';
-          renderPanel();return;
-        }
-        document.getElementById('summonBossBtn').style.display='block';
-        log('Boss '+bossKillCount+' vaincu ! Prepare le boss '+nextN+'...');
-        showToast('Boss '+bossKillCount+' vaincu !');
-        pickBossSpawnPoint();renderPanel();return;
-      } else{playSfx('kill');log(t('guardKill',{x:g.bounty}));}
-    } else if(target.isBoss){
-      bossDmgDealt+=g.dmg;
+      playSfx('kill');log(t('guardKill',{x:g.bounty}));
     }
   }
 
@@ -921,7 +882,7 @@ function update(dt){
   if(heroHitFlash>0) heroHitFlash-=realDt;
 
   if(allies.some(a=>a.hp<=0)){
-    allies.filter(a=>a.hp<=0).forEach(()=>{log('Un allie est tombe !');});
+    allies.filter(a=>a.hp<=0).forEach(a=>{pointRate-=(a.pointContribution||0);log(t('allyDown'));});
     allies=allies.filter(a=>a.hp>0);
     if(selected&&selected.type==='ally'&&!allies.includes(selected.a)){selected=null;renderPanel();}
   }
@@ -948,16 +909,6 @@ function recordNormalResult(d,mode,pts){
   s.totalPts=(s.totalPts||0)+Math.floor(pts);
   if(pts>s.best) s.best=Math.floor(pts);
   saveStats(d,mode,s);
-}
-function loadBossStats(){
-  try{return JSON.parse(localStorage.getItem('hexdefense_boss'))||{best:null,totalDmg:0};}
-  catch(e){return{best:null,totalDmg:0};}
-}
-function recordBossResult(won,startMoney,dmg){
-  const s=loadBossStats();
-  s.totalDmg=(s.totalDmg||0)+Math.floor(dmg);
-  if(won&&(s.best===null||startMoney<s.best)) s.best=startMoney;
-  localStorage.setItem('hexdefense_boss',JSON.stringify(s));
 }
 function loadDailyStats(){
   try{return JSON.parse(localStorage.getItem('hexdefense_daily_'+dailyDateStr()))||{best:0};}
@@ -995,15 +946,16 @@ function spend(amount){ money-=amount; totalSpent+=amount; }
 
 function resetGameState(){
   point=0;pointRate=0;pointIncomeAcc=0;swapTargets=[];totalSpent=0;elapsedSeconds=0;
-  midasTimer=0;mapChangeTimer=240;bossKillCount=0;bossDmgDealt=0;
+  midasTimer=0;mapChangeTimer=240;
   kaelPendingGuards=[];kaelSelectedPending=null;
   waveSpawnTotal=9999;waveSpawnCount=0;
+  debtPaid=0;debtTileKey=null;
   hero={q:0,r:0,hp:HERO_MAXHP,maxhp:HERO_MAXHP};
   guards=[];monsters=[];spawnPoints=[];allies=[];
   waveNum=0;waveTimer=0;spawnAcc=0;matchTimer=MATCH_DURATION;
   attackFx=[];monsterAttackFx=[];heroHitFlash=0;
   selected=null;pendingAction=null;pendingAllySource=null;moveSelected=[];hoverMonster=null;
-  costs={...BASE_COSTS};bossSpawned=false;
+  costs={...BASE_COSTS};
   paused=false;pauseUsed=false;
   document.getElementById('chrono').textContent=formatTime(MATCH_DURATION);
 }
@@ -1012,7 +964,8 @@ function resetGameState(){
 function startGameSession(){
   state='playing';gameRunning=true;
   waveNum=0;waveTimer=0.5;spawnAcc=0;initialPlacement=true;
-  if(!bossMode) pickRandomSpawnPoints();
+  pickRandomSpawnPoints();
+  if(sessionMode==='gameplay7') pickDebtTile();
 }
 
 // Prepare la sidebar selon le type de partie
@@ -1026,8 +979,9 @@ function prepareGameUI(showPoint,showTimer,showChrono){
   if(sessionMode==='gameplay3') document.getElementById('lblSpecial').textContent='x2 dans';
   if(sessionMode==='gameplay4') document.getElementById('lblSpecial').textContent=t('mapChangeTimer');
   const enzoBox=document.getElementById('boxEnzo');
-  enzoBox.style.display=(sessionMode==='gameplay5'&&!bossMode)?'flex':'none';
-  document.getElementById('summonBossBtn').style.display='none';
+  enzoBox.style.display=sessionMode==='gameplay5'?'flex':'none';
+  const detteBox=document.getElementById('boxDette');
+  detteBox.style.display=sessionMode==='gameplay7'?'flex':'none';
   document.getElementById('side').style.display       ='block';
   document.getElementById('settingsBtn').style.display='none';
   document.getElementById('rulesBtn').style.display   ='none';
@@ -1042,6 +996,7 @@ function heroName(mode){
   if(mode==='gameplay4') return t('modeKael');
   if(mode==='gameplay5') return t('modeEnzo');
   if(mode==='gameplay6') return t('modeIris');
+  if(mode==='gameplay7') return t('detteMode');
   return mode;
 }
 
@@ -1064,7 +1019,14 @@ function generateRandomMap(){
 }
 
 function startNormalGame(d){
-  difficulty=d;sessionMode=gameMode;bossMode=false;dailyMode=false;
+  if(gameMode==='gameplay7'){
+    pendingGameStart=()=>startNormalGameActual(d);
+    showDetteSetup();return;
+  }
+  startNormalGameActual(d);
+}
+function startNormalGameActual(d){
+  difficulty=d;sessionMode=gameMode;dailyMode=false;
   applyTileData(generateRandomMap());
   money=0;resetGameState();
   prepareGameUI(true,true,true);
@@ -1073,10 +1035,17 @@ function startNormalGame(d){
 }
 
 function startDailyGame(){
+  if(gameMode==='gameplay7'){
+    pendingGameStart=startDailyGameActual;
+    showDetteSetup();return;
+  }
+  startDailyGameActual();
+}
+function startDailyGameActual(){
   const dailyTileData=generateDailyMap();
   const count=Object.keys(dailyTileData).length;
   applyTileData(dailyTileData);
-  dailyMode=true;difficulty=2;sessionMode=gameMode;bossMode=false;
+  dailyMode=true;difficulty=2;sessionMode=gameMode;
   money=0;resetGameState();
   prepareGameUI(true,true,true);
   document.getElementById('boxDiff').textContent=heroName(gameMode)+' — Difficulté '+difficulty+' — Défi du Jour';
@@ -1084,11 +1053,17 @@ function startDailyGame(){
   startGameSession();updateHUD();renderPanel();
 }
 
+function showDetteSetup(){
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('detteSetupOverlay').style.display='flex';
+}
+
 function showMenu(){
   state='difficulty';gameRunning=false;initialPlacement=false;
   kaelPendingGuards=[];kaelSelectedPending=null;
   document.getElementById('kaelList').style.display='none';
   document.getElementById('boxEnzo').style.display='none';
+  document.getElementById('boxDette').style.display='none';
   dailyMode=false;applyTileData(normalTileData);
   document.getElementById('side').style.display       ='none';
   document.getElementById('settingsBtn').style.display='';
@@ -1100,49 +1075,34 @@ function showMenu(){
 // Termine la partie — retour direct au menu + stats en bas a gauche
 function endGame(reason){
   state='gameover';gameRunning=false;
-  const won=(!bossMode&&reason==='timeup')||reason==='bossWin';
+
+  // Otto : succes/echec du remboursement de dette
+  let detteLine='';
+  if(sessionMode==='gameplay7'){
+    if(debtPaid>=debtGoal&&debtGoal>0){
+      point=point*(debtGoal/100);
+      detteLine=t('detteSuccess')+' (x'+(debtGoal/100).toFixed(2)+')<br>';
+    } else {
+      point=0;
+      detteLine=t('detteFail')+'<br>';
+    }
+  }
+
   if(dailyMode) recordDailyResult(Math.floor(point));
-  else if(bossMode) recordBossResult(reason==='bossWin',bossStartMoney,bossDmgDealt);
   else recordNormalResult(difficulty,sessionMode,Math.floor(point));
 
-  const label=reason==='abandon'?t('abandoned'):reason==='timeup'?t('timeUp')
-    :reason==='bossWin'?('&#127942; '+t('victory')):t('gameOver');
+  const label=reason==='abandon'?t('abandoned'):reason==='timeup'?t('timeUp'):t('gameOver');
 
   // Construction HTML des stats
   let html='<b>'+t('lastGame')+' &mdash; '+label+'</b><br>';
-  if(!bossMode) html+=t('finalPoint')+' : '+Math.floor(point)+'<br>';
-  if(bossMode) html+='Argent initial : '+bossStartMoney+'&euro;<br>';
-  if(bossMode) html+='Boss vaincus : '+bossKillCount+'/'+BOSS_HPS.length+'<br>';
+  html+=detteLine;
+  html+=t('finalPoint')+' : '+Math.floor(point)+'<br>';
   html+=t('totalSpent')+' : '+Math.floor(totalSpent)+'&euro;<br>';
   html+=t('time')+' : '+formatTime(elapsedSeconds);
 
   showMenu();
   const el=document.getElementById('lastStats');
   el.innerHTML=html; el.style.display='block';
-}
-
-// ── Mode Boss ──
-function beginBossPrep(){
-  waveNum=1;
-  document.getElementById('wave').textContent=waveNum;
-  document.getElementById('summonBossBtn').style.display='block';
-  log(t('bossZoneIndicated'));showToast(t('bossZoneIndicated'));updateHUD();
-}
-function onBossPurchaseMade(){
-  if(!bossMode||bossSpawned) return;
-  waveNum++;
-  document.getElementById('wave').textContent=waveNum;playSfx('wave');
-}
-const BOSS_HPS=[150,250,380,550,800];
-function spawnBoss(){
-  if(bossSpawned||!spawnPoints.length) return;
-  const tt=tiles[spawnPoints[0]];
-  const hp=BOSS_HPS[Math.min(bossKillCount,BOSS_HPS.length-1)];
-  monsters=[{q:tt.q,r:tt.r,px:tt.px,py:tt.py,hp,maxhp:hp,dmg:1,
-    speedMult:1,rangeBonus:0,type:'boss',pathKeys:null,attackAcc:0,isBoss:true}];
-  bossSpawned=true;spawnPoints=[];
-  document.getElementById('summonBossBtn').style.display='none';
-  log(t('bossArrived')+' (Boss '+(bossKillCount+1)+'/'+BOSS_HPS.length+')');playSfx('boss');
 }
 
 
@@ -1169,7 +1129,7 @@ function drawCharacterHero(px,py){
   if(sessionMode==='gameplay4'){shirt='#9933cc';shirtLine='#7722aa';hair='#f0f0f0';pants='#4a1a6a';shoes='#2a0a3a';}
   if(sessionMode==='gameplay5'){shirt='#ee4411';shirtLine='#cc2200';hair='#222233';pants='#331100';shoes='#1a0800';}
   if(sessionMode==='gameplay6'){shirt='#22ccaa';shirtLine='#118866';hair='#eeeecc';pants='#0f4a3c';shoes='#0a2c22';}
-  if(bossMode){shirt='#882222';shirtLine='#661111';hair='#222';pants='#220a0a';shoes='#1a0000';}
+  if(sessionMode==='gameplay7'){shirt='#c9a227';shirtLine='#8a6d15';hair='#3a2a10';pants='#2a2010';shoes='#1a1408';}
   // ombre
   ctx.fillStyle='rgba(0,0,0,0.18)';
   ctx.beginPath();ctx.ellipse(px,py+s*0.46,s*0.22,s*0.08,0,0,Math.PI*2);ctx.fill();
@@ -1361,7 +1321,13 @@ function render(){
     const tt=tiles[k];
     let fill=((tt.q+tt.r)%2===0)?d.tile:(d.tile2||d.tile);
     if(spawnSet.has(k)) fill=d.spawnTile;
+    if(sessionMode==='gameplay7'&&k===debtTileKey) fill='#c9a227';
     drawHex(tt.px,tt.py,fill,'#3a3a3a');
+  }
+  if(sessionMode==='gameplay7'&&debtTileKey&&tiles[debtTileKey]){
+    const dt=tiles[debtTileKey];
+    ctx.fillStyle='#1a1408';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText(Math.floor(debtPaid)+'/'+debtGoal+'€',dt.px,dt.py+4);
   }
 
   // Heros
@@ -1374,7 +1340,7 @@ function render(){
   } else {
     const hColors={gameplay1:['#3388ee','#88ccff'],gameplay2:['#2aaa6a','#7be0b0'],
       gameplay3:['#cc9922','#ffe070'],gameplay4:['#9933cc','#dd88ff'],gameplay5:['#ee4411','#ffaa55'],
-      gameplay6:['#22ccaa','#88ffe0']};
+      gameplay6:['#22ccaa','#88ffe0'],gameplay7:['#c9a227','#ffe090']};
     const [hFill,hStroke]=(hColors[sessionMode]||[d.heroColor,d.heroStroke]);
     drawHex(hpx[0],hpx[1],hFill,hStroke);
     ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
@@ -1532,6 +1498,7 @@ function updateHUD(){
   document.getElementById('money').textContent=Math.floor(money);
   document.getElementById('point').textContent=Math.floor(point);
   if(sessionMode==='gameplay5') updateEnzoDisplay();
+  if(sessionMode==='gameplay7') document.getElementById('detteVal').textContent=Math.floor(debtPaid)+'/'+debtGoal+'€';
 }
 
 
@@ -1554,32 +1521,14 @@ function refreshAffordability(){
     const g=selected.g;
     if(q('upDmg'))       q('upDmg').disabled      =money<priceFor('dmgAll',g.costDmgUp);
     if(q('upBounty'))    q('upBounty').disabled    =money<priceFor('bountyAll',g.costBountyUp);
-    if(q('upDmgBoss'))   q('upDmgBoss').disabled   =money<priceFor('dmgAll',g.costDmg);
-    if(q('upDmgBounty')) q('upDmgBounty').disabled =money<g.costDmgBounty;
   }
 }
 
 function renderPanel(){
   const panel=document.getElementById('panel');
   if(!selected){panel.innerHTML='';return;}
-  const bossAlive=bossMode&&bossSpawned&&monsters.some(m=>m.isBoss);
-  if(bossAlive&&sessionMode==='gameplay1'&&selected.type==='hero'){
-    const disS=money<costs.swap?'disabled':'';
-    panel.innerHTML=`<h3>&#10084; ${heroName(sessionMode)}</h3>
-      <p style="font-size:11px;color:#aaa;text-align:center;margin:0 0 6px;">Boss actif — echange uniquement</p>
-      <button id="buySwap" ${disS}>Echanger 2 entites (<span class="price">${costs.swap}&euro;</span>)</button>`;
-    document.getElementById('buySwap').onclick=()=>{
-      if(money<costs.swap) return;
-      spend(costs.swap);pendingAction='swapSelect';swapTargets=[];
-      log('Selectionne 2 entites a echanger.');updateHUD();renderPanel();
-    };
-    return;
-  }
-  if(bossAlive){panel.innerHTML='<p style="color:#ff8888;text-align:center;margin-top:12px;">Boss en cours —<br>impossible d\'acheter</p>';return;}
-  const canPoint   =!bossMode;
+  const canPoint   =true;
   const canSwap    =sessionMode==='gameplay1';
-  const canCombo   =!bossMode;
-  const canDmgBnty =bossMode;
 
   if(selected.type==='hero'){
     const pG=priceFor('guardPlace',costs.guardPlace);
@@ -1610,7 +1559,7 @@ function renderPanel(){
     if(canPoint) document.getElementById('buyPoint').onclick=()=>{
       if(money<costs.point) return;
       spend(costs.point);costs.point=Math.ceil(costs.point*1.2);pointRate++;
-      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();log(t('pointBought'));
+      playSfx('buy');updateHUD();renderPanel();log(t('pointBought'));
     };
     if(canAlly) document.getElementById('buyAlly').onclick=()=>{
       if(money<priceFor('summonAlly',costs.summonAlly)) return;
@@ -1625,7 +1574,7 @@ function renderPanel(){
     let h=`<h3>&#10084; ${t('ally')} (${Math.round(Math.max(0,al.hp))}/${al.maxhp} PV)</h3>
       <button id="allyBuyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>
       <button id="allyBuyPoint" ${disP}>+1 pt/s (<span class="price">${al.costs.point}&euro;</span>)</button>
-      <p class="hint">Points : +${pointRate}/s</p>`;
+      <p class="hint">Points : +${pointRate}/s (dont ${al.pointContribution||0}/s de cet allie)</p>`;
     panel.innerHTML=h;
     document.getElementById('allyBuyGuard').onclick=()=>{
       if(money<priceFor('guardPlace',al.costs.guardPlace)) return;
@@ -1633,44 +1582,31 @@ function renderPanel(){
     };
     document.getElementById('allyBuyPoint').onclick=()=>{
       if(money<al.costs.point) return;
-      spend(al.costs.point);al.costs.point=Math.ceil(al.costs.point*1.2);pointRate++;
-      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();log(t('pointBought'));
+      spend(al.costs.point);al.costs.point=Math.ceil(al.costs.point*1.2);
+      pointRate++;al.pointContribution=(al.pointContribution||0)+1;
+      playSfx('buy');updateHUD();renderPanel();log(t('pointBought'));
     };
 
   } else if(selected.type==='guard'){
     const g=selected.g;
-    const pD=priceFor('dmgAll',g.costDmg);
     const pUd=priceFor('dmgAll',g.costDmgUp);
     const pUb=priceFor('bountyAll',g.costBountyUp);
     let h=`<h3>${t('guard')}</h3>
       <div class="row"><span>${t('dmg')}</span><span>${g.dmg}</span></div>
-      <div class="row"><span>${t('range')}</span><span>${g.range}</span></div>`;
-    if(canCombo)   h+=`<div class="row"><span>${t('bountyPerKill')}</span><span>+${g.bounty}&euro;</span></div>`;
-    if(canDmgBnty) h+=`<div class="row"><span>${t('dmgBounty')}</span><span>lv.${g.dmgBountyLevel}</span></div>`;
+      <div class="row"><span>${t('range')}</span><span>${g.range}</span></div>
+      <div class="row"><span>${t('bountyPerKill')}</span><span>+${g.bounty}&euro;</span></div>`;
     const disUd=money<g.costDmgUp?'disabled':'';
     const disUb=money<g.costBountyUp?'disabled':'';
-    const disDmgB=money<pD?'disabled':'';
-    const disDmgBounty=money<g.costDmgBounty?'disabled':'';
-    if(canCombo)   h+=`<button id="upDmg" ${disUd}>${t('upDmg')} (<span class="price">${pUd}&euro;</span>)</button>`;
-    if(canCombo)   h+=`<button id="upBounty" ${disUb}>${t('upBounty')} (<span class="price">${pUb}&euro;</span>)</button>`;
-    if(canDmgBnty) h+=`<button id="upDmgBoss" ${disDmgB}>${t('upDmg')} (<span class="price">${pD}&euro;</span>)</button>`;
-    if(canDmgBnty) h+=`<button id="upDmgBounty" ${disDmgBounty}>${t('upDmgBounty')} (<span class="price">${g.costDmgBounty}&euro;</span>)</button>`;
+    h+=`<button id="upDmg" ${disUd}>${t('upDmg')} (<span class="price">${pUd}&euro;</span>)</button>`;
+    h+=`<button id="upBounty" ${disUb}>${t('upBounty')} (<span class="price">${pUb}&euro;</span>)</button>`;
     panel.innerHTML=h;
-    if(canCombo) document.getElementById('upDmg').onclick=()=>{
+    document.getElementById('upDmg').onclick=()=>{
       if(money<g.costDmgUp) return;spend(g.costDmgUp);g.costDmgUp=Math.ceil(g.costDmgUp*1.2);g.dmg++;
-      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
+      playSfx('buy');updateHUD();renderPanel();
     };
-    if(canCombo) document.getElementById('upBounty').onclick=()=>{
+    document.getElementById('upBounty').onclick=()=>{
       if(money<g.costBountyUp) return;spend(g.costBountyUp);g.costBountyUp=Math.ceil(g.costBountyUp*1.2);g.bounty++;
-      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
-    };
-    if(canDmgBnty) document.getElementById('upDmgBoss').onclick=()=>{
-      if(money<pD) return;spend(pD);g.costDmg=Math.ceil(g.costDmg*1.2);g.dmg++;
-      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
-    };
-    if(canDmgBnty) document.getElementById('upDmgBounty').onclick=()=>{
-      if(money<g.costDmgBounty) return;spend(g.costDmgBounty);g.costDmgBounty=Math.ceil(g.costDmgBounty*1.2);g.dmgBountyLevel++;
-      playSfx('buy');onBossPurchaseMade();updateHUD();renderPanel();
+      playSfx('buy');updateHUD();renderPanel();
     };
   }
 }
@@ -1726,7 +1662,7 @@ cv.addEventListener('click',e=>{
     const price=priceFor('guardPlace',costObj.guardPlace);
     const g=newGuard();g.q=tt.q;g.r=tt.r;guards.push(g);
     spend(price);costObj.guardPlace=Math.ceil(costObj.guardPlace*1.2);
-    pendingAction=null;pendingAllySource=null;playSfx('buy');onBossPurchaseMade();
+    pendingAction=null;pendingAllySource=null;playSfx('buy');
     log(t('newGuardPlaced'));updateHUD();renderPanel();return;
   }
 
@@ -1734,10 +1670,15 @@ cv.addEventListener('click',e=>{
     if(occupiedSet().has(axKey(tt.q,tt.r))) return;
     if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
     const price=priceFor('summonAlly',costs.summonAlly);
-    allies.push({q:tt.q,r:tt.r,hp:ALLY_MAXHP,maxhp:ALLY_MAXHP,costs:{guardPlace:BASE_COSTS.guardPlace,point:BASE_COSTS.point}});
+    allies.push({q:tt.q,r:tt.r,hp:ALLY_MAXHP,maxhp:ALLY_MAXHP,pointContribution:0,costs:{guardPlace:BASE_COSTS.guardPlace,point:BASE_COSTS.point}});
     spend(price);costs.summonAlly=Math.ceil(costs.summonAlly*1.2);
-    pendingAction=null;playSfx('buy');onBossPurchaseMade();
+    pendingAction=null;playSfx('buy');
     log(t('allyPlaced'));updateHUD();renderPanel();return;
+  }
+
+  if(sessionMode==='gameplay7'&&debtTileKey&&axKey(tt.q,tt.r)===debtTileKey){
+    if(money>0){debtPaid+=money;money=0;playSfx('buy');log(t('detteRepaid'));updateHUD();}
+    return;
   }
 
   if(pendingAction==='swapSelect'){
@@ -1766,19 +1707,6 @@ cv.addEventListener('click',e=>{
       if(b.type==='monster'){const[px,py]=axToPx(b.obj.q,b.obj.r);b.obj.px=px;b.obj.py=py;b.obj.pathKeys=null;}
       // Recompute paths for all monsters
       monsters.forEach(m=>recomputePath(m));
-      // Anti-blocage boss : annuler si le boss n'a plus de chemin
-      if(bossMode&&bossSpawned){
-        const boss=monsters.find(m=>m.isBoss);
-        if(boss&&boss.pathKeys===null){
-          a.obj.q=aq;a.obj.r=ar;b.obj.q=bq;b.obj.r=br;
-          if(a.type==='monster'){const[px,py]=axToPx(a.obj.q,a.obj.r);a.obj.px=px;a.obj.py=py;a.obj.pathKeys=null;}
-          if(b.type==='monster'){const[px,py]=axToPx(b.obj.q,b.obj.r);b.obj.px=px;b.obj.py=py;b.obj.pathKeys=null;}
-          monsters.forEach(m=>recomputePath(m));
-          money+=costs.swap; // remboursement
-          pendingAction=null;swapTargets=[];
-          log('Impossible : le boss serait bloque !');showToast('Echange impossible !');renderPanel();return;
-        }
-      }
       pendingAction=null;swapTargets=[];
       log('Echange effectue !');renderPanel();
     } else {
@@ -1817,7 +1745,6 @@ document.getElementById('speedBtn').addEventListener('click',()=>{
   speedIndex=(speedIndex+1)%SPEEDS.length;
   document.getElementById('speedBtn').textContent=t('speed')+' x'+SPEEDS[speedIndex];
 });
-document.getElementById('summonBossBtn').addEventListener('click',spawnBoss);
 document.getElementById('enzoPlus').addEventListener('click',()=>{
   if(!gameRunning||sessionMode!=='gameplay5') return;
   waveSpawnTotal++;
@@ -1866,30 +1793,23 @@ document.getElementById('rulesBtn').addEventListener('click',()=>{
   if(state!=='difficulty') return;
   document.getElementById('overlay').style.display='none';
   document.getElementById('rulesOverlay').style.display='flex';
-  renderRulesBossStats();
 });
 document.getElementById('closeRules').addEventListener('click',()=>{
   document.getElementById('rulesOverlay').style.display='none';
   document.getElementById('overlay').style.display='flex';
 });
 
-// Setup Boss
-document.getElementById('bossCancelBtn').addEventListener('click',()=>{
-  document.getElementById('bossSetupOverlay').style.display='none';
+// Setup dette (Otto)
+document.getElementById('detteCancelBtn').addEventListener('click',()=>{
+  document.getElementById('detteSetupOverlay').style.display='none';
   document.getElementById('overlay').style.display='flex';
+  pendingGameStart=null;
 });
-document.getElementById('bossStartBtn').addEventListener('click',()=>{
-  bossStartMoney=Math.max(0,parseInt(document.getElementById('bossMoneyInput').value,10)||0);
-  bossMode=true;difficulty=1;
-  document.getElementById('bossSetupOverlay').style.display='none';
-  document.getElementById('lblWave').textContent=t('bossWaveLbl');
-  applyTileData(generateRandomMap());
-  resetGameState();money=bossStartMoney;
-  prepareGameUI(false,false,false);
-  document.getElementById('boxDiff').textContent='Mode Boss';
-  state='playing';gameRunning=true;initialPlacement=true;paused=false;pauseUsed=false;
-  pickBossSpawnPoint();beginBossPrep();
-  updateHUD();renderPanel();
+document.getElementById('detteStartBtn').addEventListener('click',()=>{
+  debtGoal=Math.max(0,parseInt(document.getElementById('detteAmountInput').value,10)||0);
+  document.getElementById('detteSetupOverlay').style.display='none';
+  const fn=pendingGameStart;pendingGameStart=null;
+  if(fn) fn();
 });
 
 
@@ -1906,6 +1826,7 @@ function renderHeroCards(){
     {mode:'gameplay4',color:'#9933cc',border:'#dd88ff',descKey:'heroDesc4'},
     {mode:'gameplay5',color:'#ee4411',border:'#ffaa55',descKey:'heroDesc5'},
     {mode:'gameplay6',color:'#22ccaa',border:'#88ffe0',descKey:'heroDesc6'},
+    {mode:'gameplay7',color:'#c9a227',border:'#ffe090',descKey:'heroDesc7'},
   ];
   container.innerHTML='';
   heroes.forEach(h=>{
@@ -1982,23 +1903,6 @@ function renderDifficultyList(){
   list.appendChild(dRow);
   document.getElementById('dailyBtn').addEventListener('click',startDailyGame);
 
-  // Mode Boss
-  const bSt=loadBossStats();
-  const bRow=document.createElement('div');bRow.className='diffrow';
-  bRow.innerHTML=`<button class="diffbtn" id="bossModeBtn">${t('bossMode')}</button>
-    <div class="diffstats">${t('bossRecord')} : ${bSt.best===null?t('bossNoRecord'):bSt.best+'&euro;'}<br>${t('bossTotalDmg')} : ${bSt.totalDmg||0}</div>`;
-  list.appendChild(bRow);
-  document.getElementById('bossModeBtn').addEventListener('click',()=>{
-    document.getElementById('overlay').style.display='none';
-    document.getElementById('bossSetupOverlay').style.display='flex';
-  });
-}
-
-function renderRulesBossStats(){
-  const s=loadBossStats();
-  document.getElementById('rulesBossStats').innerHTML=
-    '<b>'+t('bossMode')+'</b> '+t('bossRecord')+' : '+
-    (s.best===null?t('bossNoRecord'):s.best+'&euro;')+'<br>'+t('bossTotalDmg')+' : '+(s.totalDmg||0);
 }
 
 function buildDecorOptions(){
@@ -2010,7 +1914,7 @@ function buildDecorOptions(){
 }
 function buildModeOptions(){
   const sel=document.getElementById('modeSelect');sel.innerHTML='';
-  [['gameplay1','modeNormal'],['gameplay2','modeHardcore'],['gameplay3','modeMidas'],['gameplay4','modeKael'],['gameplay5','modeEnzo'],['gameplay6','modeIris']].forEach(([v,k])=>{
+  [['gameplay1','modeNormal'],['gameplay2','modeHardcore'],['gameplay3','modeMidas'],['gameplay4','modeKael'],['gameplay5','modeEnzo'],['gameplay6','modeIris'],['gameplay7','detteMode']].forEach(([v,k])=>{
     const opt=document.createElement('option');opt.value=v;opt.textContent=t(k);sel.appendChild(opt);
   });
   sel.value=gameMode;
@@ -2021,15 +1925,15 @@ function applyStaticTexts(){
   E('setTitle',t('settings'));
   E('langLbl',t('language')); E('decorLbl',t('decor')); E('modeLbl',t('gameMode'));
   E('closeSettings',t('close')); E('lblHp',t('hero')); E('lblMoney',t('money'));
-  E('lblPoint',t('point')); E('lblWave',bossMode?t('bossWaveLbl'):t('wave'));
+  E('lblPoint',t('point')); E('lblWave',t('wave'));
   E('lblTimer',t('nextWave')); E('lblChrono',t('chrono'));
   E('abandonBtn',t('abandon'));
   E('speedBtn',t('speed')+' x'+SPEEDS[speedIndex]);
   E('volLbl',t('volume')); E('pauseKeyLbl',t('pauseKeyLbl'));
   E('rulesBtn',t('rulesBtn')); E('rulesTitle',t('rules')); E('closeRules',t('close'));
-  E('bossSetupTitle',t('bossMode')); E('bossSetupLabel',t('bossSetupLabel'));
-  E('bossStartBtn',t('bossStart')); E('bossCancelBtn',t('bossCancel'));
-  E('summonBossBtn',t('summonBoss'));
+  E('detteSetupTitle',t('detteMode')); E('detteSetupLabel',t('detteSetupLabel'));
+  E('detteStartBtn',t('detteStart')); E('detteCancelBtn',t('detteCancel'));
+  E('lblDette',t('detteMode'));
   document.getElementById('rulesText').innerHTML=t('rulesText');
   const hsb=document.getElementById('heroSelectBtn');
   if(hsb) hsb.textContent='⚔ '+t('heroSelectBtn')+' : '+heroName(gameMode);
