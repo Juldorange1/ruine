@@ -362,7 +362,7 @@ const I18N = {
     heroDesc3:'Midas — Gagne un doubleur d\'argent toutes les 3 min. Peut s\'endetter jusqu\'a son pic d\'argent atteint.',
     heroDesc5:'Enzo — Choisit combien de chaque type d\'ennemi apparait (max 600/type).',
     heroDesc6:'Iris — Invoque un allie (10 PV) a couts independants.',
-    heroDesc8:'Gaston — Grossit de 1 case a chaque garde achete. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
+    heroDesc8:'Gaston — Grossit de 1 case tous les 2 gardes achetes. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
     heroDesc9:'Les Gardes — Pas de heros visible : ses gardes (30 PV chacun) l\'incarnent. Si tous ses gardes meurent, la partie est perdue.',
     summonAlly:'Invoquer un allie', allyPlaced:'Allie invoque !', allyDown:'Un allie est tombe !',
     chooseTileForAlly:'Clique une case libre pour l\'allie', ally:'Allie',
@@ -421,7 +421,7 @@ const I18N = {
     heroDesc3:'Midas — Gains a money doubler every 3 min. Can go into debt up to his peak money reached.',
     heroDesc5:'Enzo — Chooses how many of each enemy type spawn (max 600/type).',
     heroDesc6:'Iris — Summons an ally (10 HP) with its own costs.',
-    heroDesc8:'Gaston — Grows by 1 tile per guard bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
+    heroDesc8:'Gaston — Grows by 1 tile every 2 guards bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
     heroDesc9:'The Guards — No visible hero: his guards (30 HP each) embody him. If all his guards die, the game is lost.',
     summonAlly:'Summon an ally', allyPlaced:'Ally summoned!', allyDown:'An ally has fallen!',
     chooseTileForAlly:'Click a free tile for the ally', ally:'Ally',
@@ -610,6 +610,7 @@ let allies=[];
 let pendingAllySource=null;
 let heroExtraTiles=[];
 let nextGrowthTile=null;
+let gastonGuardsSinceGrowth=0;
 let boostTiles=new Set();
 
 // Ressources & chrono
@@ -1123,7 +1124,7 @@ function resetGameState(){
   enzoCounts={fast:7,hp:7,dmg:6};enzoTotalSpawned={fast:0,hp:0,dmg:0};
   enzoRemainingThisWave={fast:0,hp:0,dmg:0};enzoStarvedTimer=0;enzoAutoSpeedBoost=false;
   hero={q:0,r:0,hp:HERO_MAXHP,maxhp:HERO_MAXHP};
-  heroExtraTiles=[];boostTiles=new Set();nextGrowthTile=null;
+  heroExtraTiles=[];boostTiles=new Set();nextGrowthTile=null;gastonGuardsSinceGrowth=0;
   guards=[];monsters=[];spawnPoints=[];allies=[];
   waveNum=0;waveTimer=0;spawnAcc=0;matchTimer=MATCH_DURATION;
   attackFx=[];monsterAttackFx=[];heroHitFlash=0;
@@ -1580,17 +1581,6 @@ function render(){
       }
     }
   }
-  // Prochaine case de croissance (Gaston)
-  if(sessionMode==='gameplay8'&&nextGrowthTile){
-    const [npx,npy]=axToPx(nextGrowthTile.q,nextGrowthTile.r);
-    ctx.save();ctx.strokeStyle='rgba(217,122,58,0.9)';ctx.lineWidth=3;
-    ctx.setLineDash([6,4]);ctx.beginPath();
-    ctx.arc(npx,npy,SIZE*0.7,0,Math.PI*2);ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle='rgba(217,122,58,0.8)';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
-    ctx.fillText('+',npx,npy+7);
-  }
-
   // Allies (Iris)
   for(const al of allies){
     const [apx,apy]=axToPx(al.q,al.r);
@@ -1643,6 +1633,18 @@ function render(){
     ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
     ctx.fillText('d'+g.dmg+' p'+g.range+' +'+g.bounty+'€',px,py+(d.emoji?SIZE*0.65:14));
     if(g.maxhp) ctx.fillText('❤ '+Math.max(0,Math.round(g.hp))+'/'+g.maxhp,px,py+(d.emoji?SIZE*0.65:14)+13);
+  }
+
+  // Prochaine case de croissance (Gaston) — toujours visible, meme au-dessus d'un garde
+  if(sessionMode==='gameplay8'&&nextGrowthTile){
+    const [npx,npy]=axToPx(nextGrowthTile.q,nextGrowthTile.r);
+    ctx.save();ctx.strokeStyle='rgba(217,122,58,0.9)';ctx.lineWidth=3;
+    ctx.setLineDash([6,4]);ctx.beginPath();
+    ctx.arc(npx,npy,SIZE*0.7,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle='rgba(0,0,0,0.55)';ctx.beginPath();ctx.arc(npx,npy-SIZE*0.55,10,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffcc66';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
+    ctx.fillText('+',npx,npy-SIZE*0.55+6);
   }
 
   // Effets attaques gardes (jaune)
@@ -1787,7 +1789,7 @@ function renderPanel(){
     if(canAlly)   h+=`<button id="buyAlly" ${disA}>${t('summonAlly')} (<span class="price">${pA}&euro;</span>)</button>`;
     if(canMidas)  h+=`<button id="useDoubler" ${disMidas}>Utiliser un doubleur (x2 argent) : ${midasDoublers} en stock</button>`;
     if(canMidas)  h+=`<p class="hint">Dette maximale autorisee : -${Math.floor(midasMaxMoney)}&euro;</p>`;
-    if(sessionMode==='gameplay8') h+=`<p class="hint">Taille : ${1+heroExtraTiles.length} case(s)</p>`;
+    if(sessionMode==='gameplay8') h+=`<p class="hint">Taille : ${1+heroExtraTiles.length} case(s) — prochaine dans ${2-gastonGuardsSinceGrowth} garde(s)</p>`;
     panel.innerHTML=h;
     document.getElementById('buyGuard').onclick=()=>{
       if(!canAfford(priceFor('guardPlace',costs.guardPlace))) return;
@@ -1902,7 +1904,10 @@ cv.addEventListener('click',e=>{
     if(boostTiles.has(axKey(tt.q,tt.r))) g.dmg=2;
     guards.push(g);
     spend(price);costObj.guardPlace=Math.ceil(costObj.guardPlace*1.25);
-    if(sessionMode==='gameplay8'&&!pendingAllySource) growHero();
+    if(sessionMode==='gameplay8'&&!pendingAllySource){
+      gastonGuardsSinceGrowth++;
+      if(gastonGuardsSinceGrowth>=2){gastonGuardsSinceGrowth=0;growHero();}
+    }
     pendingAction=null;pendingAllySource=null;playSfx('buy');
     log(t('newGuardPlaced'));updateHUD();renderPanel();return;
   }
@@ -1961,13 +1966,19 @@ cv.addEventListener('click',e=>{
   }
 
   // Selection hero / allie / garde
-  if((tt.q===hero.q&&tt.r===hero.r)||heroExtraTiles.some(ht=>ht.q===tt.q&&ht.r===tt.r)){selected={type:'hero'};}
-  else {
+  const onHeroBody=(tt.q===hero.q&&tt.r===hero.r)||heroExtraTiles.some(ht=>ht.q===tt.q&&ht.r===tt.r);
+  const guardHere=guards.find(g=>g.q===tt.q&&g.r===tt.r);
+  if(onHeroBody&&guardHere){
+    // Case partagee (Gaston + garde) : la moitie cliquee (gauche/droite) determine la cible
+    const [tpx]=axToPx(tt.q,tt.r);
+    selected=(mx<tpx)?{type:'hero'}:{type:'guard',g:guardHere};
+  } else if(onHeroBody){
+    selected={type:'hero'};
+  } else {
     const al=allies.find(a=>a.q===tt.q&&a.r===tt.r);
     if(al){selected={type:'ally',a:al};}
     else{
-      const g=guards.find(g=>g.q===tt.q&&g.r===tt.r);
-      selected=g?{type:'guard',g}:null;
+      selected=guardHere?{type:'guard',g:guardHere}:null;
     }
   }
   renderPanel();
