@@ -114,55 +114,40 @@ body.theme-epure{
   --btn-hover:linear-gradient(135deg,#344458,#445870);}
 .statbox{border:1px solid var(--side-border);}
 
-/* ── RESPONSIVE (mobile / tablette, portrait ou paysage) ── */
-/* Portrait (etroit et haut) : on empile canvas au-dessus, sidebar en dessous */
-@media (orientation:portrait){
-  #wrap{flex-direction:column;}
-  #canvasWrap{flex:1 1 auto;min-height:0;}
-  #side{width:100%;flex:0 0 42%;max-height:42%;border-left:none;border-top:3px solid var(--side-border);
-    padding:10px;}
-  #side h2{font-size:19px;margin:2px 0 6px;}
-  .statbox{padding:8px 12px;margin:5px 0;}
-  .statbox .lbl{font-size:14px;}
-  .statbox .val{font-size:20px;}
-  #panel h3{font-size:17px;}
-  #panel button{font-size:15px;padding:11px 10px;}
-  button{font-size:14px;}
-  #overlay h2{font-size:30px;}
-  #overlay p{font-size:17px;}
-  .rulesCard{padding:16px 18px;max-width:94vw;}
-  #settingsBtn,#rulesBtn{padding:8px 10px;font-size:14px;}
-}
-@media (orientation:portrait) and (max-width:480px){
-  #side{flex-basis:48%;max-height:48%;}
-  .diffbtn{width:140px;font-size:15px;padding:11px 8px;}
-  .diffstats{font-size:12px;min-width:120px;}
-}
-/* Paysage etroit (telephone couche) : on garde canvas + sidebar cote a cote, mais sidebar compacte */
-@media (orientation:landscape) and (max-height:500px){
-  #side{width:230px;flex:0 0 230px;padding:8px;}
-  #side h2{font-size:15px;margin:0 0 4px;}
-  #speedBtn{padding:6px;font-size:12px;}
-  .statbox{padding:5px 9px;margin:3px 0;}
-  .statbox .lbl{font-size:11px;}
-  .statbox .val{font-size:15px;}
-  #panel{margin-top:8px;padding-top:8px;}
-  #panel h3{font-size:14px;}
-  #panel button{font-size:12px;padding:7px 7px;}
-  #panel .row{font-size:13px;padding:2px 0;}
-  .hint{font-size:11px;margin:3px 0;}
-  button{font-size:12px;}
-  #log{font-size:11px;max-height:70px;}
-  #overlay h2{font-size:26px;margin-bottom:4px;}
-  #overlay p{font-size:14px;}
-  .diffbtn{font-size:14px;padding:8px 6px;}
-  .diffstats{font-size:11px;}
-  #settingsBtn,#rulesBtn{padding:6px 8px;font-size:12px;}
+/* ── RESPONSIVE (mobile / tablette : tableau d'infos a gauche + achats a droite) ── */
+#leftPanel{display:none;flex-direction:column;background:var(--side-bg);
+  padding:12px;box-sizing:border-box;overflow-y:auto;border-right:3px solid var(--side-border);
+  min-width:0;min-height:0;}
+body.mobile-layout #leftPanel,body.mobile-layout #side{width:27vw;flex:0 0 27vw;max-width:170px;min-width:92px;}
+body.mobile-layout #side h2{font-size:14px;margin:0 0 6px;}
+body.mobile-layout .statbox{padding:6px 8px;margin:5px 0;flex-direction:column;align-items:flex-start;gap:2px;}
+body.mobile-layout .statbox .lbl{font-size:10.5px;}
+body.mobile-layout .statbox .val{font-size:16px;}
+body.mobile-layout #panel h3{font-size:14px;}
+body.mobile-layout #panel button{font-size:12px;padding:9px 7px;}
+body.mobile-layout #panel .row{font-size:13px;padding:2px 0;}
+body.mobile-layout .hint{font-size:11px;margin:4px 0;}
+body.mobile-layout button{font-size:12px;}
+body.mobile-layout #log{font-size:10px;max-height:80px;}
+body.mobile-layout #speedBtn{font-size:12px;padding:8px 4px;}
+body.mobile-layout #overlay h2{font-size:28px;}
+body.mobile-layout #overlay p{font-size:16px;}
+body.mobile-layout .rulesCard{padding:16px 18px;max-width:94vw;}
+body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;font-size:14px;}
+@media (max-height:450px){
+  body.mobile-layout #leftPanel,body.mobile-layout #side{padding:6px;}
+  body.mobile-layout .statbox{padding:4px 6px;margin:3px 0;}
+  body.mobile-layout .statbox .val{font-size:13px;}
+  body.mobile-layout .statbox .lbl{font-size:9px;}
+  body.mobile-layout #panel button{font-size:11px;padding:6px 5px;}
 }
 </style>
 </head>
 <body>
 <div id="wrap">
+
+  <!-- ── TABLEAU D'INFOS (mobile/tablette uniquement) ──── -->
+  <div id="leftPanel"></div>
 
   <!-- ── ZONE CANVAS ──────────────────────────── -->
   <div id="canvasWrap">
@@ -246,6 +231,7 @@ body.theme-epure{
   <div id="side">
     <h2>Hex Defense</h2>
     <button id="speedBtn"></button>
+    <div id="statsScrollAnchor" style="display:none;"></div>
     <div id="statsScroll" style="overflow-y:auto;flex:1 1 auto;min-height:0;">
     <div class="statbox" id="boxHp">
       <span class="lbl" id="lblHp"></span><span class="val" id="hp">50/50</span>
@@ -1155,6 +1141,29 @@ function startGameSession(){
 }
 
 // Prepare la sidebar selon le type de partie
+// Detecte tablette/telephone (pas d'ordinateur) pour repartir les infos et achats
+// dans deux tableaux de part et d'autre de la carte, plutot que tout dans un seul.
+function isMobileLayout(){
+  return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+}
+function applyPanelLayout(){
+  const mobile=isMobileLayout();
+  document.body.classList.toggle('mobile-layout',mobile);
+  const statsScroll=document.getElementById('statsScroll');
+  const leftPanel=document.getElementById('leftPanel');
+  const anchor=document.getElementById('statsScrollAnchor');
+  if(mobile){
+    if(statsScroll.parentElement!==leftPanel) leftPanel.appendChild(statsScroll);
+  } else {
+    if(anchor.nextSibling!==statsScroll) anchor.insertAdjacentElement('afterend',statsScroll);
+  }
+  const sideVisible=document.getElementById('side').style.display==='flex';
+  leftPanel.style.display=(mobile&&sideVisible)?'flex':'none';
+}
+window.matchMedia('(hover: none) and (pointer: coarse)').addEventListener?.('change',applyPanelLayout);
+window.addEventListener('resize',applyPanelLayout);
+window.addEventListener('orientationchange',applyPanelLayout);
+
 function prepareGameUI(showPoint,showTimer,showChrono){
   document.getElementById('boxPoint').style.display   =showPoint  ?'':'none';
   document.getElementById('boxTimer').style.display   =showTimer  ?'':'none';
@@ -1172,6 +1181,7 @@ function prepareGameUI(showPoint,showTimer,showChrono){
   document.getElementById('rulesBtn').style.display   ='none';
   document.getElementById('overlay').style.display    ='none';
   document.getElementById('lastStats').style.display  ='none';
+  applyPanelLayout();
 }
 
 function heroName(mode){
@@ -1233,6 +1243,7 @@ function showMenu(){
   document.getElementById('rulesBtn').style.display   ='';
   document.getElementById('overlay').style.display    ='flex';
   renderDifficultyList();
+  applyPanelLayout();
 }
 
 // Termine la partie — retour direct au menu + stats en bas a gauche
@@ -2204,6 +2215,7 @@ document.getElementById('speed2Input').value=SPEEDS[1];
 applyStaticTexts();
 applyTheme();
 updateHUD();
+applyPanelLayout();
 document.getElementById('chrono').textContent=formatTime(MATCH_DURATION);
 requestAnimationFrame(loop);
 
