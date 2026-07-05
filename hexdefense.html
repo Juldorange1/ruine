@@ -25,8 +25,8 @@ button:disabled{opacity:.4;cursor:default;}
 canvas{background:#222;max-width:100%;max-height:100%;}
 
 /* ── SIDEBAR ──────────────────────────────────── */
-#side{display:none;width:380px;flex:0 0 380px;background:var(--side-bg);
-  padding:18px;box-sizing:border-box;overflow-y:auto;border-left:3px solid var(--side-border);}
+#side{display:none;flex-direction:column;width:380px;flex:0 0 380px;background:var(--side-bg);
+  padding:18px;box-sizing:border-box;overflow:hidden;border-left:3px solid var(--side-border);}
 .statbox{display:flex;justify-content:space-between;align-items:center;margin:8px 0;
   background:var(--box-bg);border-radius:8px;padding:12px 16px;border:1px solid var(--side-border);}
 .statbox .lbl{color:#ddd;font-size:17px;font-weight:600;}
@@ -45,10 +45,10 @@ canvas{background:#222;max-width:100%;max-height:100%;}
 #boxHp,#boxWave{display:none !important;}
 
 /* ── OVERLAYS ─────────────────────────────────── */
-#overlay,#settingsOverlay,#detteSetupOverlay,#rulesOverlay{
+#overlay,#settingsOverlay,#rulesOverlay{
   position:absolute;inset:0;background:var(--menu-bg);
   display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;}
-#settingsOverlay,#detteSetupOverlay,#rulesOverlay{display:none;z-index:5;}
+#settingsOverlay,#rulesOverlay{display:none;z-index:5;}
 #overlay h2{font-size:42px;margin-bottom:10px;}
 #overlay p{font-size:22px;margin:4px 0 14px;}
 #overlay button{width:300px;font-size:18px;padding:14px;}
@@ -119,9 +119,6 @@ body.theme-epure{
     <canvas id="c"></canvas>
     <div id="toast"></div>
     <div id="lastStats"></div>
-    <div id="kaelList" style="display:none;position:absolute;left:8px;top:50%;transform:translateY(-50%);
-      background:rgba(18,10,30,0.94);border:2px solid #9933cc;border-radius:10px;padding:8px 6px;
-      max-height:80vh;overflow-y:auto;z-index:10;min-width:116px;"></div>
 
     <!-- Menu principal -->
     <div id="overlay">
@@ -147,16 +144,6 @@ body.theme-epure{
       </div>
     </div>
 
-    <!-- Setup dette (Otto) -->
-    <div id="detteSetupOverlay">
-      <h2 id="detteSetupTitle"></h2>
-      <p id="detteSetupLabel"></p>
-      <input type="number" id="detteAmountInput" value="100" min="0" step="100"
-        style="width:140px;font-size:18px;padding:8px;text-align:center;margin:8px 0;">
-      <button id="detteStartBtn" style="width:200px;"></button>
-      <button id="detteCancelBtn" style="width:200px;"></button>
-    </div>
-
     <!-- Parametres -->
     <div id="settingsOverlay">
       <h2 id="setTitle"></h2>
@@ -177,6 +164,26 @@ body.theme-epure{
         <span id="pauseKeyLbl"></span> :
         <button id="pauseKeyBtn" class="keyBtn">P</button>
       </div>
+      <div class="settingsRow">
+        <span id="abandonKeyLbl"></span> :
+        <button id="abandonKeyBtn" class="keyBtn">-</button>
+      </div>
+      <div class="settingsRow">
+        <span id="topBuyKeyLbl"></span> :
+        <button id="topBuyKeyBtn" class="keyBtn">-</button>
+      </div>
+      <div class="settingsRow">
+        <span id="bottomBuyKeyLbl"></span> :
+        <button id="bottomBuyKeyBtn" class="keyBtn">-</button>
+      </div>
+      <div class="settingsRow">
+        <span id="specialKeyLbl"></span> :
+        <button id="specialKeyBtn" class="keyBtn">-</button>
+      </div>
+      <div class="settingsRow">
+        <span id="speed2Lbl"></span> :
+        <input type="number" id="speed2Input" min="1" step="0.01" value="3" style="width:70px;font-size:14px;padding:4px;">
+      </div>
       <button id="closeSettings"></button>
     </div>
 
@@ -189,6 +196,7 @@ body.theme-epure{
   <div id="side">
     <h2>Hex Defense</h2>
     <button id="speedBtn"></button>
+    <div id="statsScroll" style="overflow-y:auto;flex:1 1 auto;min-height:0;">
     <div class="statbox" id="boxHp">
       <span class="lbl" id="lblHp"></span><span class="val" id="hp">50/50</span>
     </div>
@@ -199,15 +207,39 @@ body.theme-epure{
       <span class="lbl" id="lblPoint"></span><span class="val" id="point">0</span>
     </div>
     <div id="boxDiff" style="font-size:13px;color:#bbb;text-align:center;margin:2px 0 2px;letter-spacing:.5px;"></div>
-    <div class="statbox" id="boxSpecial" style="display:none;">
-      <span class="lbl" id="lblSpecial">⏱</span><span class="val" id="specialVal">-</span>
+    <div class="statbox" id="boxSpecial" style="display:none;flex-direction:column;gap:4px;">
+      <div style="display:flex;justify-content:space-between;width:100%;">
+        <span class="lbl" id="lblSpecial">⏱</span><span class="val" id="specialVal" style="font-size:20px;">-</span>
+      </div>
+      <div id="midasExtra" style="display:none;width:100%;font-size:13px;color:#ddd;">
+        <div style="display:flex;justify-content:space-between;"><span>Doubleurs disponibles</span><span id="midasDoublersVal" style="font-weight:bold;">0</span></div>
+        <div style="display:flex;justify-content:space-between;"><span>Dette maximale</span><span id="midasMaxDebtVal" style="font-weight:bold;">-0&euro;</span></div>
+      </div>
     </div>
-    <div class="statbox" id="boxEnzo" style="display:none;gap:6px;">
-      <span class="lbl" id="lblEnzo">Ennemis vague</span>
-      <span style="display:flex;align-items:center;gap:6px;">
-        <span class="val" id="enzoVal">0</span>
-        <button id="enzoPlus" style="width:34px;padding:2px 0;font-size:20px;font-weight:900;line-height:1;">+</button>
-      </span>
+    <div class="statbox" id="boxEnzo" style="display:none;flex-direction:column;gap:4px;">
+      <span class="lbl" id="lblEnzo" style="text-align:center;">Prochaine vague</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;">⚔ Degats</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+        <button id="enzoMinusDmg" style="width:24px;padding:1px 0;font-size:16px;font-weight:900;line-height:1;">−</button>
+        <span class="val" id="enzoValDmg">0</span>
+        <button id="enzoPlusDmg" style="width:24px;padding:1px 0;font-size:16px;font-weight:900;line-height:1;">+</button></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;">❤ PV</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+        <button id="enzoMinusHp" style="width:24px;padding:1px 0;font-size:16px;font-weight:900;line-height:1;">−</button>
+        <span class="val" id="enzoValHp">0</span>
+        <button id="enzoPlusHp" style="width:24px;padding:1px 0;font-size:16px;font-weight:900;line-height:1;">+</button></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;">⚡ Vitesse</span>
+        <span style="display:flex;align-items:center;gap:6px;">
+        <button id="enzoMinusFast" style="width:24px;padding:1px 0;font-size:16px;font-weight:900;line-height:1;">−</button>
+        <span class="val" id="enzoValFast">0</span>
+        <button id="enzoPlusFast" style="width:24px;padding:1px 0;font-size:16px;font-weight:900;line-height:1;">+</button></span>
+      </div>
+      <div style="font-size:11px;color:#aaa;text-align:center;">Minimum 20 ennemis/vague</div>
     </div>
     <div class="statbox" id="boxWave">
       <span class="lbl" id="lblWave"></span><span class="val" id="wave">-</span>
@@ -219,9 +251,9 @@ body.theme-epure{
       <span class="lbl" id="lblChrono"></span><span class="val" id="chrono">00:00</span>
     </div>
     <div id="offerBox"></div>
-    <div class="statbox" id="boxDette" style="display:none;">
-      <span class="lbl" id="lblDette">Dette</span><span class="val" id="detteVal">0/0&euro;</span>
     </div>
+    <button id="golemShopBtn" style="display:none;">Achats</button>
+    <button id="pauseBtnSide" style="display:none;"></button>
     <button id="abandonBtn"></button>
     <div id="panel"></div>
     <div id="log"></div>
@@ -242,13 +274,14 @@ const PAD_TILE       = SIZE * 1.6;
 const HERO_MAXHP     = 50;
 const HERO_REGEN     = 0.2;     // PV/s
 const WAVE_INTERVAL  = 20;      // s entre vagues
-const SPAWN_INTERVAL = 2;       // s entre spawns
+const WAVE_ENEMY_BASE= 20;      // ennemis par vague (avant ajouts d'Enzo)
 const MATCH_DURATION = 900;     // 15 min
 const GUARD_INIT     = 3;
 const SPEEDS         = [1, 3];
 const DIFF_HP_MULT   = [0.7, 1.1];
-const BASE_COSTS     = {guardPlace:6, point:10, swap:5, summonAlly:10};
+const BASE_COSTS     = {guardPlace:4, point:10, swap:2, summonAlly:10};
 const ALLY_MAXHP     = 10;
+const GOLEM_GUARD_HP = 30;
 
 // Canvas — défini ici pour être disponible partout (applyTileData, render, events)
 const cv  = document.getElementById('c');
@@ -285,35 +318,38 @@ const I18N = {
     waveStart:'Vague {n} !', guardKill:'Garde tue un monstre (+{x}e)',
     hintPlaceGuard:'Clique une case libre pour le garde',
     desert:'Desert', forest:'Foret', characters:'Personnages', epure:'Epure',
-    gameMode:'Mode de jeu', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo', modeIris:'Iris',
+    gameMode:'Mode de jeu', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston', modeGolem:'Les Gardes',
     heroSelectBtn:'Choisir le heros', heroSelectClose:'Retour',
-    heroDesc1:'Axel — Peut echanger la position de 2 entites (garde, monstre ou heros).',
-    heroDesc2:'Noa — Gagne des pts chaque seconde selon le nombre de cases vides adjacentes x niveau.',
-    heroDesc3:'Midas — Son argent est double automatiquement toutes les 3 minutes.',
-    heroDesc4:'Kael — La carte change toutes les 4 minutes : les ennemis disparaissent, le heros revient au centre, les gardes (avec leurs stats) doivent etre repositionnes.',
-    heroDesc5:'Enzo — Voit le nombre d\'ennemis restants a spawner cette vague. Peut en ajouter +1 a tout moment pour augmenter la frequence d\'apparition.',
-    heroDesc6:'Iris — Peut invoquer un allie (10 PV) a placer sur le terrain. Ses couts d\'achat propres demarrent toujours au prix de base. S\'il meurt, il disparait sans consequence.',
-    heroDesc7:'Otto — Choisit une dette a rembourser avant le debut de la partie. Clique la case doree pour y deposer tout son argent actuel. Si la dette est totalement remboursee a la fin, ses points sont multiplies par (dette/100). Sinon, tous ses points sont perdus.',
+    heroDesc1:'Axel — Echange 2 entites de place.',
+    heroDesc3:'Midas — Gagne un doubleur d\'argent toutes les 3 min. Peut s\'endetter jusqu\'a son pic d\'argent atteint.',
+    heroDesc5:'Enzo — Choisit combien de chaque type d\'ennemi apparait (max 400/type).',
+    heroDesc6:'Iris — Invoque un allie (10 PV) a couts independants.',
+    heroDesc8:'Gaston — Grossit de 1 case a chaque garde achete. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
+    heroDesc9:'Les Gardes — Pas de heros visible : ses gardes (30 PV chacun) l\'incarnent. Si tous ses gardes meurent, la partie est perdue.',
     summonAlly:'Invoquer un allie', allyPlaced:'Allie invoque !', allyDown:'Un allie est tombe !',
     chooseTileForAlly:'Clique une case libre pour l\'allie', ally:'Allie',
-    mapChange:'Carte changee ! Replace tes gardes.', mapChangeTimer:'Prochain changement',
-    enzoRemaining:'Ennemis vague',
+    enzoNextWave:'Prochaine vague',
     buyChrono:'+1 min de chrono', chronoBought:'Chrono +1 minute !',
-    detteMode:'Otto', detteSetupLabel:'Dette a rembourser (par tranche de 100e) :', detteStart:'Commencer', detteCancel:'Annuler',
-    detteTileHint:'Case de remboursement', detteRepaid:'Argent verse au remboursement !',
-    detteFail:'Dette non remboursee — tous les points sont perdus.', detteSuccess:'Dette remboursee ! Points multiplies.',
     volume:'Volume', dmgBounty:'1e/10 degats infliges', upDmgBounty:'+1e/10 degats',
     restartKeyLbl:'Touche redemarrage (maintenir 1s)', pauseKeyLbl:'Touche pause',
+    abandonKeyLbl:'Touche abandonner (maintenir)', topBuyKeyLbl:'Touche achat du haut',
+    bottomBuyKeyLbl:'Touche achat du bas', specialKeyLbl:'Touche specialite',
+    speed2Lbl:'Vitesse rapide personnalisee (x...)',
+    pauseBtn:'Pause',
     rulesBtn:'Regles', rules:'Regles',
     dailyChallenge:'Defi du Jour', dailyRecord:'Record du jour',
     dailyMapInfo:'Carte du jour — {n} cases',
     lastGame:'Derniere partie',
-    rulesText:'<b>But</b> : proteger le heros contre les monstres avec des gardes. Max de points.<br><br>'+
-      '<b>Vagues</b> : toutes les 20s. Monstres spawne des le debut. Heros regenere 0,2 PV/s.<br><br>'+
-      '<b>Types</b> : Rapide (x1.5 vitesse, bleu) · PV (x1.5 vie, jaune) · Degats (x1.5 dmg, rouge) · Portee (tire a distance, bloque par les gardes, violet).<br><br>'+
-      '<b>Modes</b> : Debutant (pas d offre, pas de deplacement, pas de portee) · Normal · Avance (tout + chrono).<br><br>'+
-      '<b>Defi du Jour</b> : carte unique chaque jour (80-120 cases connexes). Difficulte 2, mode Normal.<br><br>'+
-      '<b>Touches</b> : Maintenir 1s = redemarrer. Pause = 1 fois/partie.'
+    rulesText:'<b>But</b> : proteger le heros contre les monstres en placant des gardes. Score = points accumules en 15 minutes.<br><br>'+
+      '<b>Vagues</b> : une nouvelle vague toutes les 20 secondes. Chaque vague fait apparaitre au moins 20 ennemis, repartis regulierement sur les 20 secondes (pas tous d\'un coup).<br><br>'+
+      '<b>Types d\'ennemis</b> (menace equivalente, juste une specialite differente) : Rapide (+50% vitesse, bleu) · PV (+40% vie, jaune) · Degats (+50% degats, rouge).<br><br>'+
+      '<b>Ciblage</b> : les ennemis visent toujours la cible la plus proche qu\'ils peuvent attaquer (heros, allie invoque...) et reevaluent leur trajet des qu\'une cible plus proche apparait.<br><br>'+
+      '<b>Heros</b> : regenere 0,2 PV/s. 3 gardes gratuits a placer au debut de chaque partie.<br><br>'+
+      '<b>Gardes</b> : placement a 4&euro; (prix +25% a chaque achat). Amelioration +1 degat et +1&euro;/kill avec des couts qui evoluent separement (+25% chacun).<br><br>'+
+      '<b>Points</b> : achetable a 10&euro; pour +1 pt/s (prix +25% a chaque achat).<br><br>'+
+      '<b>Difficulte</b> : Difficulte 1 = ennemis plus faibles, Difficulte 2 = ennemis plus forts.<br><br>'+
+      '<b>Defi du Jour</b> : carte unique chaque jour (80-120 cases connexes), en Difficulte 2. Le heros du jour est tire au sort automatiquement (le meme pour tout le monde ce jour-la), quel que soit le heros choisi dans le menu.<br><br>'+
+      '<b>Touches</b> (configurables dans les parametres) : pause (1 fois par partie), abandon (maintenir), achat du haut et du bas selon la selection (heros ou garde), et activation directe de la specialite du heros quand elle existe.'
   },
   en:{
     chooseDifficulty:'Choose difficulty',
@@ -341,35 +377,38 @@ const I18N = {
     waveStart:'Wave {n}!', guardKill:'Guard killed monster (+{x}e)',
     hintPlaceGuard:'Click a free tile to place the guard',
     desert:'Desert', forest:'Forest', characters:'Characters',
-    gameMode:'Game mode', modeNormal:'Axel', modeHardcore:'Noa', modeMidas:'Midas', modeKael:'Kael', modeEnzo:'Enzo', modeIris:'Iris',
+    gameMode:'Game mode', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston', modeGolem:'The Guards',
     heroSelectBtn:'Choose hero', heroSelectClose:'Back',
-    heroDesc1:'Axel — Can swap 2 entities (guard, monster or hero).',
-    heroDesc2:'Noa — Earns pts each second based on adjacent empty tiles x level.',
-    heroDesc3:'Midas — Money doubles automatically every 3 minutes.',
-    heroDesc4:'Kael — Map changes every 4 minutes: enemies vanish, hero recenters, guards (with stats) must be repositioned.',
-    heroDesc5:'Enzo — Sees remaining enemies to spawn this wave. Can add +1 anytime to increase spawn rate.',
-    heroDesc6:'Iris — Can summon an ally (10 HP) to place on the field. Its own purchase costs always start at base price. If it dies, it just vanishes with no consequence.',
-    heroDesc7:'Otto — Picks a debt to repay before the match starts. Click the gold tile to deposit all current money into repayment. If fully repaid by the end, points are multiplied by (debt/100). Otherwise all points are lost.',
+    heroDesc1:'Axel — Swaps 2 entities.',
+    heroDesc3:'Midas — Gains a money doubler every 3 min. Can go into debt up to his peak money reached.',
+    heroDesc5:'Enzo — Chooses how many of each enemy type spawn (max 400/type).',
+    heroDesc6:'Iris — Summons an ally (10 HP) with its own costs.',
+    heroDesc8:'Gaston — Grows by 1 tile per guard bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
+    heroDesc9:'The Guards — No visible hero: his guards (30 HP each) embody him. If all his guards die, the game is lost.',
     summonAlly:'Summon an ally', allyPlaced:'Ally summoned!', allyDown:'An ally has fallen!',
     chooseTileForAlly:'Click a free tile for the ally', ally:'Ally',
-    mapChange:'Map changed! Reposition your guards.', mapChangeTimer:'Next change',
-    enzoRemaining:'Wave enemies',
+    enzoNextWave:'Next wave',
     buyChrono:'+1 min timer', chronoBought:'Timer +1 minute!',
-    detteMode:'Otto', detteSetupLabel:'Debt to repay (in steps of 100):', detteStart:'Start', detteCancel:'Cancel',
-    detteTileHint:'Repayment tile', detteRepaid:'Money deposited into repayment!',
-    detteFail:'Debt not repaid — all points lost.', detteSuccess:'Debt repaid! Points multiplied.',
     volume:'Volume', dmgBounty:'1e/10 damage dealt', upDmgBounty:'+1e/10 damage',
     restartKeyLbl:'Restart key (hold 1s)', pauseKeyLbl:'Pause key',
+    abandonKeyLbl:'Abandon key (hold)', topBuyKeyLbl:'Top purchase key',
+    bottomBuyKeyLbl:'Bottom purchase key', specialKeyLbl:'Specialty key',
+    speed2Lbl:'Custom fast speed (x...)',
+    pauseBtn:'Pause',
     rulesBtn:'Rules', rules:'Rules',
     dailyChallenge:'Daily Challenge', dailyRecord:"Today's record",
     dailyMapInfo:'Daily map — {n} tiles',
     lastGame:'Last game',
-    rulesText:'<b>Goal</b>: protect your hero with guards. Max Points.<br><br>'+
-      '<b>Waves</b>: every 20s. Monsters spawn right away. Hero regens 0.2 HP/s.<br><br>'+
-      '<b>Types</b>: Fast (x1.5 speed, blue) · HP (x1.5 health, yellow) · Damage (x1.5 dmg, red) · Range (ranged, blocked by guards, purple).<br><br>'+
-      '<b>Modes</b>: Beginner (no offer, no move, no range) · Normal · Advanced (all + timer).<br><br>'+
-      '<b>Daily</b>: unique map each day (80-120 connected tiles). Difficulty 2, Normal.<br><br>'+
-      '<b>Keys</b>: Hold 1s = restart. Pause = once per game.'
+    rulesText:'<b>Goal</b>: protect your hero from monsters by placing guards. Score = points earned in 15 minutes.<br><br>'+
+      '<b>Waves</b>: a new wave every 20 seconds. Each wave spawns at least 20 enemies, spread evenly across the 20 seconds (not all at once).<br><br>'+
+      '<b>Enemy types</b> (equal threat level, just a different specialty): Fast (+50% speed, blue) · HP (+40% health, yellow) · Damage (+50% damage, red).<br><br>'+
+      '<b>Targeting</b>: enemies always aim for the closest thing they can attack (hero, summoned ally...) and re-evaluate their path as soon as a closer target appears.<br><br>'+
+      '<b>Hero</b>: regens 0.2 HP/s. 3 free guards to place at the start of each game.<br><br>'+
+      '<b>Guards</b>: placement costs 4&euro; (price +25% per purchase). +1 damage and +1&euro;/kill upgrades have separately scaling costs (+25% each).<br><br>'+
+      '<b>Points</b>: buyable for 10&euro; for +1 pt/s (price +25% per purchase).<br><br>'+
+      '<b>Difficulty</b>: Difficulty 1 = weaker enemies, Difficulty 2 = stronger enemies.<br><br>'+
+      '<b>Daily Challenge</b>: unique map each day (80-120 connected tiles), Difficulty 2. The day\'s hero is picked automatically (same for everyone that day), regardless of the hero chosen in the menu.<br><br>'+
+      '<b>Keys</b> (configurable in settings): pause (once per game), abandon (hold), top and bottom purchase depending on selection (hero or guard), and direct activation of the hero\'s specialty when it has one.'
   }
 };
 let lang = 'fr';
@@ -489,6 +528,11 @@ function dailyDateStr(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+const DAILY_HEROES=['gameplay1','gameplay3','gameplay5','gameplay6','gameplay8','gameplay9'];
+function dailyHeroMode(){
+  const rng=seededRng(dailySeed()+7919);
+  return DAILY_HEROES[Math.floor(rng()*DAILY_HEROES.length)];
+}
 // Genere un sous-ensemble connexe de 80-120 tuiles via BFS aleatoire
 function generateDailyMap(){
   const rng=seededRng(dailySeed());
@@ -517,16 +561,21 @@ let state='difficulty'; // 'difficulty' | 'playing' | 'gameover'
 let initialPlacement=false;
 let difficulty=1, gameMode='gameplay1', sessionMode='gameplay1';
 let dailyMode=false;
-let midasTimer=0, mapChangeTimer=240;
-let kaelPendingGuards=[], kaelSelectedPending=null;
+let midasTimer=0, midasDoublers=0, midasMaxMoney=0;
 let waveSpawnTotal=9999, waveSpawnCount=0;
+const ENZO_TYPE_CAP=400;
+let enzoCounts={fast:7,hp:7,dmg:6};
+let enzoTotalSpawned={fast:0,hp:0,dmg:0};
+let enzoRemainingThisWave={fast:0,hp:0,dmg:0};
+let enzoStarvedTimer=0, enzoAutoSpeedBoost=false;
 let allies=[];
 let pendingAllySource=null;
-let debtGoal=0, debtPaid=0, debtTileKey=null;
-let pendingGameStart=null;
+let heroExtraTiles=[];
+let nextGrowthTile=null;
+let boostTiles=new Set();
 
 // Ressources & chrono
-let money=0, point=0, pointRate=0, pointIncomeAcc=0;
+let money=0, point=0, pointRate=0;
 let swapTargets=[];
 let totalSpent=0, elapsedSeconds=0, matchTimer=MATCH_DURATION;
 
@@ -550,7 +599,7 @@ let hoverMonster=null;
 let lastT=performance.now(), realDt=0;
 let speedIndex=0, gameRunning=false;
 let paused=false, pauseUsed=false;
-let pauseKey='p', listeningFor=null;
+let pauseKey='p', abandonKey='', topBuyKey='', bottomBuyKey='', specialKey='', listeningFor=null;
 
 
 // ══════════════════════════════════════════════════════
@@ -593,10 +642,36 @@ function log(msg){
 // ══════════════════════════════════════════════════════
 function occupiedSet(){
   const s=new Set(); s.add(axKey(hero.q,hero.r));
+  heroExtraTiles.forEach(t=>s.add(axKey(t.q,t.r)));
   guards.forEach(g=>s.add(axKey(g.q,g.r)));
   allies.forEach(a=>s.add(axKey(a.q,a.r)));
-  if(debtTileKey) s.add(debtTileKey);
   return s;
+}
+
+// Obese : le corps du heros grossit d'une case a chaque garde achete
+function growthCandidates(){
+  const occ=occupiedSet();
+  const bodyKeys=[axKey(hero.q,hero.r),...heroExtraTiles.map(t=>axKey(t.q,t.r))];
+  const cands=[];
+  bodyKeys.forEach(bk=>{
+    const [bq,br]=bk.split(',').map(Number);
+    neighbors(bq,br).forEach(nk=>{ if(!occ.has(nk)&&!spawnPoints.includes(nk)) cands.push(nk); });
+  });
+  return cands;
+}
+function updateNextGrowthTile(){
+  const cands=growthCandidates();
+  if(!cands.length){nextGrowthTile=null;return;}
+  const nk=cands[Math.floor(Math.random()*cands.length)];
+  const [nq,nr]=nk.split(',').map(Number);
+  nextGrowthTile={q:nq,r:nr};
+}
+function growHero(){
+  if(!nextGrowthTile) updateNextGrowthTile();
+  if(!nextGrowthTile) return;
+  heroExtraTiles.push(nextGrowthTile);
+  nextGrowthTile=null;
+  updateNextGrowthTile();
 }
 
 // Verifie que poser un garde en (q,r) ne deconnecte pas la grille
@@ -604,15 +679,19 @@ function canPlaceGuard(q,r){
   const k=axKey(q,r);
   if(!tiles[k]||spawnPoints.includes(k)) return false;
   const occ=occupiedSet(); if(occ.has(k)) return false;
-  occ.add(k);
+  // Seuls les gardes/allies bloquent vraiment le passage ; le corps du heros (Gaston) reste traversable
+  const blocked=new Set();
+  guards.forEach(g=>blocked.add(axKey(g.q,g.r)));
+  allies.forEach(a=>blocked.add(axKey(a.q,a.r)));
+  blocked.add(k);
   const reach=new Set([axKey(hero.q,hero.r)]), queue=[axKey(hero.q,hero.r)];
   while(queue.length){
     const cur=queue.shift(); const tt=tiles[cur];
     for(const nk of neighbors(tt.q,tt.r)){
-      if(!occ.has(nk)&&!reach.has(nk)){ reach.add(nk); queue.push(nk); }
+      if(!blocked.has(nk)&&!reach.has(nk)){ reach.add(nk); queue.push(nk); }
     }
   }
-  for(const k2 in tiles) if(!occ.has(k2)&&!reach.has(k2)) return false;
+  for(const k2 in tiles) if(!blocked.has(k2)&&!reach.has(k2)) return false;
   return true;
 }
 
@@ -687,12 +766,6 @@ function pickRandomSpawnPoints(){
     spawnPoints.push(cands.splice(Math.floor(Math.random()*cands.length),1)[0]);
   }
 }
-function pickDebtTile(){
-  const occ=occupiedSet();
-  const cands=Object.keys(tiles).filter(k=>!occ.has(k)&&!spawnPoints.includes(k));
-  debtTileKey=cands.length?cands[Math.floor(Math.random()*cands.length)]:null;
-}
-
 function priceFor(cat,baseCost){
   return baseCost;
 }
@@ -701,7 +774,17 @@ function startWave(){
   waveNum++; waveTimer=WAVE_INTERVAL;
   currentMonsterType=MONSTER_TYPES[Math.floor(Math.random()*MONSTER_TYPES.length)];
   waveSpawnCount=0; spawnAcc=0;
-  waveSpawnTotal=sessionMode==='gameplay5' ? Math.max(2, Math.floor(waveNum*1.5)+1) : 9999;
+  if(sessionMode==='gameplay5'){
+    MONSTER_TYPES.forEach(t=>{
+      const allowance=ENZO_TYPE_CAP-enzoTotalSpawned[t];
+      if(enzoCounts[t]>allowance) enzoCounts[t]=Math.max(0,allowance);
+    });
+    enzoRemainingThisWave={...enzoCounts};
+    waveSpawnTotal=MONSTER_TYPES.reduce((s,t)=>s+enzoRemainingThisWave[t],0);
+    updateEnzoDisplay();
+  } else {
+    waveSpawnTotal=WAVE_ENEMY_BASE;
+  }
   pickRandomSpawnPoints();
   document.getElementById('wave').textContent=waveNum;
   log(t('waveStart',{n:waveNum})); showToast(t('waveStart',{n:waveNum})); playSfx('wave');
@@ -710,26 +793,52 @@ function startWave(){
 
 function spawnMonster(){
   if(!spawnPoints.length) return;
+  let type=currentMonsterType;
+  if(sessionMode==='gameplay5'){
+    const avail=MONSTER_TYPES.filter(t=>enzoRemainingThisWave[t]>0);
+    if(!avail.length) return;
+    type=avail[Math.floor(Math.random()*avail.length)];
+    enzoRemainingThisWave[type]--;
+    enzoTotalSpawned[type]++;
+    updateEnzoDisplay();
+  }
   const k=spawnPoints[Math.floor(Math.random()*spawnPoints.length)];
   const tt=tiles[k]; if(!tt) return;
   let {hp,dmg}=monsterStats(), speedMult=1, rangeBonus=0;
-  switch(currentMonsterType){
+  switch(type){
     case 'fast': speedMult=1.5; break;
-    case 'hp':   hp=Math.round(hp*1.5); break;
-    case 'dmg':  dmg=Math.round(dmg*1.5); break;
+    case 'hp':   hp=Math.round(hp*1.4); break;
+    case 'dmg':  dmg=dmg*1.5; break;
   }
   monsters.push({q:tt.q,r:tt.r,px:tt.px,py:tt.py,hp,maxhp:hp,dmg,
-    speedMult,rangeBonus,type:currentMonsterType,pathKeys:null,attackAcc:0});
+    speedMult,rangeBonus,type,pathKeys:null,attackAcc:0});
 }
 
+// Cible la plus proche (a vol d'hex) parmi le heros, son corps agrandi et les allies
+function nearestTargetTile(m){
+  const cands=sessionMode==='gameplay9'
+    ? guards.map(g=>({q:g.q,r:g.r}))
+    : [{q:hero.q,r:hero.r},...heroExtraTiles,...allies.map(a=>({q:a.q,r:a.r}))];
+  let best=null,bestD=Infinity;
+  for(const c of cands){
+    const d=hexDist(m.q,m.r,c.q,c.r);
+    if(d<bestD){bestD=d;best=c;}
+  }
+  return best;
+}
 function recomputePath(m){
   const blocked=new Set();
-  guards.forEach(g=>blocked.add(axKey(g.q,g.r)));
-  m.pathKeys=bfsPath(m.q,m.r,hero.q,hero.r,blocked);
+  if(sessionMode!=='gameplay9') guards.forEach(g=>blocked.add(axKey(g.q,g.r)));
+  const target=nearestTargetTile(m);
+  if(!target){m.pathKeys=null;m.pathTargetKey=null;return;}
+  m.pathTargetKey=axKey(target.q,target.r);
+  m.pathKeys=bfsPath(m.q,m.r,target.q,target.r,blocked);
 }
 
 function newGuard(){
-  return {dmg:1,range:1,bounty:1,cooldown:1,costDmgUp:4,costBountyUp:4};
+  const g={dmg:1,range:1,bounty:1,cooldown:1,costDmgUp:4,costBountyUp:4};
+  if(sessionMode==='gameplay9'){g.hp=GOLEM_GUARD_HP;g.maxhp=GOLEM_GUARD_HP;}
+  return g;
 }
 
 
@@ -748,81 +857,73 @@ function update(dt){
   // Regeneration heros
   if(hero.hp<hero.maxhp) hero.hp=Math.min(hero.maxhp,hero.hp+HERO_REGEN*dt);
 
-  // Revenu adjacent (Noa)
-  if(pointRate>0&&sessionMode==='gameplay2'){
-    pointIncomeAcc+=dt;
-    while(pointIncomeAcc>=1){
-      pointIncomeAcc-=1;
-      const occ=occupiedSet();
-      const adj=neighbors(hero.q,hero.r).filter(nk=>tiles[nk]&&!occ.has(nk)).length;
-      point+=pointRate*adj; updateHUD();
-    }
-  }
-  // Doublement automatique toutes les 3 min (Midas)
+  // Accumulation d'un doubleur toutes les 3 min (Midas)
   if(sessionMode==='gameplay3'){
     midasTimer+=dt;
     const midasLeft=Math.max(0,Math.ceil(180-midasTimer));
-    document.getElementById('specialVal').textContent=midasLeft+'s';
-    if(midasTimer>=180){midasTimer-=180;money*=2;updateHUD();log('Midas : argent double !');showToast('x2 Argent !');}
+    document.getElementById('specialVal').textContent=formatTime(midasLeft);
+    document.getElementById('midasDoublersVal').textContent=midasDoublers;
+    document.getElementById('midasMaxDebtVal').textContent='-'+Math.floor(midasMaxMoney)+'€';
+    if(midasTimer>=180){midasTimer-=180;midasDoublers++;log('Midas : nouveau doubleur disponible !');showToast('+1 doubleur !');}
   }
-  // Changement de carte toutes les 4 min (Kael)
-  if(sessionMode==='gameplay4'){
-    if(kaelPendingGuards.length===0){
-      mapChangeTimer-=dt;
-      document.getElementById('specialVal').textContent=Math.max(0,Math.ceil(mapChangeTimer))+'s';
-    } else {
-      document.getElementById('specialVal').textContent='En cours...';
-    }
-    if(mapChangeTimer<=0&&kaelPendingGuards.length===0){
-      kaelPendingGuards=guards.map(g=>Object.assign({},g));
-      applyTileData(generateRandomMap());
-      hero.q=0;hero.r=0;
-      guards=[];monsters=[];swapTargets=[];kaelSelectedPending=null;
-      mapChangeTimer=240;
-      pickRandomSpawnPoints();
-      renderKaelList();
-      log(t('mapChange'));showToast(t('mapChange'));
-    }
-  }
-  // Points accumulés (autres modes)
-  if(pointRate>0&&sessionMode!=='gameplay2'){
+  // Points accumulés
+  if(pointRate>0){
     point+=pointRate*dt;
+  }
+
+  // Enzo : si plus aucun type d'ennemi n'est disponible, on accelere le jeu apres 10s d'attente
+  if(sessionMode==='gameplay5'){
+    const allCapped=MONSTER_TYPES.every(t=>enzoTotalSpawned[t]>=ENZO_TYPE_CAP);
+    if(allCapped){
+      enzoStarvedTimer+=realDt;
+      if(!enzoAutoSpeedBoost&&enzoStarvedTimer>=10){
+        enzoAutoSpeedBoost=true;
+        log('Plus aucun ennemi disponible — vitesse x10 !');showToast('Vitesse x10 !');
+      }
+    } else {
+      enzoStarvedTimer=0;enzoAutoSpeedBoost=false;
+    }
   }
 
   // Vagues
   waveTimer-=dt;
   document.getElementById('timer').textContent=Math.max(0,Math.ceil(waveTimer))+'s';
   if(waveTimer<=0){ startWave(); return; }
-  const kaelBlocking=sessionMode==='gameplay4'&&kaelPendingGuards.length>0;
-  if(!kaelBlocking){
-    if(sessionMode==='gameplay5'){
-      const remaining=waveSpawnTotal-waveSpawnCount;
-      if(remaining>0&&waveTimer>0){
-        const dynInterval=Math.max(0.05,waveTimer/remaining);
-        spawnAcc+=dt;
-        if(spawnAcc>=dynInterval){spawnAcc=0;spawnMonster();waveSpawnCount++;updateEnzoDisplay();}
-      }
-    } else {
+  if(waveNum>=1){
+    const remaining=waveSpawnTotal-waveSpawnCount;
+    if(remaining>0&&waveTimer>0){
+      const dynInterval=Math.max(0.05,waveTimer/remaining);
       spawnAcc+=dt;
-      if(spawnAcc>=SPAWN_INTERVAL&&waveSpawnCount<waveSpawnTotal){
-        spawnAcc-=SPAWN_INTERVAL; spawnMonster(); waveSpawnCount++;
-      }
+      if(spawnAcc>=dynInterval){spawnAcc=0;spawnMonster();waveSpawnCount++;if(sessionMode==='gameplay5') updateEnzoDisplay();}
     }
   }
 
   const heroPx=axToPx(hero.q,hero.r);
+  const heroBodyPx=[heroPx,...heroExtraTiles.map(t=>axToPx(t.q,t.r))];
+  const isGolem=sessionMode==='gameplay9';
 
   // ── Monstres : attaque / deplacement ──
   for(const m of monsters){
     const atkRange=SIZE*1.8+(m.rangeBonus?m.rangeBonus*SIZE*Math.sqrt(3):0);
-    const distHero=Math.hypot(heroPx[0]-m.px,heroPx[1]-m.py);
-
     let atkTarget=null, atkPx=null, atkDist=Infinity;
-    if(distHero<=atkRange&&!guardBlocksLOS(m,heroPx)){atkTarget=hero;atkPx=heroPx;atkDist=distHero;}
-    for(const al of allies){
-      const [apx,apy]=axToPx(al.q,al.r);
-      const dA=Math.hypot(apx-m.px,apy-m.py);
-      if(dA<=atkRange&&dA<atkDist&&!guardBlocksLOS(m,[apx,apy])){atkTarget=al;atkPx=[apx,apy];atkDist=dA;}
+    if(isGolem){
+      for(const g of guards){
+        const [gpx,gpy]=axToPx(g.q,g.r);
+        const dG=Math.hypot(gpx-m.px,gpy-m.py);
+        if(dG<=atkRange&&dG<atkDist){atkTarget=g;atkPx=[gpx,gpy];atkDist=dG;}
+      }
+    } else {
+      let distHero=Infinity, heroAtkPx=heroPx;
+      for(const bpx of heroBodyPx){
+        const d=Math.hypot(bpx[0]-m.px,bpx[1]-m.py);
+        if(d<distHero){distHero=d;heroAtkPx=bpx;}
+      }
+      if(distHero<=atkRange&&!guardBlocksLOS(m,heroAtkPx)){atkTarget=hero;atkPx=heroAtkPx;atkDist=distHero;}
+      for(const al of allies){
+        const [apx,apy]=axToPx(al.q,al.r);
+        const dA=Math.hypot(apx-m.px,apy-m.py);
+        if(dA<=atkRange&&dA<atkDist&&!guardBlocksLOS(m,[apx,apy])){atkTarget=al;atkPx=[apx,apy];atkDist=dA;}
+      }
     }
 
     if(atkTarget){
@@ -833,25 +934,42 @@ function update(dt){
         monsterAttackFx.push({x1:m.px,y1:m.py,x2:atkPx[0],y2:atkPx[1],life:0.3});
         playSfx('hit');
       }
+      if(isGolem&&atkTarget.hp<=0){
+        guards=guards.filter(g=>g!==atkTarget);
+        if(selected&&selected.type==='guard'&&selected.g===atkTarget){selected=null;renderPanel();}
+      }
       continue;
     }
 
-    if(!m.pathKeys||!m.pathKeys.length) recomputePath(m);
+    const curTarget=nearestTargetTile(m);
+    const curTargetKey=curTarget?axKey(curTarget.q,curTarget.r):null;
+    if(!m.pathKeys||!m.pathKeys.length||m.pathTargetKey!==curTargetKey) recomputePath(m);
     if(!m.pathKeys||!m.pathKeys.length) continue;
-    let rem=SPEED_PX*(m.speedMult||1)*dt;
+    const boostMult=boostTiles.has(axKey(m.q,m.r))?1.5:1;
+    let rem=SPEED_PX*(m.speedMult||1)*boostMult*dt;
     while(rem>0&&m.pathKeys&&m.pathKeys.length){
       const nk=m.pathKeys[0];
-      if(guards.some(g=>axKey(g.q,g.r)===nk)){m.pathKeys=null;break;}
+      if(!isGolem&&guards.some(g=>axKey(g.q,g.r)===nk)){m.pathKeys=null;break;}
       const nt=tiles[nk];
       const dx=nt.px-m.px,dy=nt.py-m.py,d=Math.hypot(dx,dy);
       if(d<=rem){
         m.px=nt.px;m.py=nt.py;m.q=nt.q;m.r=nt.r;rem-=d;m.pathKeys.shift();
-        if(Math.hypot(heroPx[0]-m.px,heroPx[1]-m.py)<=atkRange) break;
+        let nearAny;
+        if(isGolem){
+          nearAny=guards.some(g=>{const[gpx,gpy]=axToPx(g.q,g.r);return Math.hypot(gpx-m.px,gpy-m.py)<=atkRange;});
+        } else {
+          nearAny=heroBodyPx.some(bpx=>Math.hypot(bpx[0]-m.px,bpx[1]-m.py)<=atkRange);
+          if(!nearAny) nearAny=allies.some(al=>{const[apx,apy]=axToPx(al.q,al.r);return Math.hypot(apx-m.px,apy-m.py)<=atkRange;});
+        }
+        if(nearAny) break;
       } else {
         m.px+=dx/d*rem;m.py+=dy/d*rem;rem=0;
       }
     }
   }
+
+  // Golem : mort si tous les gardes sont detruits
+  if(isGolem&&!initialPlacement&&guards.length===0){ endGame(); return; }
 
   // ── Gardes : attaque des monstres ──
   for(const g of guards){
@@ -869,6 +987,7 @@ function update(dt){
     playSfx('attack');
     if(target.hp<=0){
       money+=g.bounty;
+      if(sessionMode==='gameplay3'&&money>midasMaxMoney) midasMaxMoney=money;
       monsters=monsters.filter(m=>m!==target);
       playSfx('kill');log(t('guardKill',{x:g.bounty}));
     }
@@ -925,17 +1044,21 @@ function loadSettings(){
     if(s.decorIndex!==undefined) decorIndex=s.decorIndex;
     if(s.gameMode&&s.gameMode!=='beginner'){
       // migrer anciens noms de mode
-      if(s.gameMode==='normal') gameMode='gameplay1';
-      else if(s.gameMode==='hardcore') gameMode='gameplay2';
+      if(['normal','hardcore','gameplay2','gameplay4','gameplay7'].includes(s.gameMode)) gameMode='gameplay1';
       else gameMode=s.gameMode;
     }
     if(s.sfxVolume!==undefined) sfxVolume=s.sfxVolume;
     if(s.pauseKey) pauseKey=s.pauseKey;
+    if(s.abandonKey!==undefined) abandonKey=s.abandonKey;
+    if(s.topBuyKey!==undefined) topBuyKey=s.topBuyKey;
+    if(s.bottomBuyKey!==undefined) bottomBuyKey=s.bottomBuyKey;
+    if(s.specialKey!==undefined) specialKey=s.specialKey;
+    if(s.speed2&&s.speed2>=1) SPEEDS[1]=s.speed2;
   }catch(e){}
 }
 function saveSettings(){
   localStorage.setItem('hexdefense_settings',
-    JSON.stringify({lang,decorIndex,gameMode,sfxVolume,pauseKey}));
+    JSON.stringify({lang,decorIndex,gameMode,sfxVolume,pauseKey,abandonKey,topBuyKey,bottomBuyKey,specialKey,speed2:SPEEDS[1]}));
 }
 
 
@@ -944,19 +1067,28 @@ function saveSettings(){
 // ══════════════════════════════════════════════════════
 function spend(amount){ money-=amount; totalSpent+=amount; }
 
+// Midas peut passer en negatif ; sa limite est son argent maximal atteint cette partie
+function canAfford(cost){
+  if(sessionMode==='gameplay3') return money-cost>=-midasMaxMoney;
+  return money>=cost;
+}
+
 function resetGameState(){
-  point=0;pointRate=0;pointIncomeAcc=0;swapTargets=[];totalSpent=0;elapsedSeconds=0;
-  midasTimer=0;mapChangeTimer=240;
-  kaelPendingGuards=[];kaelSelectedPending=null;
+  point=0;pointRate=0;swapTargets=[];totalSpent=0;elapsedSeconds=0;
+  midasTimer=0;midasDoublers=0;midasMaxMoney=0;
   waveSpawnTotal=9999;waveSpawnCount=0;
-  debtPaid=0;debtTileKey=null;
+  enzoCounts={fast:7,hp:7,dmg:6};enzoTotalSpawned={fast:0,hp:0,dmg:0};
+  enzoRemainingThisWave={fast:0,hp:0,dmg:0};enzoStarvedTimer=0;enzoAutoSpeedBoost=false;
   hero={q:0,r:0,hp:HERO_MAXHP,maxhp:HERO_MAXHP};
+  heroExtraTiles=[];boostTiles=new Set();nextGrowthTile=null;
   guards=[];monsters=[];spawnPoints=[];allies=[];
   waveNum=0;waveTimer=0;spawnAcc=0;matchTimer=MATCH_DURATION;
   attackFx=[];monsterAttackFx=[];heroHitFlash=0;
   selected=null;pendingAction=null;pendingAllySource=null;moveSelected=[];hoverMonster=null;
   costs={...BASE_COSTS};
   paused=false;pauseUsed=false;
+  speedIndex=0;document.getElementById('speedBtn').textContent=t('speed')+' x'+SPEEDS[speedIndex];
+  document.getElementById('pauseBtnSide').style.display='';
   document.getElementById('chrono').textContent=formatTime(MATCH_DURATION);
 }
 
@@ -965,7 +1097,11 @@ function startGameSession(){
   state='playing';gameRunning=true;
   waveNum=0;waveTimer=0.5;spawnAcc=0;initialPlacement=true;
   pickRandomSpawnPoints();
-  if(sessionMode==='gameplay7') pickDebtTile();
+  if(sessionMode==='gameplay8'){
+    boostTiles=new Set();
+    Object.keys(tiles).forEach(k=>{if(Math.random()<0.5) boostTiles.add(k);});
+    updateNextGrowthTile();
+  }
 }
 
 // Prepare la sidebar selon le type de partie
@@ -973,15 +1109,14 @@ function prepareGameUI(showPoint,showTimer,showChrono){
   document.getElementById('boxPoint').style.display   =showPoint  ?'':'none';
   document.getElementById('boxTimer').style.display   =showTimer  ?'':'none';
   document.getElementById('boxChrono').style.display  =showChrono ?'':'none';
-  const showSpecial=sessionMode==='gameplay3'||sessionMode==='gameplay4';
+  const showSpecial=sessionMode==='gameplay3';
   const specBox=document.getElementById('boxSpecial');
   specBox.style.display=showSpecial?'flex':'none';
-  if(sessionMode==='gameplay3') document.getElementById('lblSpecial').textContent='x2 dans';
-  if(sessionMode==='gameplay4') document.getElementById('lblSpecial').textContent=t('mapChangeTimer');
+  if(sessionMode==='gameplay3') document.getElementById('lblSpecial').textContent='Prochain doubleur dans';
+  document.getElementById('midasExtra').style.display=sessionMode==='gameplay3'?'block':'none';
   const enzoBox=document.getElementById('boxEnzo');
   enzoBox.style.display=sessionMode==='gameplay5'?'flex':'none';
-  const detteBox=document.getElementById('boxDette');
-  detteBox.style.display=sessionMode==='gameplay7'?'flex':'none';
+  document.getElementById('golemShopBtn').style.display=sessionMode==='gameplay9'?'':'none';
   document.getElementById('side').style.display       ='block';
   document.getElementById('settingsBtn').style.display='none';
   document.getElementById('rulesBtn').style.display   ='none';
@@ -991,12 +1126,11 @@ function prepareGameUI(showPoint,showTimer,showChrono){
 
 function heroName(mode){
   if(mode==='gameplay1') return t('modeNormal');
-  if(mode==='gameplay2') return t('modeHardcore');
   if(mode==='gameplay3') return t('modeMidas');
-  if(mode==='gameplay4') return t('modeKael');
   if(mode==='gameplay5') return t('modeEnzo');
   if(mode==='gameplay6') return t('modeIris');
-  if(mode==='gameplay7') return t('detteMode');
+  if(mode==='gameplay8') return t('modeGaston');
+  if(mode==='gameplay9') return t('modeGolem');
   return mode;
 }
 
@@ -1019,51 +1153,30 @@ function generateRandomMap(){
 }
 
 function startNormalGame(d){
-  if(gameMode==='gameplay7'){
-    pendingGameStart=()=>startNormalGameActual(d);
-    showDetteSetup();return;
-  }
-  startNormalGameActual(d);
-}
-function startNormalGameActual(d){
   difficulty=d;sessionMode=gameMode;dailyMode=false;
   applyTileData(generateRandomMap());
-  money=0;resetGameState();
+  resetGameState();money=sessionMode==='gameplay9'?40:0;
   prepareGameUI(true,true,true);
   document.getElementById('boxDiff').textContent=heroName(gameMode)+' — Difficulté '+d;
   startGameSession();updateHUD();renderPanel();
 }
 
 function startDailyGame(){
-  if(gameMode==='gameplay7'){
-    pendingGameStart=startDailyGameActual;
-    showDetteSetup();return;
-  }
-  startDailyGameActual();
-}
-function startDailyGameActual(){
+  const dailyHero=dailyHeroMode();
   const dailyTileData=generateDailyMap();
   const count=Object.keys(dailyTileData).length;
   applyTileData(dailyTileData);
-  dailyMode=true;difficulty=2;sessionMode=gameMode;
-  money=0;resetGameState();
+  dailyMode=true;difficulty=2;sessionMode=dailyHero;
+  resetGameState();money=sessionMode==='gameplay9'?40:0;
   prepareGameUI(true,true,true);
-  document.getElementById('boxDiff').textContent=heroName(gameMode)+' — Difficulté '+difficulty+' — Défi du Jour';
+  document.getElementById('boxDiff').textContent=heroName(sessionMode)+' — Difficulté '+difficulty+' — Défi du Jour';
   showToast(t('dailyMapInfo',{n:count}));
   startGameSession();updateHUD();renderPanel();
 }
 
-function showDetteSetup(){
-  document.getElementById('overlay').style.display='none';
-  document.getElementById('detteSetupOverlay').style.display='flex';
-}
-
 function showMenu(){
   state='difficulty';gameRunning=false;initialPlacement=false;
-  kaelPendingGuards=[];kaelSelectedPending=null;
-  document.getElementById('kaelList').style.display='none';
   document.getElementById('boxEnzo').style.display='none';
-  document.getElementById('boxDette').style.display='none';
   dailyMode=false;applyTileData(normalTileData);
   document.getElementById('side').style.display       ='none';
   document.getElementById('settingsBtn').style.display='';
@@ -1076,18 +1189,6 @@ function showMenu(){
 function endGame(reason){
   state='gameover';gameRunning=false;
 
-  // Otto : succes/echec du remboursement de dette
-  let detteLine='';
-  if(sessionMode==='gameplay7'){
-    if(debtPaid>=debtGoal&&debtGoal>0){
-      point=point*(debtGoal/100);
-      detteLine=t('detteSuccess')+' (x'+(debtGoal/100).toFixed(2)+')<br>';
-    } else {
-      point=0;
-      detteLine=t('detteFail')+'<br>';
-    }
-  }
-
   if(dailyMode) recordDailyResult(Math.floor(point));
   else recordNormalResult(difficulty,sessionMode,Math.floor(point));
 
@@ -1095,7 +1196,6 @@ function endGame(reason){
 
   // Construction HTML des stats
   let html='<b>'+t('lastGame')+' &mdash; '+label+'</b><br>';
-  html+=detteLine;
   html+=t('finalPoint')+' : '+Math.floor(point)+'<br>';
   html+=t('totalSpent')+' : '+Math.floor(totalSpent)+'&euro;<br>';
   html+=t('time')+' : '+formatTime(elapsedSeconds);
@@ -1124,12 +1224,10 @@ function drawCharacterHero(px,py){
   const s=SIZE;
   // Couleurs selon le héros
   let shirt='#3388ee',shirtLine='#1166cc',hair='#7a4418',pants='#1a3b8c',shoes='#3a2010';
-  if(sessionMode==='gameplay2'){shirt='#2aaa6a';shirtLine='#1a7a4a';hair='#d4a820';pants='#1a4a2a';shoes='#3a2808';}
   if(sessionMode==='gameplay3'){shirt='#cc9922';shirtLine='#aa7700';hair='#1a1a1a';pants='#2a2a2a';shoes='#111';}
-  if(sessionMode==='gameplay4'){shirt='#9933cc';shirtLine='#7722aa';hair='#f0f0f0';pants='#4a1a6a';shoes='#2a0a3a';}
   if(sessionMode==='gameplay5'){shirt='#ee4411';shirtLine='#cc2200';hair='#222233';pants='#331100';shoes='#1a0800';}
   if(sessionMode==='gameplay6'){shirt='#22ccaa';shirtLine='#118866';hair='#eeeecc';pants='#0f4a3c';shoes='#0a2c22';}
-  if(sessionMode==='gameplay7'){shirt='#c9a227';shirtLine='#8a6d15';hair='#3a2a10';pants='#2a2010';shoes='#1a1408';}
+  if(sessionMode==='gameplay8'){shirt='#d97a3a';shirtLine='#a85a20';hair='#5a3a1a';pants='#7a4a20';shoes='#3a2410';}
   // ombre
   ctx.fillStyle='rgba(0,0,0,0.18)';
   ctx.beginPath();ctx.ellipse(px,py+s*0.46,s*0.22,s*0.08,0,0,Math.PI*2);ctx.fill();
@@ -1321,45 +1419,72 @@ function render(){
     const tt=tiles[k];
     let fill=((tt.q+tt.r)%2===0)?d.tile:(d.tile2||d.tile);
     if(spawnSet.has(k)) fill=d.spawnTile;
-    if(sessionMode==='gameplay7'&&k===debtTileKey) fill='#c9a227';
+    if(sessionMode==='gameplay8'&&boostTiles.has(k)) fill='#ffcc33';
     drawHex(tt.px,tt.py,fill,'#3a3a3a');
   }
-  if(sessionMode==='gameplay7'&&debtTileKey&&tiles[debtTileKey]){
-    const dt=tiles[debtTileKey];
-    ctx.fillStyle='#1a1408';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
-    ctx.fillText(Math.floor(debtPaid)+'/'+debtGoal+'€',dt.px,dt.py+4);
+  // Surbrillance des cases (vides/spawn) choisies pour l'echange
+  for(const st of swapTargets){
+    if(st.type!=='empty'&&st.type!=='spawn') continue;
+    const [spx,spy]=axToPx(st.obj.q,st.obj.r);
+    ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
+    ctx.setLineDash([]);ctx.beginPath();
+    ctx.arc(spx,spy,SIZE*0.78,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
   }
 
-  // Heros
+  // Heros (invisible pour le Golem, incarne uniquement par ses gardes)
   const hpx=axToPx(hero.q,hero.r);
-  if(d.characters){
+  if(sessionMode==='gameplay9'){
+    // rien a dessiner
+  } else if(d.characters){
     drawCharacterHero(hpx[0],hpx[1]);
   } else if(d.emoji){
     ctx.font=(SIZE*1.2)+'px sans-serif';ctx.textAlign='center';
     ctx.fillText(d.heroEmoji||'🧑',hpx[0],hpx[1]+SIZE*0.35);
   } else {
-    const hColors={gameplay1:['#3388ee','#88ccff'],gameplay2:['#2aaa6a','#7be0b0'],
-      gameplay3:['#cc9922','#ffe070'],gameplay4:['#9933cc','#dd88ff'],gameplay5:['#ee4411','#ffaa55'],
-      gameplay6:['#22ccaa','#88ffe0'],gameplay7:['#c9a227','#ffe090']};
+    const hColors={gameplay1:['#3388ee','#88ccff'],
+      gameplay3:['#cc9922','#ffe070'],gameplay5:['#ee4411','#ffaa55'],
+      gameplay6:['#22ccaa','#88ffe0'],gameplay8:['#d97a3a','#ffcc99']};
     const [hFill,hStroke]=(hColors[sessionMode]||[d.heroColor,d.heroStroke]);
     drawHex(hpx[0],hpx[1],hFill,hStroke);
     ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
     ctx.fillText(heroName(sessionMode).toUpperCase(),hpx[0],hpx[1]-4);
   }
-  if(selected&&selected.type==='hero'){
-    ctx.save();ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=2;
-    ctx.setLineDash([5,4]);ctx.beginPath();
-    ctx.arc(hpx[0],hpx[1],SIZE*0.76,0,Math.PI*2);ctx.stroke();
-    ctx.restore();
+  if(sessionMode!=='gameplay9'){
+    if(selected&&selected.type==='hero'){
+      ctx.save();ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=2;
+      ctx.setLineDash([5,4]);ctx.beginPath();
+      ctx.arc(hpx[0],hpx[1],SIZE*0.76,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+    if(swapTargets.some(t=>t.obj===hero)){
+      ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
+      ctx.setLineDash([]);ctx.beginPath();
+      ctx.arc(hpx[0],hpx[1],SIZE*0.78,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+    ctx.fillText(Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp,hpx[0],hpx[1]+(d.emoji?SIZE*0.7:12));
   }
-  if(swapTargets.some(t=>t.obj===hero)){
-    ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
-    ctx.setLineDash([]);ctx.beginPath();
-    ctx.arc(hpx[0],hpx[1],SIZE*0.78,0,Math.PI*2);ctx.stroke();
-    ctx.restore();
+
+  // Corps supplementaire du heros (Gaston)
+  if(heroExtraTiles.length){
+    const [hFillB,hStrokeB]=sessionMode==='gameplay8'?['#d97a3a','#ffcc99']:[d.heroColor,d.heroStroke];
+    for(const bt of heroExtraTiles){
+      const [bpx,bpy]=axToPx(bt.q,bt.r);
+      drawHex(bpx,bpy,hFillB,hStrokeB);
+    }
   }
-  ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
-  ctx.fillText(Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp,hpx[0],hpx[1]+(d.emoji?SIZE*0.7:12));
+  // Prochaine case de croissance (Gaston)
+  if(sessionMode==='gameplay8'&&nextGrowthTile){
+    const [npx,npy]=axToPx(nextGrowthTile.q,nextGrowthTile.r);
+    ctx.save();ctx.strokeStyle='rgba(217,122,58,0.9)';ctx.lineWidth=3;
+    ctx.setLineDash([6,4]);ctx.beginPath();
+    ctx.arc(npx,npy,SIZE*0.7,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle='rgba(217,122,58,0.8)';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
+    ctx.fillText('+',npx,npy+7);
+  }
 
   // Allies (Iris)
   for(const al of allies){
@@ -1409,6 +1534,7 @@ function render(){
     }
     ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
     ctx.fillText('d'+g.dmg+' p'+g.range+' +'+g.bounty+'€',px,py+(d.emoji?SIZE*0.65:14));
+    if(g.maxhp) ctx.fillText('❤ '+Math.max(0,Math.round(g.hp))+'/'+g.maxhp,px,py+(d.emoji?SIZE*0.65:14)+13);
   }
 
   // Effets attaques gardes (jaune)
@@ -1483,7 +1609,9 @@ function loop(ts){
   const dtRaw=(ts-lastT)/1000;lastT=ts;
   realDt=Math.min(dtRaw,0.25);
   abandonTick(realDt);
-  if(!paused&&gameRunning) update(Math.min(dtRaw,0.2)*SPEEDS[speedIndex]);
+  const curSpeedMult=(sessionMode==='gameplay5'&&enzoAutoSpeedBoost)?10:SPEEDS[speedIndex];
+  if(!paused&&gameRunning) update(Math.min(dtRaw,0.2)*curSpeedMult);
+  if(gameRunning) updateHUD();
   refreshAffordability();
   render();
   requestAnimationFrame(loop);
@@ -1495,10 +1623,10 @@ function loop(ts){
 // ══════════════════════════════════════════════════════
 function updateHUD(){
   document.getElementById('hp').textContent   =Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp;
+  if(sessionMode==='gameplay3'&&money>midasMaxMoney) midasMaxMoney=money;
   document.getElementById('money').textContent=Math.floor(money);
   document.getElementById('point').textContent=Math.floor(point);
   if(sessionMode==='gameplay5') updateEnzoDisplay();
-  if(sessionMode==='gameplay7') document.getElementById('detteVal').textContent=Math.floor(debtPaid)+'/'+debtGoal+'€';
 }
 
 
@@ -1509,18 +1637,19 @@ function refreshAffordability(){
   if(!selected) return;
   const q=id=>document.getElementById(id);
   if(selected.type==='hero'){
-    if(q('buyGuard'))  q('buyGuard').disabled =money<priceFor('guardPlace',costs.guardPlace);
-    if(q('buySwap'))   q('buySwap').disabled  =money<costs.swap;
-    if(q('buyPoint'))  q('buyPoint').disabled =money<costs.point;
-    if(q('buyAlly'))   q('buyAlly').disabled  =money<priceFor('summonAlly',costs.summonAlly);
+    if(q('buyGuard'))  q('buyGuard').disabled =!canAfford(priceFor('guardPlace',costs.guardPlace));
+    if(q('buySwap'))   q('buySwap').disabled =!canAfford(costs.swap);
+    if(q('buyPoint'))  q('buyPoint').disabled =!canAfford(costs.point);
+    if(q('buyAlly'))   q('buyAlly').disabled =!canAfford(priceFor('summonAlly',costs.summonAlly));
+    if(q('useDoubler')) q('useDoubler').disabled=midasDoublers<=0;
   } else if(selected.type==='ally'){
     const al=selected.a;
-    if(q('allyBuyGuard')) q('allyBuyGuard').disabled=money<priceFor('guardPlace',al.costs.guardPlace);
-    if(q('allyBuyPoint')) q('allyBuyPoint').disabled=money<al.costs.point;
+    if(q('allyBuyGuard')) q('allyBuyGuard').disabled =!canAfford(priceFor('guardPlace',al.costs.guardPlace));
+    if(q('allyBuyPoint')) q('allyBuyPoint').disabled =!canAfford(al.costs.point);
   } else if(selected.type==='guard'){
     const g=selected.g;
-    if(q('upDmg'))       q('upDmg').disabled      =money<priceFor('dmgAll',g.costDmgUp);
-    if(q('upBounty'))    q('upBounty').disabled    =money<priceFor('bountyAll',g.costBountyUp);
+    if(q('upDmg'))       q('upDmg').disabled =!canAfford(priceFor('dmgAll',g.costDmgUp));
+    if(q('upBounty'))    q('upBounty').disabled =!canAfford(priceFor('bountyAll',g.costBountyUp));
   }
 }
 
@@ -1532,58 +1661,68 @@ function renderPanel(){
 
   if(selected.type==='hero'){
     const pG=priceFor('guardPlace',costs.guardPlace);
-    const disG=money<pG?'disabled':'';
-    const disS=money<costs.swap?'disabled':'';
-    const disP=money<costs.point?'disabled':'';
-    const ptLabel=sessionMode==='gameplay2'?'+1 adj./pts':'+1 pt/s';
-    const ptHint=sessionMode==='gameplay2'?`Pts/s adj. : +${pointRate}/case vide/s`:`Points : +${pointRate}/s`;
+    const disG=!canAfford(pG)?'disabled':'';
+    const disS=!canAfford(costs.swap)?'disabled':'';
+    const disP=!canAfford(costs.point)?'disabled':'';
+    const ptLabel=sessionMode==='gameplay6'?'+0.3 pt/s':'+1 pt/s';
+    const ptHint=`Points : +${pointRate.toFixed(1)}/s`;
     const canAlly=canPoint&&sessionMode==='gameplay6';
     const pA=priceFor('summonAlly',costs.summonAlly);
-    const disA=money<pA?'disabled':'';
+    const disA=!canAfford(pA)?'disabled':'';
+    const canMidas=sessionMode==='gameplay3';
+    const disMidas=midasDoublers<=0?'disabled':'';
     let h=`<h3>&#10084; ${heroName(sessionMode)}</h3>
       <button id="buyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>`;
     if(canSwap)   h+=`<button id="buySwap" ${disS}>Echanger 2 entites (<span class="price">${costs.swap}&euro;</span>)</button>`;
     if(canPoint)  h+=`<button id="buyPoint" ${disP}>${ptLabel} (<span class="price">${costs.point}&euro;</span>)</button>`;
     if(canPoint)  h+=`<p class="hint">${ptHint}</p>`;
     if(canAlly)   h+=`<button id="buyAlly" ${disA}>${t('summonAlly')} (<span class="price">${pA}&euro;</span>)</button>`;
+    if(canMidas)  h+=`<button id="useDoubler" ${disMidas}>Utiliser un doubleur (x2 argent) : ${midasDoublers} en stock</button>`;
+    if(canMidas)  h+=`<p class="hint">Dette maximale autorisee : -${Math.floor(midasMaxMoney)}&euro;</p>`;
+    if(sessionMode==='gameplay8') h+=`<p class="hint">Taille : ${1+heroExtraTiles.length} case(s)</p>`;
     panel.innerHTML=h;
     document.getElementById('buyGuard').onclick=()=>{
-      if(money<priceFor('guardPlace',costs.guardPlace)) return;
+      if(!canAfford(priceFor('guardPlace',costs.guardPlace))) return;
       pendingAction='placeGuard';log(t('chooseTileForGuard'));
     };
     if(canSwap) document.getElementById('buySwap').onclick=()=>{
-      if(money<costs.swap) return;
+      if(!canAfford(costs.swap)) return;
       spend(costs.swap);pendingAction='swapSelect';swapTargets=[];
       log('Selectionne 2 entites a echanger.');updateHUD();renderPanel();
     };
     if(canPoint) document.getElementById('buyPoint').onclick=()=>{
-      if(money<costs.point) return;
-      spend(costs.point);costs.point=Math.ceil(costs.point*1.2);pointRate++;
+      if(!canAfford(costs.point)) return;
+      spend(costs.point);costs.point=Math.ceil(costs.point*1.25);
+      pointRate+=sessionMode==='gameplay6'?0.3:1;
       playSfx('buy');updateHUD();renderPanel();log(t('pointBought'));
     };
     if(canAlly) document.getElementById('buyAlly').onclick=()=>{
-      if(money<priceFor('summonAlly',costs.summonAlly)) return;
+      if(!canAfford(priceFor('summonAlly',costs.summonAlly))) return;
       pendingAction='placeAlly';log(t('chooseTileForAlly'));
+    };
+    if(canMidas) document.getElementById('useDoubler').onclick=()=>{
+      if(midasDoublers<=0) return;
+      midasDoublers--;money*=2;playSfx('buy');log('Argent double !');showToast('x2 Argent !');updateHUD();renderPanel();
     };
 
   } else if(selected.type==='ally'){
     const al=selected.a;
     const pG=priceFor('guardPlace',al.costs.guardPlace);
-    const disG=money<pG?'disabled':'';
-    const disP=money<al.costs.point?'disabled':'';
+    const disG=!canAfford(pG)?'disabled':'';
+    const disP=!canAfford(al.costs.point)?'disabled':'';
     let h=`<h3>&#10084; ${t('ally')} (${Math.round(Math.max(0,al.hp))}/${al.maxhp} PV)</h3>
       <button id="allyBuyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>
-      <button id="allyBuyPoint" ${disP}>+1 pt/s (<span class="price">${al.costs.point}&euro;</span>)</button>
-      <p class="hint">Points : +${pointRate}/s (dont ${al.pointContribution||0}/s de cet allie)</p>`;
+      <button id="allyBuyPoint" ${disP}>+0.3 pt/s (<span class="price">${al.costs.point}&euro;</span>)</button>
+      <p class="hint">Points : +${pointRate.toFixed(1)}/s (dont ${(al.pointContribution||0).toFixed(1)}/s de cet allie)</p>`;
     panel.innerHTML=h;
     document.getElementById('allyBuyGuard').onclick=()=>{
-      if(money<priceFor('guardPlace',al.costs.guardPlace)) return;
+      if(!canAfford(priceFor('guardPlace',al.costs.guardPlace))) return;
       pendingAction='placeGuard';pendingAllySource=al;log(t('chooseTileForGuard'));
     };
     document.getElementById('allyBuyPoint').onclick=()=>{
-      if(money<al.costs.point) return;
-      spend(al.costs.point);al.costs.point=Math.ceil(al.costs.point*1.2);
-      pointRate++;al.pointContribution=(al.pointContribution||0)+1;
+      if(!canAfford(al.costs.point)) return;
+      spend(al.costs.point);al.costs.point=Math.ceil(al.costs.point*1.25);
+      pointRate+=0.3;al.pointContribution=(al.pointContribution||0)+0.3;
       playSfx('buy');updateHUD();renderPanel();log(t('pointBought'));
     };
 
@@ -1595,17 +1734,18 @@ function renderPanel(){
       <div class="row"><span>${t('dmg')}</span><span>${g.dmg}</span></div>
       <div class="row"><span>${t('range')}</span><span>${g.range}</span></div>
       <div class="row"><span>${t('bountyPerKill')}</span><span>+${g.bounty}&euro;</span></div>`;
-    const disUd=money<g.costDmgUp?'disabled':'';
-    const disUb=money<g.costBountyUp?'disabled':'';
+    if(g.maxhp) h+=`<div class="row"><span>PV</span><span>${Math.max(0,Math.round(g.hp))}/${g.maxhp}</span></div>`;
+    const disUd=!canAfford(g.costDmgUp)?'disabled':'';
+    const disUb=!canAfford(g.costBountyUp)?'disabled':'';
     h+=`<button id="upDmg" ${disUd}>${t('upDmg')} (<span class="price">${pUd}&euro;</span>)</button>`;
     h+=`<button id="upBounty" ${disUb}>${t('upBounty')} (<span class="price">${pUb}&euro;</span>)</button>`;
     panel.innerHTML=h;
     document.getElementById('upDmg').onclick=()=>{
-      if(money<g.costDmgUp) return;spend(g.costDmgUp);g.costDmgUp=Math.ceil(g.costDmgUp*1.2);g.dmg++;
+      if(!canAfford(g.costDmgUp)) return;spend(g.costDmgUp);g.costDmgUp=Math.ceil(g.costDmgUp*1.25);g.dmg++;
       playSfx('buy');updateHUD();renderPanel();
     };
     document.getElementById('upBounty').onclick=()=>{
-      if(money<g.costBountyUp) return;spend(g.costBountyUp);g.costBountyUp=Math.ceil(g.costBountyUp*1.2);g.bounty++;
+      if(!canAfford(g.costBountyUp)) return;spend(g.costBountyUp);g.costBountyUp=Math.ceil(g.costBountyUp*1.25);g.bounty++;
       playSfx('buy');updateHUD();renderPanel();
     };
   }
@@ -1637,31 +1777,24 @@ cv.addEventListener('click',e=>{
     const k=axKey(tt.q,tt.r);
     if(occupiedSet().has(k)) return;
     if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
-    const g=newGuard();g.q=tt.q;g.r=tt.r;guards.push(g);
+    const g=newGuard();g.q=tt.q;g.r=tt.r;
+    if(boostTiles.has(k)) g.dmg=2;
+    guards.push(g);
     if(guards.length>=GUARD_INIT) initialPlacement=false;
     return;
   }
   if(!gameRunning) return;
-
-  // Placement garde Kael depuis la liste
-  if(sessionMode==='gameplay4'&&kaelPendingGuards.length>0&&kaelSelectedPending!==null){
-    if(occupiedSet().has(axKey(tt.q,tt.r))){log(t('invalidPlacement'));return;}
-    if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
-    const g=kaelPendingGuards.splice(kaelSelectedPending,1)[0];
-    g.q=tt.q;g.r=tt.r;guards.push(g);
-    kaelSelectedPending=null;
-    renderKaelList();
-    if(kaelPendingGuards.length===0){log('Tous les gardes places !');showToast('Gardes places !');}
-    return;
-  }
 
   if(pendingAction==='placeGuard'){
     if(occupiedSet().has(axKey(tt.q,tt.r))) return;
     if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
     const costObj=pendingAllySource?pendingAllySource.costs:costs;
     const price=priceFor('guardPlace',costObj.guardPlace);
-    const g=newGuard();g.q=tt.q;g.r=tt.r;guards.push(g);
-    spend(price);costObj.guardPlace=Math.ceil(costObj.guardPlace*1.2);
+    const g=newGuard();g.q=tt.q;g.r=tt.r;
+    if(boostTiles.has(axKey(tt.q,tt.r))) g.dmg=2;
+    guards.push(g);
+    spend(price);costObj.guardPlace=Math.ceil(costObj.guardPlace*1.25);
+    if(sessionMode==='gameplay8'&&!pendingAllySource) growHero();
     pendingAction=null;pendingAllySource=null;playSfx('buy');
     log(t('newGuardPlaced'));updateHUD();renderPanel();return;
   }
@@ -1671,18 +1804,13 @@ cv.addEventListener('click',e=>{
     if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
     const price=priceFor('summonAlly',costs.summonAlly);
     allies.push({q:tt.q,r:tt.r,hp:ALLY_MAXHP,maxhp:ALLY_MAXHP,pointContribution:0,costs:{guardPlace:BASE_COSTS.guardPlace,point:BASE_COSTS.point}});
-    spend(price);costs.summonAlly=Math.ceil(costs.summonAlly*1.2);
+    spend(price);costs.summonAlly=Math.ceil(costs.summonAlly*1.25);
     pendingAction=null;playSfx('buy');
     log(t('allyPlaced'));updateHUD();renderPanel();return;
   }
 
-  if(sessionMode==='gameplay7'&&debtTileKey&&axKey(tt.q,tt.r)===debtTileKey){
-    if(money>0){debtPaid+=money;money=0;playSfx('buy');log(t('detteRepaid'));updateHUD();}
-    return;
-  }
-
   if(pendingAction==='swapSelect'){
-    // Detect which entity was clicked (hero, guard, monster)
+    // Detect which entity was clicked (hero, guard, monster, zone de spawn, ou case vide)
     let entity=null;
     const dist=SIZE*0.76;
     if(Math.hypot(hero.px-mx,hero.py-my)<=dist) entity={type:'hero',obj:hero};
@@ -1694,17 +1822,26 @@ cv.addEventListener('click',e=>{
       const m=monsters.find(m=>Math.hypot(m.px-mx,m.py-my)<=dist);
       if(m) entity={type:'monster',obj:m};
     }
-    if(!entity) return;
-    // Avoid duplicate selection
-    if(swapTargets.some(t=>t.obj===entity.obj)) return;
+    if(!entity){
+      const k=axKey(tt.q,tt.r);
+      if(!tiles[k]) return;
+      if(spawnPoints.includes(k)) entity={type:'spawn',obj:{q:tt.q,r:tt.r},key:k};
+      else entity={type:'empty',obj:{q:tt.q,r:tt.r}};
+    }
+    // Avoid duplicate selection (meme case deja choisie)
+    const entKey=axKey(entity.obj.q,entity.obj.r);
+    if(swapTargets.some(t=>axKey(t.obj.q,t.obj.r)===entKey)) return;
     swapTargets.push(entity);
     if(swapTargets.length===2){
       // Execute swap: exchange q,r between all; snap monsters' px,py to new hex
       const a=swapTargets[0],b=swapTargets[1];
       const aq=a.obj.q,ar=a.obj.r,bq=b.obj.q,br=b.obj.r;
-      a.obj.q=bq;a.obj.r=br;b.obj.q=aq;b.obj.r=ar;
+      if(a.type==='hero'||a.type==='guard'||a.type==='monster'){a.obj.q=bq;a.obj.r=br;}
+      if(b.type==='hero'||b.type==='guard'||b.type==='monster'){b.obj.q=aq;b.obj.r=ar;}
       if(a.type==='monster'){const[px,py]=axToPx(a.obj.q,a.obj.r);a.obj.px=px;a.obj.py=py;a.obj.pathKeys=null;}
       if(b.type==='monster'){const[px,py]=axToPx(b.obj.q,b.obj.r);b.obj.px=px;b.obj.py=py;b.obj.pathKeys=null;}
+      if(a.type==='spawn'){spawnPoints=spawnPoints.filter(k=>k!==a.key);spawnPoints.push(axKey(bq,br));}
+      if(b.type==='spawn'){spawnPoints=spawnPoints.filter(k=>k!==b.key);spawnPoints.push(axKey(aq,ar));}
       // Recompute paths for all monsters
       monsters.forEach(m=>recomputePath(m));
       pendingAction=null;swapTargets=[];
@@ -1716,7 +1853,7 @@ cv.addEventListener('click',e=>{
   }
 
   // Selection hero / allie / garde
-  if(tt.q===hero.q&&tt.r===hero.r){selected={type:'hero'};}
+  if((tt.q===hero.q&&tt.r===hero.r)||heroExtraTiles.some(ht=>ht.q===tt.q&&ht.r===tt.r)){selected={type:'hero'};}
   else {
     const al=allies.find(a=>a.q===tt.q&&a.r===tt.r);
     if(al){selected={type:'ally',a:al};}
@@ -1729,27 +1866,94 @@ cv.addEventListener('click',e=>{
 });
 
 // Clavier
+function togglePause(){
+  if(state!=='playing') return;
+  if(!paused){
+    if(pauseUsed) return;
+    paused=true;pauseUsed=true;
+    document.getElementById('pauseBtnSide').style.display='none';
+  } else paused=false;
+}
+function doTopBuy(){
+  if(!selected) return;
+  if(selected.type==='guard') document.getElementById('upDmg')?.click();
+  else if(selected.type==='hero') document.getElementById('buyGuard')?.click();
+}
+function doBottomBuy(){
+  if(!selected) return;
+  if(selected.type==='guard') document.getElementById('upBounty')?.click();
+  else if(selected.type==='hero') document.getElementById('buyPoint')?.click();
+}
+function doSpecial(){
+  if(state!=='playing') return;
+  if(sessionMode==='gameplay6'){
+    if(!canAfford(priceFor('summonAlly',costs.summonAlly))) return;
+    pendingAction='placeAlly';log(t('chooseTileForAlly'));
+  } else if(sessionMode==='gameplay5'){
+    if(!gameRunning) return;
+    const avail=MONSTER_TYPES.filter(t=>enzoTotalSpawned[t]+enzoCounts[t]<ENZO_TYPE_CAP);
+    if(!avail.length) return;
+    const t=avail[Math.floor(Math.random()*avail.length)];
+    enzoCounts[t]++;updateEnzoDisplay();
+  } else if(sessionMode==='gameplay1'){
+    if(!canAfford(costs.swap)) return;
+    spend(costs.swap);pendingAction='swapSelect';swapTargets=[];
+    log('Selectionne 2 entites a echanger.');updateHUD();renderPanel();
+  } else if(sessionMode==='gameplay3'){
+    if(midasDoublers<=0) return;
+    midasDoublers--;money*=2;playSfx('buy');log('Argent double !');showToast('x2 Argent !');updateHUD();renderPanel();
+  }
+}
+let abandonKeyHeld=false;
 document.addEventListener('keydown',e=>{
   if(listeningFor){
-    pauseKey=e.key.toLowerCase();
-    document.getElementById('pauseKeyBtn').textContent=pauseKey.toUpperCase();
+    const key=e.key.toLowerCase();
+    if(listeningFor==='pause'){pauseKey=key;document.getElementById('pauseKeyBtn').textContent=key.toUpperCase();}
+    if(listeningFor==='abandon'){abandonKey=key;document.getElementById('abandonKeyBtn').textContent=key.toUpperCase();}
+    if(listeningFor==='topBuy'){topBuyKey=key;document.getElementById('topBuyKeyBtn').textContent=key.toUpperCase();}
+    if(listeningFor==='bottomBuy'){bottomBuyKey=key;document.getElementById('bottomBuyKeyBtn').textContent=key.toUpperCase();}
+    if(listeningFor==='special'){specialKey=key;document.getElementById('specialKeyBtn').textContent=key.toUpperCase();}
     listeningFor=null;saveSettings();return;
   }
   const k=e.key.toLowerCase();
-  if(k===pauseKey&&state==='playing'){
-    if(!paused){if(pauseUsed)return;paused=true;pauseUsed=true;}else paused=false;return;
+  if(k===pauseKey&&state==='playing'){togglePause();return;}
+  if(abandonKey&&k===abandonKey&&state==='playing'){
+    if(!abandonKeyHeld){abandonKeyHeld=true;abandonHoldActive=true;abandonHoldT=0;}
+    return;
   }
+  if(topBuyKey&&k===topBuyKey&&state==='playing'){doTopBuy();return;}
+  if(bottomBuyKey&&k===bottomBuyKey&&state==='playing'){doBottomBuy();return;}
+  if(specialKey&&k===specialKey&&state==='playing'){doSpecial();return;}
+});
+document.addEventListener('keyup',e=>{
+  const k=e.key.toLowerCase();
+  if(abandonKey&&k===abandonKey){abandonKeyHeld=false;stopAbandonHold();}
 });
 
 document.getElementById('speedBtn').addEventListener('click',()=>{
   speedIndex=(speedIndex+1)%SPEEDS.length;
   document.getElementById('speedBtn').textContent=t('speed')+' x'+SPEEDS[speedIndex];
 });
-document.getElementById('enzoPlus').addEventListener('click',()=>{
+function enzoAddOne(type){
   if(!gameRunning||sessionMode!=='gameplay5') return;
-  waveSpawnTotal++;
+  if(enzoTotalSpawned[type]+enzoCounts[type]>=ENZO_TYPE_CAP) return;
+  enzoCounts[type]++;
   updateEnzoDisplay();
-});
+}
+function enzoRemoveOne(type){
+  if(!gameRunning||sessionMode!=='gameplay5') return;
+  if(enzoCounts[type]<=0) return;
+  const total=MONSTER_TYPES.reduce((s,t)=>s+enzoCounts[t],0);
+  if(total<=20) return;
+  enzoCounts[type]--;
+  updateEnzoDisplay();
+}
+document.getElementById('enzoPlusDmg').addEventListener('click',()=>enzoAddOne('dmg'));
+document.getElementById('enzoPlusHp').addEventListener('click',()=>enzoAddOne('hp'));
+document.getElementById('enzoPlusFast').addEventListener('click',()=>enzoAddOne('fast'));
+document.getElementById('enzoMinusDmg').addEventListener('click',()=>enzoRemoveOne('dmg'));
+document.getElementById('enzoMinusHp').addEventListener('click',()=>enzoRemoveOne('hp'));
+document.getElementById('enzoMinusFast').addEventListener('click',()=>enzoRemoveOne('fast'));
 
 // Parametres
 document.getElementById('settingsBtn').addEventListener('click',()=>{
@@ -1770,7 +1974,23 @@ document.getElementById('langSelect').addEventListener('change',e=>{lang=e.targe
 document.getElementById('decorSelect').addEventListener('change',e=>{decorIndex=parseInt(e.target.value,10);applyTheme();saveSettings();});
 document.getElementById('modeSelect').addEventListener('change',e=>{gameMode=e.target.value;renderDifficultyList();saveSettings();});
 document.getElementById('volSlider').addEventListener('input',e=>{sfxVolume=parseInt(e.target.value,10)/100;ensureAudio();saveSettings();});
+document.getElementById('speed2Input').addEventListener('change',e=>{
+  const v=parseFloat(e.target.value);
+  if(!v||v<1) return;
+  SPEEDS[1]=v;
+  if(speedIndex===1) document.getElementById('speedBtn').textContent=t('speed')+' x'+SPEEDS[1];
+  saveSettings();
+});
 document.getElementById('pauseKeyBtn').addEventListener('click',()=>{listeningFor='pause';document.getElementById('pauseKeyBtn').textContent='...';});
+document.getElementById('abandonKeyBtn').addEventListener('click',()=>{listeningFor='abandon';document.getElementById('abandonKeyBtn').textContent='...';});
+document.getElementById('topBuyKeyBtn').addEventListener('click',()=>{listeningFor='topBuy';document.getElementById('topBuyKeyBtn').textContent='...';});
+document.getElementById('bottomBuyKeyBtn').addEventListener('click',()=>{listeningFor='bottomBuy';document.getElementById('bottomBuyKeyBtn').textContent='...';});
+document.getElementById('specialKeyBtn').addEventListener('click',()=>{listeningFor='special';document.getElementById('specialKeyBtn').textContent='...';});
+document.getElementById('pauseBtnSide').addEventListener('click',togglePause);
+document.getElementById('golemShopBtn').addEventListener('click',()=>{
+  if(state!=='playing') return;
+  selected={type:'hero'};renderPanel();
+});
 let abandonHoldT=0,abandonHoldActive=false;
 const abandonBtn=document.getElementById('abandonBtn');
 function abandonTick(dt){
@@ -1799,19 +2019,6 @@ document.getElementById('closeRules').addEventListener('click',()=>{
   document.getElementById('overlay').style.display='flex';
 });
 
-// Setup dette (Otto)
-document.getElementById('detteCancelBtn').addEventListener('click',()=>{
-  document.getElementById('detteSetupOverlay').style.display='none';
-  document.getElementById('overlay').style.display='flex';
-  pendingGameStart=null;
-});
-document.getElementById('detteStartBtn').addEventListener('click',()=>{
-  debtGoal=Math.max(0,parseInt(document.getElementById('detteAmountInput').value,10)||0);
-  document.getElementById('detteSetupOverlay').style.display='none';
-  const fn=pendingGameStart;pendingGameStart=null;
-  if(fn) fn();
-});
-
 
 // ══════════════════════════════════════════════════════
 // MENU — rendu des listes
@@ -1821,12 +2028,11 @@ function renderHeroCards(){
   if(!container) return;
   const heroes=[
     {mode:'gameplay1',color:'#3388ee',border:'#88ccff',descKey:'heroDesc1'},
-    {mode:'gameplay2',color:'#2aaa6a',border:'#7be0b0',descKey:'heroDesc2'},
     {mode:'gameplay3',color:'#cc9922',border:'#ffe070',descKey:'heroDesc3'},
-    {mode:'gameplay4',color:'#9933cc',border:'#dd88ff',descKey:'heroDesc4'},
     {mode:'gameplay5',color:'#ee4411',border:'#ffaa55',descKey:'heroDesc5'},
     {mode:'gameplay6',color:'#22ccaa',border:'#88ffe0',descKey:'heroDesc6'},
-    {mode:'gameplay7',color:'#c9a227',border:'#ffe090',descKey:'heroDesc7'},
+    {mode:'gameplay8',color:'#d97a3a',border:'#ffcc99',descKey:'heroDesc8'},
+    {mode:'gameplay9',color:'#8a8a8a',border:'#cfcfcf',descKey:'heroDesc9'},
   ];
   container.innerHTML='';
   heroes.forEach(h=>{
@@ -1853,30 +2059,19 @@ function renderHeroCards(){
   });
 }
 
-function renderKaelList(){
-  const el=document.getElementById('kaelList');
-  if(sessionMode!=='gameplay4'||kaelPendingGuards.length===0){el.style.display='none';return;}
-  el.style.display='block';
-  el.innerHTML='<div style="color:#dd88ff;font-weight:700;font-size:13px;text-align:center;margin-bottom:6px;">Gardes a placer</div>';
-  kaelPendingGuards.forEach((g,i)=>{
-    const isSel=kaelSelectedPending===i;
-    const btn=document.createElement('div');
-    btn.style.cssText=`background:${isSel?'#5a1a8a':'#2a1a3a'};border:2px solid ${isSel?'#dd88ff':'#7733aa'};
-      border-radius:8px;padding:8px 10px;margin:4px 0;cursor:pointer;font-size:12px;color:#eee;text-align:center;`;
-    btn.innerHTML=`<div style="font-weight:700;color:#dd88ff;margin-bottom:3px;">Garde ${i+1}</div>
-      <div>⚔ ${g.dmg} &nbsp; 🎯 ${g.range} &nbsp; 💰 +${g.bounty}€</div>`;
-    btn.addEventListener('click',()=>{
-      kaelSelectedPending=isSel?null:i;
-      renderKaelList();
-    });
-    el.appendChild(btn);
-  });
-}
-
 function updateEnzoDisplay(){
-  const rem=Math.max(0,waveSpawnTotal-waveSpawnCount);
-  const el=document.getElementById('enzoVal');
-  if(el) el.textContent=rem;
+  const setVal=(id,v)=>{const el=document.getElementById(id);if(el) el.textContent=v;};
+  setVal('enzoValDmg',enzoCounts.dmg||0);
+  setVal('enzoValHp',enzoCounts.hp||0);
+  setVal('enzoValFast',enzoCounts.fast||0);
+  const total=MONSTER_TYPES.reduce((s,t)=>s+enzoCounts[t],0);
+  const setDis=(idP,idM,t)=>{
+    const elP=document.getElementById(idP); if(elP) elP.disabled=enzoTotalSpawned[t]+enzoCounts[t]>=ENZO_TYPE_CAP;
+    const elM=document.getElementById(idM); if(elM) elM.disabled=(total<=20)||enzoCounts[t]<=0;
+  };
+  setDis('enzoPlusDmg','enzoMinusDmg','dmg');
+  setDis('enzoPlusHp','enzoMinusHp','hp');
+  setDis('enzoPlusFast','enzoMinusFast','fast');
 }
 
 function renderDifficultyList(){
@@ -1914,7 +2109,7 @@ function buildDecorOptions(){
 }
 function buildModeOptions(){
   const sel=document.getElementById('modeSelect');sel.innerHTML='';
-  [['gameplay1','modeNormal'],['gameplay2','modeHardcore'],['gameplay3','modeMidas'],['gameplay4','modeKael'],['gameplay5','modeEnzo'],['gameplay6','modeIris'],['gameplay7','detteMode']].forEach(([v,k])=>{
+  [['gameplay1','modeNormal'],['gameplay3','modeMidas'],['gameplay5','modeEnzo'],['gameplay6','modeIris'],['gameplay8','modeGaston'],['gameplay9','modeGolem']].forEach(([v,k])=>{
     const opt=document.createElement('option');opt.value=v;opt.textContent=t(k);sel.appendChild(opt);
   });
   sel.value=gameMode;
@@ -1930,10 +2125,12 @@ function applyStaticTexts(){
   E('abandonBtn',t('abandon'));
   E('speedBtn',t('speed')+' x'+SPEEDS[speedIndex]);
   E('volLbl',t('volume')); E('pauseKeyLbl',t('pauseKeyLbl'));
+  E('abandonKeyLbl',t('abandonKeyLbl')); E('topBuyKeyLbl',t('topBuyKeyLbl'));
+  E('bottomBuyKeyLbl',t('bottomBuyKeyLbl')); E('specialKeyLbl',t('specialKeyLbl'));
+  E('speed2Lbl',t('speed2Lbl'));
+  E('pauseBtnSide',t('pauseBtn'));
   E('rulesBtn',t('rulesBtn')); E('rulesTitle',t('rules')); E('closeRules',t('close'));
-  E('detteSetupTitle',t('detteMode')); E('detteSetupLabel',t('detteSetupLabel'));
-  E('detteStartBtn',t('detteStart')); E('detteCancelBtn',t('detteCancel'));
-  E('lblDette',t('detteMode'));
+  E('lblEnzo',t('enzoNextWave'));
   document.getElementById('rulesText').innerHTML=t('rulesText');
   const hsb=document.getElementById('heroSelectBtn');
   if(hsb) hsb.textContent='⚔ '+t('heroSelectBtn')+' : '+heroName(gameMode);
@@ -1949,6 +2146,11 @@ loadSettings();
 document.getElementById('langSelect').value=lang;
 document.getElementById('volSlider').value=Math.round(sfxVolume*100);
 document.getElementById('pauseKeyBtn').textContent=pauseKey.toUpperCase();
+document.getElementById('abandonKeyBtn').textContent=abandonKey?abandonKey.toUpperCase():'-';
+document.getElementById('topBuyKeyBtn').textContent=topBuyKey?topBuyKey.toUpperCase():'-';
+document.getElementById('bottomBuyKeyBtn').textContent=bottomBuyKey?bottomBuyKey.toUpperCase():'-';
+document.getElementById('specialKeyBtn').textContent=specialKey?specialKey.toUpperCase():'-';
+document.getElementById('speed2Input').value=SPEEDS[1];
 applyStaticTexts();
 applyTheme();
 updateHUD();
