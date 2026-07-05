@@ -28,23 +28,26 @@ canvas{background:#222;max-width:100%;max-height:100%;min-width:0;min-height:0;
 
 /* ── SIDEBAR ──────────────────────────────────── */
 #side{display:none;flex-direction:column;width:380px;flex:0 0 380px;background:var(--side-bg);
-  padding:18px;box-sizing:border-box;overflow:hidden;border-left:3px solid var(--side-border);
+  padding:14px;box-sizing:border-box;overflow:hidden;border-left:3px solid var(--side-border);
   min-width:0;min-height:0;}
-.statbox{display:flex;justify-content:space-between;align-items:center;margin:8px 0;
-  background:var(--box-bg);border-radius:8px;padding:12px 16px;border:1px solid var(--side-border);}
-.statbox .lbl{color:#ddd;font-size:17px;font-weight:600;}
-.statbox .val{font-weight:bold;font-size:28px;}
+.statbox{display:flex;justify-content:space-between;align-items:center;margin:6px 0;
+  background:var(--box-bg);border-radius:8px;padding:9px 14px;border:1px solid var(--side-border);}
+.statbox .lbl{color:#ddd;font-size:15px;font-weight:600;}
+.statbox .val{font-weight:bold;font-size:23px;}
 #money{color:#ffd23f;} #hp{color:#ff6666;} #chrono{color:#7fd1ff;} #point{color:#ff7fe0;}
-.row{display:flex;justify-content:space-between;margin:6px 0;font-size:16px;}
+.row{display:flex;justify-content:space-between;margin:4px 0;font-size:15px;}
 .price{font-weight:800;color:var(--accent,#ffd23f);}
-.hint{font-size:14px;color:#9c9;margin:6px 0;}
+.hint{font-size:13px;color:#9c9;margin:4px 0;}
 #offerBox{display:none;}
-#log{font-size:13px;color:#bbb;max-height:120px;overflow-y:auto;
-  margin-top:12px;border-top:1px solid var(--side-border);padding-top:6px;}
-#panel{margin-top:16px;padding-top:12px;border-top:2px solid var(--side-border);}
-#panel h3{font-size:21px;}
-#panel button{font-size:17px;padding:13px 12px;font-weight:600;}
-#panel .row{font-size:19px;padding:4px 0;}
+#log{font-size:12px;color:#bbb;max-height:90px;overflow-y:auto;
+  margin-top:8px;border-top:1px solid var(--side-border);padding-top:5px;flex:0 0 auto;}
+/* Sur ordinateur, le journal (garde tue monstre, etc.) n'est pas essentiel : on le masque
+   pour garantir que les infos et achats tiennent toujours sans avoir a scroller. */
+body:not(.mobile-layout) #log{display:none;}
+#panel{margin-top:10px;padding-top:9px;border-top:2px solid var(--side-border);flex:0 0 auto;}
+#panel h3{font-size:18px;margin:2px 0;}
+#panel button{font-size:15px;padding:10px 10px;font-weight:600;margin:4px 0;}
+#panel .row{font-size:16px;padding:3px 0;}
 #boxHp,#boxWave{display:none !important;}
 
 /* ── OVERLAYS ─────────────────────────────────── */
@@ -290,7 +293,6 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
     </div>
     <div id="offerBox"></div>
     </div>
-    <button id="golemShopBtn" style="display:none;">Achats</button>
     <button id="pauseBtnSide" style="display:none;"></button>
     <button id="abandonBtn"></button>
     <div id="panel"></div>
@@ -319,7 +321,6 @@ const SPEEDS         = [1, 3];
 const DIFF_HP_MULT   = [0.7, 1.1];
 const BASE_COSTS     = {guardPlace:4, point:10, swap:2, summonAlly:10};
 const ALLY_MAXHP     = 10;
-const GOLEM_GUARD_HP = 30;
 
 // Canvas — défini ici pour être disponible partout (applyTileData, render, events)
 const cv  = document.getElementById('c');
@@ -356,14 +357,13 @@ const I18N = {
     waveStart:'Vague {n} !', guardKill:'Garde tue un monstre (+{x}e)',
     hintPlaceGuard:'Clique une case libre pour le garde',
     desert:'Desert', forest:'Foret', characters:'Personnages', epure:'Epure',
-    gameMode:'Mode de jeu', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston', modeGolem:'Les Gardes',
+    gameMode:'Mode de jeu', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston',
     heroSelectBtn:'Choisir le heros', heroSelectClose:'Retour',
     heroDesc1:'Axel — Echange 2 entites de place.',
     heroDesc3:'Midas — Gagne un doubleur d\'argent toutes les 3 min. Peut s\'endetter jusqu\'a son pic d\'argent atteint.',
     heroDesc5:'Enzo — Choisit combien de chaque type d\'ennemi apparait (max 600/type).',
     heroDesc6:'Iris — Invoque un allie (10 PV) a couts independants.',
     heroDesc8:'Gaston — Grossit de 1 case tous les 2 gardes achetes. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
-    heroDesc9:'Les Gardes — Pas de heros visible : ses gardes (30 PV chacun) l\'incarnent. Si tous ses gardes meurent, la partie est perdue.',
     summonAlly:'Invoquer un allie', allyPlaced:'Allie invoque !', allyDown:'Un allie est tombe !',
     chooseTileForAlly:'Clique une case libre pour l\'allie', ally:'Allie',
     enzoNextWave:'Prochaine vague',
@@ -415,14 +415,13 @@ const I18N = {
     waveStart:'Wave {n}!', guardKill:'Guard killed monster (+{x}e)',
     hintPlaceGuard:'Click a free tile to place the guard',
     desert:'Desert', forest:'Forest', characters:'Characters',
-    gameMode:'Game mode', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston', modeGolem:'The Guards',
+    gameMode:'Game mode', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston',
     heroSelectBtn:'Choose hero', heroSelectClose:'Back',
     heroDesc1:'Axel — Swaps 2 entities.',
     heroDesc3:'Midas — Gains a money doubler every 3 min. Can go into debt up to his peak money reached.',
     heroDesc5:'Enzo — Chooses how many of each enemy type spawn (max 600/type).',
     heroDesc6:'Iris — Summons an ally (10 HP) with its own costs.',
     heroDesc8:'Gaston — Grows by 1 tile every 2 guards bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
-    heroDesc9:'The Guards — No visible hero: his guards (30 HP each) embody him. If all his guards die, the game is lost.',
     summonAlly:'Summon an ally', allyPlaced:'Ally summoned!', allyDown:'An ally has fallen!',
     chooseTileForAlly:'Click a free tile for the ally', ally:'Ally',
     enzoNextWave:'Next wave',
@@ -566,7 +565,7 @@ function dailyDateStr(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-const DAILY_HEROES=['gameplay1','gameplay3','gameplay5','gameplay6','gameplay8','gameplay9'];
+const DAILY_HEROES=['gameplay1','gameplay3','gameplay5','gameplay6','gameplay8'];
 function dailyHeroMode(){
   const rng=seededRng(dailySeed()+7919);
   return DAILY_HEROES[Math.floor(rng()*DAILY_HEROES.length)];
@@ -860,9 +859,7 @@ function spawnMonster(){
 
 // Cible la plus proche (a vol d'hex) parmi le heros, son corps agrandi et les allies
 function nearestTargetTile(m){
-  const cands=sessionMode==='gameplay9'
-    ? guards.map(g=>({q:g.q,r:g.r}))
-    : [{q:hero.q,r:hero.r},...heroExtraTiles,...allies.map(a=>({q:a.q,r:a.r}))];
+  const cands=[{q:hero.q,r:hero.r},...heroExtraTiles,...allies.map(a=>({q:a.q,r:a.r}))];
   let best=null,bestD=Infinity;
   for(const c of cands){
     const d=hexDist(m.q,m.r,c.q,c.r);
@@ -872,7 +869,7 @@ function nearestTargetTile(m){
 }
 function recomputePath(m){
   const blocked=new Set();
-  if(sessionMode!=='gameplay9') guards.forEach(g=>blocked.add(axKey(g.q,g.r)));
+  guards.forEach(g=>blocked.add(axKey(g.q,g.r)));
   const target=nearestTargetTile(m);
   if(!target){m.pathKeys=null;m.pathTargetKey=null;return;}
   m.pathTargetKey=axKey(target.q,target.r);
@@ -880,9 +877,7 @@ function recomputePath(m){
 }
 
 function newGuard(){
-  const g={dmg:1,range:1,bounty:1,cooldown:1,costDmgUp:4,costBountyUp:4};
-  if(sessionMode==='gameplay9'){g.hp=GOLEM_GUARD_HP;g.maxhp=GOLEM_GUARD_HP;}
-  return g;
+  return {dmg:1,range:1,bounty:1,cooldown:1,costDmgUp:4,costBountyUp:4};
 }
 
 
@@ -944,30 +939,21 @@ function update(dt){
 
   const heroPx=axToPx(hero.q,hero.r);
   const heroBodyPx=[heroPx,...heroExtraTiles.map(t=>axToPx(t.q,t.r))];
-  const isGolem=sessionMode==='gameplay9';
 
   // ── Monstres : attaque / deplacement ──
   for(const m of monsters){
     const atkRange=SIZE*1.8+(m.rangeBonus?m.rangeBonus*SIZE*Math.sqrt(3):0);
     let atkTarget=null, atkPx=null, atkDist=Infinity;
-    if(isGolem){
-      for(const g of guards){
-        const [gpx,gpy]=axToPx(g.q,g.r);
-        const dG=Math.hypot(gpx-m.px,gpy-m.py);
-        if(dG<=atkRange&&dG<atkDist){atkTarget=g;atkPx=[gpx,gpy];atkDist=dG;}
-      }
-    } else {
-      let distHero=Infinity, heroAtkPx=heroPx;
-      for(const bpx of heroBodyPx){
-        const d=Math.hypot(bpx[0]-m.px,bpx[1]-m.py);
-        if(d<distHero){distHero=d;heroAtkPx=bpx;}
-      }
-      if(distHero<=atkRange&&!guardBlocksLOS(m,heroAtkPx)){atkTarget=hero;atkPx=heroAtkPx;atkDist=distHero;}
-      for(const al of allies){
-        const [apx,apy]=axToPx(al.q,al.r);
-        const dA=Math.hypot(apx-m.px,apy-m.py);
-        if(dA<=atkRange&&dA<atkDist&&!guardBlocksLOS(m,[apx,apy])){atkTarget=al;atkPx=[apx,apy];atkDist=dA;}
-      }
+    let distHero=Infinity, heroAtkPx=heroPx;
+    for(const bpx of heroBodyPx){
+      const d=Math.hypot(bpx[0]-m.px,bpx[1]-m.py);
+      if(d<distHero){distHero=d;heroAtkPx=bpx;}
+    }
+    if(distHero<=atkRange&&!guardBlocksLOS(m,heroAtkPx)){atkTarget=hero;atkPx=heroAtkPx;atkDist=distHero;}
+    for(const al of allies){
+      const [apx,apy]=axToPx(al.q,al.r);
+      const dA=Math.hypot(apx-m.px,apy-m.py);
+      if(dA<=atkRange&&dA<atkDist&&!guardBlocksLOS(m,[apx,apy])){atkTarget=al;atkPx=[apx,apy];atkDist=dA;}
     }
 
     if(atkTarget){
@@ -977,10 +963,6 @@ function update(dt){
         if(atkTarget===hero) heroHitFlash=0.35;
         monsterAttackFx.push({x1:m.px,y1:m.py,x2:atkPx[0],y2:atkPx[1],life:0.3});
         playSfx('hit');
-      }
-      if(isGolem&&atkTarget.hp<=0){
-        guards=guards.filter(g=>g!==atkTarget);
-        if(selected&&selected.type==='guard'&&selected.g===atkTarget){selected=null;renderPanel();}
       }
       continue;
     }
@@ -993,27 +975,19 @@ function update(dt){
     let rem=SPEED_PX*(m.speedMult||1)*boostMult*dt;
     while(rem>0&&m.pathKeys&&m.pathKeys.length){
       const nk=m.pathKeys[0];
-      if(!isGolem&&guards.some(g=>axKey(g.q,g.r)===nk)){m.pathKeys=null;break;}
+      if(guards.some(g=>axKey(g.q,g.r)===nk)){m.pathKeys=null;break;}
       const nt=tiles[nk];
       const dx=nt.px-m.px,dy=nt.py-m.py,d=Math.hypot(dx,dy);
       if(d<=rem){
         m.px=nt.px;m.py=nt.py;m.q=nt.q;m.r=nt.r;rem-=d;m.pathKeys.shift();
-        let nearAny;
-        if(isGolem){
-          nearAny=guards.some(g=>{const[gpx,gpy]=axToPx(g.q,g.r);return Math.hypot(gpx-m.px,gpy-m.py)<=atkRange;});
-        } else {
-          nearAny=heroBodyPx.some(bpx=>Math.hypot(bpx[0]-m.px,bpx[1]-m.py)<=atkRange);
-          if(!nearAny) nearAny=allies.some(al=>{const[apx,apy]=axToPx(al.q,al.r);return Math.hypot(apx-m.px,apy-m.py)<=atkRange;});
-        }
+        let nearAny=heroBodyPx.some(bpx=>Math.hypot(bpx[0]-m.px,bpx[1]-m.py)<=atkRange);
+        if(!nearAny) nearAny=allies.some(al=>{const[apx,apy]=axToPx(al.q,al.r);return Math.hypot(apx-m.px,apy-m.py)<=atkRange;});
         if(nearAny) break;
       } else {
         m.px+=dx/d*rem;m.py+=dy/d*rem;rem=0;
       }
     }
   }
-
-  // Golem : mort si tous les gardes sont detruits
-  if(isGolem&&!initialPlacement&&guards.length===0){ endGame(); return; }
 
   // ── Gardes : attaque des monstres ──
   for(const g of guards){
@@ -1197,7 +1171,6 @@ function prepareGameUI(showPoint,showTimer,showChrono){
   document.getElementById('midasExtra').style.display=sessionMode==='gameplay3'?'block':'none';
   const enzoBox=document.getElementById('boxEnzo');
   enzoBox.style.display=sessionMode==='gameplay5'?'flex':'none';
-  document.getElementById('golemShopBtn').style.display=sessionMode==='gameplay9'?'':'none';
   document.getElementById('side').style.display       ='flex';
   document.getElementById('settingsBtn').style.display='none';
   document.getElementById('rulesBtn').style.display   ='none';
@@ -1212,7 +1185,6 @@ function heroName(mode){
   if(mode==='gameplay5') return t('modeEnzo');
   if(mode==='gameplay6') return t('modeIris');
   if(mode==='gameplay8') return t('modeGaston');
-  if(mode==='gameplay9') return t('modeGolem');
   return mode;
 }
 
@@ -1237,7 +1209,7 @@ function generateRandomMap(){
 function startNormalGame(d){
   difficulty=d;sessionMode=gameMode;dailyMode=false;
   applyTileData(generateRandomMap());
-  resetGameState();money=sessionMode==='gameplay9'?40:0;
+  resetGameState();money=0;
   prepareGameUI(true,true,true);
   document.getElementById('boxDiff').textContent=heroName(gameMode)+' — Difficulté '+d;
   startGameSession();updateHUD();renderPanel();
@@ -1249,7 +1221,7 @@ function startDailyGame(){
   const count=Object.keys(dailyTileData).length;
   applyTileData(dailyTileData);
   dailyMode=true;difficulty=2;sessionMode=dailyHero;
-  resetGameState();money=sessionMode==='gameplay9'?40:0;
+  resetGameState();money=0;
   prepareGameUI(true,true,true);
   document.getElementById('boxDiff').textContent=heroName(sessionMode)+' — Difficulté '+difficulty+' — Défi du Jour';
   showToast(t('dailyMapInfo',{n:count}));
@@ -1532,11 +1504,9 @@ function render(){
     ctx.restore();
   }
 
-  // Heros (invisible pour le Golem, incarne uniquement par ses gardes)
+  // Heros
   const hpx=axToPx(hero.q,hero.r);
-  if(sessionMode==='gameplay9'){
-    // rien a dessiner
-  } else if(d.characters){
+  if(d.characters){
     drawCharacterHero(hpx[0],hpx[1]);
   } else if(d.emoji){
     ctx.font=(SIZE*1.2)+'px sans-serif';ctx.textAlign='center';
@@ -1550,22 +1520,20 @@ function render(){
     ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
     ctx.fillText(heroName(sessionMode).toUpperCase(),hpx[0],hpx[1]-4);
   }
-  if(sessionMode!=='gameplay9'){
-    if(selected&&selected.type==='hero'){
-      ctx.save();ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=2;
-      ctx.setLineDash([5,4]);ctx.beginPath();
-      ctx.arc(hpx[0],hpx[1],SIZE*0.76,0,Math.PI*2);ctx.stroke();
-      ctx.restore();
-    }
-    if(swapTargets.some(t=>t.obj===hero)){
-      ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
-      ctx.setLineDash([]);ctx.beginPath();
-      ctx.arc(hpx[0],hpx[1],SIZE*0.78,0,Math.PI*2);ctx.stroke();
-      ctx.restore();
-    }
-    ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
-    ctx.fillText(Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp,hpx[0],hpx[1]+(d.emoji?SIZE*0.7:12));
+  if(selected&&selected.type==='hero'){
+    ctx.save();ctx.strokeStyle='rgba(255,255,255,0.55)';ctx.lineWidth=2;
+    ctx.setLineDash([5,4]);ctx.beginPath();
+    ctx.arc(hpx[0],hpx[1],SIZE*0.76,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
   }
+  if(swapTargets.some(t=>t.obj===hero)){
+    ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
+    ctx.setLineDash([]);ctx.beginPath();
+    ctx.arc(hpx[0],hpx[1],SIZE*0.78,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+  ctx.fillText(Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp,hpx[0],hpx[1]+(d.emoji?SIZE*0.7:12));
 
   // Corps supplementaire du heros (Gaston) — case partagee si un garde y est deja
   if(heroExtraTiles.length){
@@ -1632,7 +1600,6 @@ function render(){
     }
     ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
     ctx.fillText('d'+g.dmg+' p'+g.range+' +'+g.bounty+'€',px,py+(d.emoji?SIZE*0.65:14));
-    if(g.maxhp) ctx.fillText('❤ '+Math.max(0,Math.round(g.hp))+'/'+g.maxhp,px,py+(d.emoji?SIZE*0.65:14)+13);
   }
 
   // Prochaine case de croissance (Gaston) — toujours visible, meme au-dessus d'un garde
@@ -1844,7 +1811,6 @@ function renderPanel(){
       <div class="row"><span>${t('dmg')}</span><span>${g.dmg}</span></div>
       <div class="row"><span>${t('range')}</span><span>${g.range}</span></div>
       <div class="row"><span>${t('bountyPerKill')}</span><span>+${g.bounty}&euro;</span></div>`;
-    if(g.maxhp) h+=`<div class="row"><span>PV</span><span>${Math.max(0,Math.round(g.hp))}/${g.maxhp}</span></div>`;
     const disUd=!canAfford(g.costDmgUp)?'disabled':'';
     const disUb=!canAfford(g.costBountyUp)?'disabled':'';
     h+=`<button id="upDmg" ${disUd}>${t('upDmg')} (<span class="price">${pUd}&euro;</span>)</button>`;
@@ -2106,10 +2072,6 @@ document.getElementById('topBuyKeyBtn').addEventListener('click',()=>{listeningF
 document.getElementById('bottomBuyKeyBtn').addEventListener('click',()=>{listeningFor='bottomBuy';document.getElementById('bottomBuyKeyBtn').textContent='...';});
 document.getElementById('specialKeyBtn').addEventListener('click',()=>{listeningFor='special';document.getElementById('specialKeyBtn').textContent='...';});
 document.getElementById('pauseBtnSide').addEventListener('click',togglePause);
-document.getElementById('golemShopBtn').addEventListener('click',()=>{
-  if(state!=='playing') return;
-  selected={type:'hero'};renderPanel();
-});
 let abandonHoldT=0,abandonHoldActive=false;
 const abandonBtn=document.getElementById('abandonBtn');
 function abandonTick(dt){
@@ -2151,7 +2113,6 @@ function renderHeroCards(){
     {mode:'gameplay5',color:'#ee4411',border:'#ffaa55',descKey:'heroDesc5'},
     {mode:'gameplay6',color:'#22ccaa',border:'#88ffe0',descKey:'heroDesc6'},
     {mode:'gameplay8',color:'#d97a3a',border:'#ffcc99',descKey:'heroDesc8'},
-    {mode:'gameplay9',color:'#8a8a8a',border:'#cfcfcf',descKey:'heroDesc9'},
   ];
   container.innerHTML='';
   heroes.forEach(h=>{
@@ -2228,7 +2189,7 @@ function buildDecorOptions(){
 }
 function buildModeOptions(){
   const sel=document.getElementById('modeSelect');sel.innerHTML='';
-  [['gameplay1','modeNormal'],['gameplay3','modeMidas'],['gameplay5','modeEnzo'],['gameplay6','modeIris'],['gameplay8','modeGaston'],['gameplay9','modeGolem']].forEach(([v,k])=>{
+  [['gameplay1','modeNormal'],['gameplay3','modeMidas'],['gameplay5','modeEnzo'],['gameplay6','modeIris'],['gameplay8','modeGaston']].forEach(([v,k])=>{
     const opt=document.createElement('option');opt.value=v;opt.textContent=t(k);sel.appendChild(opt);
   });
   sel.value=gameMode;
