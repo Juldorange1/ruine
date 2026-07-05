@@ -157,9 +157,11 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
 
     <!-- Menu principal -->
     <div id="overlay">
-      <h2 id="ovTitle">Hex Defense</h2>
-      <button id="heroSelectBtn" style="width:260px;font-size:17px;padding:12px;margin-bottom:6px;border-color:#d8a8ff;"></button>
-      <div id="diffList"></div>
+      <div id="overlayZoom" style="display:flex;flex-direction:column;align-items:center;">
+        <h2 id="ovTitle">Hex Defense</h2>
+        <button id="heroSelectBtn" style="width:260px;font-size:17px;padding:12px;margin-bottom:6px;border-color:#d8a8ff;"></button>
+        <div id="diffList"></div>
+      </div>
     </div>
 
     <!-- Selection du heros -->
@@ -358,7 +360,7 @@ const I18N = {
     heroSelectBtn:'Choisir le heros', heroSelectClose:'Retour',
     heroDesc1:'Axel — Echange 2 entites de place.',
     heroDesc3:'Midas — Gagne un doubleur d\'argent toutes les 3 min. Peut s\'endetter jusqu\'a son pic d\'argent atteint.',
-    heroDesc5:'Enzo — Choisit combien de chaque type d\'ennemi apparait (max 400/type).',
+    heroDesc5:'Enzo — Choisit combien de chaque type d\'ennemi apparait (max 600/type).',
     heroDesc6:'Iris — Invoque un allie (10 PV) a couts independants.',
     heroDesc8:'Gaston — Grossit de 1 case a chaque garde achete. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
     heroDesc9:'Les Gardes — Pas de heros visible : ses gardes (30 PV chacun) l\'incarnent. Si tous ses gardes meurent, la partie est perdue.',
@@ -417,7 +419,7 @@ const I18N = {
     heroSelectBtn:'Choose hero', heroSelectClose:'Back',
     heroDesc1:'Axel — Swaps 2 entities.',
     heroDesc3:'Midas — Gains a money doubler every 3 min. Can go into debt up to his peak money reached.',
-    heroDesc5:'Enzo — Chooses how many of each enemy type spawn (max 400/type).',
+    heroDesc5:'Enzo — Chooses how many of each enemy type spawn (max 600/type).',
     heroDesc6:'Iris — Summons an ally (10 HP) with its own costs.',
     heroDesc8:'Gaston — Grows by 1 tile per guard bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
     heroDesc9:'The Guards — No visible hero: his guards (30 HP each) embody him. If all his guards die, the game is lost.',
@@ -599,7 +601,7 @@ let difficulty=1, gameMode='gameplay1', sessionMode='gameplay1';
 let dailyMode=false;
 let midasTimer=0, midasDoublers=0, midasMaxMoney=0;
 let waveSpawnTotal=9999, waveSpawnCount=0;
-const ENZO_TYPE_CAP=400;
+const ENZO_TYPE_CAP=600;
 let enzoCounts={fast:7,hp:7,dmg:6};
 let enzoTotalSpawned={fast:0,hp:0,dmg:0};
 let enzoRemainingThisWave={fast:0,hp:0,dmg:0};
@@ -686,7 +688,12 @@ function occupiedSet(){
 
 // Obese : le corps du heros grossit d'une case a chaque garde achete
 function growthCandidates(){
-  const occ=occupiedSet();
+  // Gaston peut grossir sur une case deja occupee par un garde (partagee en deux) ;
+  // seuls le heros lui-meme, ses autres cases de corps, les allies et les spawns sont exclus.
+  const occ=new Set();
+  occ.add(axKey(hero.q,hero.r));
+  heroExtraTiles.forEach(t=>occ.add(axKey(t.q,t.r)));
+  allies.forEach(a=>occ.add(axKey(a.q,a.r)));
   const bodyKeys=[axKey(hero.q,hero.r),...heroExtraTiles.map(t=>axKey(t.q,t.r))];
   const cands=[];
   bodyKeys.forEach(bk=>{
@@ -914,7 +921,7 @@ function update(dt){
       enzoStarvedTimer+=realDt;
       if(!enzoAutoSpeedBoost&&enzoStarvedTimer>=10){
         enzoAutoSpeedBoost=true;
-        log('Plus aucun ennemi disponible — vitesse x10 !');showToast('Vitesse x10 !');
+        log('Plus aucun ennemi disponible — vitesse x20 !');showToast('Vitesse x20 !');
       }
     } else {
       enzoStarvedTimer=0;enzoAutoSpeedBoost=false;
@@ -1159,7 +1166,21 @@ function applyPanelLayout(){
   }
   const sideVisible=document.getElementById('side').style.display==='flex';
   leftPanel.style.display=(mobile&&sideVisible)?'flex':'none';
+  applyMenuZoom();
 }
+
+// Sur ordinateur, le menu principal est agrandi et zoomable a la molette (jusqu'a x150%)
+let menuZoom=1.2;
+function applyMenuZoom(){
+  const z=document.getElementById('overlayZoom');
+  z.style.zoom=isMobileLayout()?'':menuZoom;
+}
+document.getElementById('overlay').addEventListener('wheel',e=>{
+  if(isMobileLayout()) return;
+  e.preventDefault();
+  menuZoom=Math.min(1.5,Math.max(1,menuZoom+(e.deltaY<0?0.05:-0.05)));
+  applyMenuZoom();
+},{passive:false});
 window.matchMedia('(hover: none) and (pointer: coarse)').addEventListener?.('change',applyPanelLayout);
 window.addEventListener('resize',applyPanelLayout);
 window.addEventListener('orientationchange',applyPanelLayout);
@@ -1278,6 +1299,23 @@ function drawHex(px,py,fill,stroke){
   ctx.closePath();
   if(fill){ctx.fillStyle=fill;ctx.fill();}
   ctx.strokeStyle=stroke||'#444';ctx.lineWidth=2;ctx.stroke();
+}
+
+// Case partagee en deux parts egales (corps de Gaston + garde sur la meme case)
+function drawSplitHex(px,py,fillA,fillB,stroke){
+  const hexPath=()=>{
+    ctx.beginPath();
+    for(let i=0;i<6;i++){ const [x,y]=hexCorner(px,py,i); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+    ctx.closePath();
+  };
+  ctx.save();
+  hexPath();ctx.clip();
+  ctx.fillStyle=fillA;ctx.fillRect(px-SIZE,py-SIZE,SIZE,SIZE*2);
+  ctx.fillStyle=fillB;ctx.fillRect(px,py-SIZE,SIZE,SIZE*2);
+  ctx.restore();
+  hexPath();ctx.strokeStyle=stroke||'#444';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(px,py-SIZE);ctx.lineTo(px,py+SIZE);
+  ctx.strokeStyle='rgba(0,0,0,0.55)';ctx.lineWidth=1.5;ctx.stroke();
 }
 
 // Héros — vue de dessus style RPG, couleurs selon le héros actif
@@ -1528,12 +1566,18 @@ function render(){
     ctx.fillText(Math.round(Math.max(0,hero.hp))+'/'+hero.maxhp,hpx[0],hpx[1]+(d.emoji?SIZE*0.7:12));
   }
 
-  // Corps supplementaire du heros (Gaston)
+  // Corps supplementaire du heros (Gaston) — case partagee si un garde y est deja
   if(heroExtraTiles.length){
     const [hFillB,hStrokeB]=sessionMode==='gameplay8'?['#d97a3a','#ffcc99']:[d.heroColor,d.heroStroke];
     for(const bt of heroExtraTiles){
       const [bpx,bpy]=axToPx(bt.q,bt.r);
-      drawHex(bpx,bpy,hFillB,hStrokeB);
+      const sharedGuard=guards.find(g=>g.q===bt.q&&g.r===bt.r);
+      if(sharedGuard){
+        const gFill=(selected&&selected.g===sharedGuard)?d.guardSelColor:d.guardColor;
+        drawSplitHex(bpx,bpy,hFillB,gFill,hStrokeB);
+      } else {
+        drawHex(bpx,bpy,hFillB,hStrokeB);
+      }
     }
   }
   // Prochaine case de croissance (Gaston)
@@ -1576,10 +1620,13 @@ function render(){
     const [px,py]=axToPx(g.q,g.r);
     const isSel=selected&&selected.g===g;
     const isMoving=pendingAction==='moveSelect'&&moveSelected.includes(g);
-    if(d.characters){
-      drawCharacterGuard(px,py,isSel,isMoving);
-    } else {
-      drawHex(px,py,isSel?d.guardSelColor:d.guardColor,isSel?d.guardSelStroke:d.guardStroke);
+    const onGastonBody=heroExtraTiles.some(bt=>bt.q===g.q&&bt.r===g.r);
+    if(!onGastonBody){
+      if(d.characters){
+        drawCharacterGuard(px,py,isSel,isMoving);
+      } else {
+        drawHex(px,py,isSel?d.guardSelColor:d.guardColor,isSel?d.guardSelStroke:d.guardStroke);
+      }
     }
     if(isSel){
       ctx.save();ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;
@@ -1670,7 +1717,7 @@ function loop(ts){
   const dtRaw=(ts-lastT)/1000;lastT=ts;
   realDt=Math.min(dtRaw,0.25);
   abandonTick(realDt);
-  const curSpeedMult=(sessionMode==='gameplay5'&&enzoAutoSpeedBoost)?10:SPEEDS[speedIndex];
+  const curSpeedMult=(sessionMode==='gameplay5'&&enzoAutoSpeedBoost)?20:SPEEDS[speedIndex];
   if(!paused&&gameRunning) update(Math.min(dtRaw,0.2)*curSpeedMult);
   if(gameRunning) updateHUD();
   refreshAffordability();
