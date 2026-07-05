@@ -27,6 +27,8 @@ body.ingame #miniMapBar { display:block; }
 #cadenceToggle.on { border-color:#ffd166; color:#ffd166; background:rgba(255,209,102,0.10); }
 #rulesBtn { padding:4px 10px; border:2px solid #334; background:rgba(11,15,26,0.85); color:#556677; cursor:pointer; border-radius:5px; font:.78em monospace; transition:.12s; backdrop-filter:blur(4px); }
 #rulesBtn:hover { border-color:#aaa; color:#aaa; }
+#customLevelsBtn { padding:4px 10px; border:2px solid #334; background:rgba(11,15,26,0.85); color:#556677; cursor:pointer; border-radius:5px; font:.78em monospace; transition:.12s; backdrop-filter:blur(4px); }
+#customLevelsBtn:hover { border-color:#aaa; color:#aaa; }
 #settingsBtn { padding:4px 10px; border:2px solid #334; background:rgba(11,15,26,0.85); color:#556677; cursor:pointer; border-radius:5px; font:.78em monospace; transition:.12s; backdrop-filter:blur(4px); }
 #settingsBtn:hover { border-color:#aaa; color:#aaa; }
 #play { padding:5px 18px; background:#7de8ff; border:none; color:#080818; font:bold .90em 'Arial Black',Arial,sans-serif; cursor:pointer; border-radius:6px; letter-spacing:1px; transition:.12s; }
@@ -50,6 +52,30 @@ body.ingame #hint { display:none; }
 #rulesPanel { display:none; position:fixed; inset:0; background:rgba(4,4,18,0.93); align-items:center; justify-content:center; z-index:100; }
 #rulesPanel.open { display:flex; }
 #rulesBox { background:#0d1120; border:2px solid #223; border-radius:12px; padding:28px 36px; max-width:min(480px,92vw); max-height:88vh; overflow-y:auto; text-align:left; box-shadow:0 0 60px #0008; }
+#customPanel { display:none; position:fixed; inset:0; background:rgba(4,4,18,0.93); align-items:center; justify-content:center; z-index:100; }
+#customPanel.open { display:flex; }
+#customBox { background:#0d1120; border:2px solid #223; border-radius:12px; padding:28px 36px; width:min(420px,92vw); max-height:88vh; overflow-y:auto; text-align:center; box-shadow:0 0 60px #0008; }
+#customBox h2 { font-family:'Arial Black',Arial,sans-serif; font-size:1.3em; color:#7de8ff; letter-spacing:3px; margin-bottom:18px; }
+.customRow { display:flex; align-items:center; gap:8px; margin-bottom:10px; background:#080818; border:2px solid #223; border-radius:8px; padding:8px 10px; }
+.customRow .cname { flex:1; text-align:left; color:#eee; font:.82em monospace; cursor:pointer; background:none; border:none; padding:0; }
+.customRow .cname:hover { color:#7de8ff; }
+.customRow button { padding:4px 10px; font:.75em monospace; }
+#customEmpty { color:#556677; font:.82em monospace; margin:10px 0 18px; }
+#editPanel { display:none; position:fixed; inset:0; background:rgba(4,4,18,0.93); align-items:center; justify-content:center; z-index:101; }
+#editPanel.open { display:flex; }
+#editBox { background:#0d1120; border:2px solid #223; border-radius:12px; padding:28px 36px; width:min(760px,94vw); max-height:90vh; overflow-y:auto; text-align:center; box-shadow:0 0 60px #0008; }
+#editBox h2 { font-family:'Arial Black',Arial,sans-serif; font-size:1.2em; color:#7de8ff; letter-spacing:2px; margin-bottom:10px; }
+.piqueRow { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.piqueRow input[type=range] { flex:1; }
+.piqueRow select { background:#080818; border:2px solid #223; color:#eee; font:.75em monospace; border-radius:5px; }
+.portalRow { display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+.portalRow input[type=range] { flex:1; min-width:80px; }
+.portalRow .pinput { background:#080818; border:2px solid #223; color:#eee; font:.72em monospace; border-radius:5px; width:42px; text-align:center; padding:3px 2px; }
+.portalRow label { color:#556677; font:.68em monospace; }
+.clickRow { display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+.clickRow input[type=range] { flex:1; min-width:80px; }
+.clickRow .pinput { background:#080818; border:2px solid #223; color:#eee; font:.72em monospace; border-radius:5px; width:42px; text-align:center; padding:3px 2px; }
+.clickRow label { color:#556677; font:.68em monospace; }
 #rulesBox h2 { font-family:'Arial Black',Arial,sans-serif; font-size:1.3em; color:#7de8ff; letter-spacing:3px; margin-bottom:18px; text-align:center; }
 #rulesBox h3 { color:#dd88ff; font:.85em monospace; margin:14px 0 6px; }
 #rulesBox p, #rulesBox li { color:#8899aa; font:.82em monospace; line-height:1.5; }
@@ -76,9 +102,9 @@ body.ingame #hint { display:none; }
 /* Mobile : boutons plus compacts, panneaux moins de padding, pas de hover-only feedback nécessaire */
 @media (max-width:520px) {
   #row { gap:4px; padding:0 4px; }
-  .mb, #cadenceToggle, #rulesBtn, #settingsBtn { padding:4px 8px; font-size:.72em; }
+  .mb, #cadenceToggle, #customLevelsBtn, #rulesBtn, #settingsBtn { padding:4px 8px; font-size:.72em; }
   #play { padding:5px 14px; font-size:.85em; }
-  #settingsBox, #rulesBox { padding:18px 16px; }
+  #settingsBox, #rulesBox, #customBox { padding:18px 16px; }
   .srow label { min-width:0; text-align:center; }
   .srow { flex-direction:column; gap:5px; }
 }
@@ -88,11 +114,9 @@ body.ingame #hint { display:none; }
 
 <div id="ui">
   <div id="row">
-    <button class="mb on" data-m="wave">1</button>
-    <button class="mb"    data-m="swing">2</button>
-    <button class="mb"    data-m="ship">3</button>
-    <button class="mb"    data-m="twokey">4</button>
+    <button class="mb on" data-m="wave">WAVE</button>
     <button id="cadenceToggle">⏱ CADENCE</button>
+    <button id="customLevelsBtn">📁 PARTIES CRÉÉES</button>
     <button id="rulesBtn">📜 RÈGLES</button>
     <button id="settingsBtn">⚙ PARAMÈTRES</button>
     <button id="play">▶ JOUER</button>
@@ -131,12 +155,30 @@ body.ingame #hint { display:none; }
       <button class="tb on" id="trailToggle">Activée</button>
     </div>
     <div class="srow">
-      <label>Lag (tunnel x2) :</label>
-      <button class="tb" id="lagToggle">Désactivé</button>
+      <label>Vitesse perso (50-200%) :</label>
+      <button class="kb" id="speedMinus" style="min-width:36px">−</button>
+      <input id="speedPctInput" type="text" inputmode="numeric" maxlength="3" value="100" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
+      <span style="color:#aaa;font:.82em monospace;">%</span>
+      <button class="kb" id="speedPlus" style="min-width:36px">+</button>
+    </div>
+    <div class="srow">
+      <label>Angle déplacement (50-200%) :</label>
+      <button class="kb" id="angleMinus" style="min-width:36px">−</button>
+      <input id="anglePctInput" type="text" inputmode="numeric" maxlength="3" value="100" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
+      <span style="color:#aaa;font:.82em monospace;">%</span>
+      <button class="kb" id="anglePlus" style="min-width:36px">+</button>
     </div>
     <div class="srow">
       <label>Traverser les murs :</label>
       <button class="tb" id="noclipToggle">Désactivé</button>
+    </div>
+    <div class="srow">
+      <label>Personnalisable :</label>
+      <button class="tb" id="personnalisableToggle">Désactivé</button>
+    </div>
+    <div class="srow">
+      <label>Niveaux aléatoires :</label>
+      <button class="tb" id="randomLevelsToggle">Désactivé</button>
     </div>
     <div class="srow">
       <label>Épaisseur tunnel (départ) :</label>
@@ -144,10 +186,6 @@ body.ingame #hint { display:none; }
       <input id="gapPctInput" type="text" inputmode="numeric" maxlength="4" value="100" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
       <span style="color:#aaa;font:.82em monospace;">%</span>
       <button class="kb" id="gapPlus" style="min-width:36px">+</button>
-    </div>
-    <div class="srow">
-      <label>Mode Folie :</label>
-      <button class="tb" id="folieToggle">Désactivé</button>
     </div>
     <hr id="settingsSep">
     <div class="srow">
@@ -178,21 +216,21 @@ body.ingame #hint { display:none; }
       <li>Chaque seconde passée dans le niveau rapporte <b>30 − (nombre de morts)</b> points.</li>
       <li>Au-delà de 30 morts, chaque seconde fait donc <b>perdre</b> des points.</li>
       <li>Le total de la run peut devenir négatif.</li>
-      <li>Le record sauvegardé est le <b>score le plus haut</b> atteint pour chaque niveau, chaque mode, chaque réglage de Lag — et séparément <b>avec ou sans l'option Cadence</b> (2 catégories distinctes).</li>
+      <li>Le record sauvegardé est le <b>score le plus haut</b> atteint pour chaque niveau et chaque mode — et séparément <b>avec ou sans l'option Cadence</b> (2 catégories distinctes).</li>
       <li>Un record n'est compté que si le tunnel a démarré à <b>100% de sa taille prévue</b> et que l'option <b>"Traverser les murs" était désactivée</b>.</li>
     </ul>
-    <h3>Modes de jeu (1 à 4, renommables en cliquant sur leur bouton actif)</h3>
+    <h3>Modes de jeu (1 à 5, renommables en cliquant sur leur bouton actif)</h3>
     <ul>
       <li><b>1</b> — Wave : maintenir fait monter en ligne droite, relâcher fait descendre.</li>
       <li><b>2</b> — Swing : chaque appui inverse le sens de la gravité.</li>
       <li><b>3</b> — Vaisseau : maintenir pousse vers le haut avec inertie, relâcher laisse retomber.</li>
       <li><b>4</b> — Double : sans rien faire on avance tout droit ; la touche "Monter" fait monter, la touche "Descendre" fait descendre (configurables dans les Paramètres).</li>
+      <li><b>5</b> — Araignée : aucun mouvement progressif, chaque clic fait basculer instantanément du plafond au sol du tunnel (ou l'inverse), comme dans Geometry Dash.</li>
     </ul>
-    <h3>Option Lag</h3>
+    <h3>Vitesse et angle de déplacement</h3>
     <ul>
-      <li>3 réglages possibles : Désactivé, 0,5s ou 1s de retard sur tous tes appuis (clics, touches).</li>
-      <li>Dès qu'un retard est actif (0,5s ou 1s), le tunnel est toujours <b>2× plus épais</b>.</li>
-      <li>Désactivé, 0,5s et 1s comptent comme <b>3 catégories de record distinctes</b> pour chaque mode.</li>
+      <li>Vitesse perso (50%-200%) : règle la vitesse de défilement réelle du personnage. L'augmenter agrandit aussi l'angle de déplacement dans la même proportion.</li>
+      <li>Angle déplacement (50%-200%) : règle en plus, indépendamment de la vitesse, l'amplitude des mouvements verticaux.</li>
     </ul>
     <h3>Option Cadence (bouton dans le menu principal)</h3>
     <ul>
@@ -210,11 +248,55 @@ body.ingame #hint { display:none; }
       <li>Multiplie la largeur de base du tunnel de chaque niveau, de 1% à 1000% (pas multiplicatif via les boutons − / +).</li>
       <li>S'applique aussi aux niveaux générés avec l'option Cadence.</li>
     </ul>
-    <h3>Mode Folie</h3>
+    <h3>Agrandissement via mort</h3>
     <ul>
-      <li>L'écran tremble en permanence et clignote au hasard (flashs blancs/rouges) pour déstabiliser le joueur. Purement visuel — ça ne change pas la physique ni les collisions.</li>
+      <li>Par défaut, chaque mort élargit légèrement le couloir pour le reste de la run (assistance progressive, plafonnée). Désactivable dans les Paramètres.</li>
+    </ul>
+    <h3>Niveaux aléatoires</h3>
+    <ul>
+      <li>Par défaut, le Défi Aléatoire utilise toujours la même map (déterministe). Active cette option pour qu'une disposition différente d'obstacles soit tirée à chaque partie.</li>
+      <li>N'affecte que le Défi Aléatoire (sans l'option Cadence) — les niveaux Cadence et les parties créées restent toujours identiques.</li>
+    </ul>
+    <h3>Option Personnalisable</h3>
+    <ul>
+      <li>Active-la puis lance une partie : le niveau est entièrement ouvert (aucun obstacle) pendant toute sa durée, et le jeu enregistre exactement tes déplacements/appuis.</li>
+      <li>À la fin de la partie enregistrée, un niveau est créé à partir de cette trajectoire et l'option se désactive automatiquement.</li>
+      <li>Le niveau créé apparaît dans "📁 PARTIES CRÉÉES" (menu principal) : tu peux le renommer en cliquant sur son nom, le jouer ou le supprimer.</li>
+      <li>En le jouant, le tunnel trace exactement la trajectoire enregistrée : il faut reproduire les mêmes appuis au même moment (comme l'option Cadence) pour rester dedans.</li>
+      <li>Chaque partie créée a sa PROPRE table de records, séparée des autres niveaux et modes.</li>
+      <li>Le bouton "✎ Modifier" permet de déplacer le tracé du tunnel et d'ajouter des piques (obstacles) le long du niveau. Toute modification réinitialise le record de ce niveau.</li>
+      <li>On peut aussi y ajouter des "portails modificateurs" : dès qu'on les franchit, ils changent la vitesse, l'angle de déplacement et l'épaisseur du tunnel pour le reste de la partie en cours (la prochaine partie repart toujours des Paramètres).</li>
     </ul>
     <button id="closeRules">Fermer</button>
+  </div>
+</div>
+
+<div id="customPanel">
+  <div id="customBox">
+    <h2>📁 PARTIES CRÉÉES</h2>
+    <div id="customEmpty">Aucune partie créée pour l'instant. Active l'option "Personnalisable" dans les Paramètres et joue une partie, ou crée un niveau vide ci-dessous.</div>
+    <div id="customList"></div>
+    <button class="kb" id="createBlankLevel" style="margin-bottom:14px;">+ Créer un niveau</button>
+    <button id="closeCustom">Fermer</button>
+  </div>
+</div>
+
+<div id="editPanel">
+  <div id="editBox">
+    <h2>✎ MODIFIER LE NIVEAU</h2>
+    <div style="color:#556677;font:.75em monospace;margin-bottom:14px;">Clique-glisse directement sur le tracé pour le redessiner, point par point (précision totale). Ajoute des piques (obstacles) le long du niveau. Enregistrer réinitialise le record de ce niveau.</div>
+    <canvas id="editCanvas" width="700" height="200" style="width:100%;max-width:700px;height:200px;background:#04040c;border:2px solid #223;border-radius:8px;cursor:crosshair;touch-action:none;margin-bottom:18px;"></canvas>
+    <h3 style="color:#dd88ff;font:.85em monospace;margin:0 0 8px;text-align:left;">Piques</h3>
+    <div id="editPiques" style="margin-bottom:10px;"></div>
+    <button class="kb" id="addPique" style="margin-bottom:18px;">+ Ajouter un pique</button>
+    <h3 style="color:#33ddaa;font:.85em monospace;margin:0 0 8px;text-align:left;">Portails modificateurs</h3>
+    <div style="color:#556677;font:.72em monospace;margin-bottom:8px;text-align:left;">Dès qu'on les franchit, ils changent la vitesse, l'angle et l'épaisseur du tunnel pour le reste de la partie.</div>
+    <div id="editPortals" style="margin-bottom:10px;"></div>
+    <button class="kb" id="addPortal" style="margin-bottom:18px;">+ Ajouter un portail</button>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="saveEdit">Enregistrer</button>
+      <button id="cancelEdit" style="background:#334;color:#aaa;">Annuler</button>
+    </div>
   </div>
 </div>
 
@@ -237,15 +319,23 @@ let themeIdx = 0;
 let trailEnabled = true;
 let cadenceEnabled = false;
 let noclipEnabled = false;
+let speedMul = 1; // vitesse de déplacement du personnage (50%-200%) — augmente aussi l'angle de déplacement dans la même proportion
+let angleMul = 1; // pourcentage de taille d'angle des déplacements (50%-200%), indépendant de la vitesse
 let gapStartMul = 1; // épaisseur du tunnel au démarrage des parties (1%-1000%), aussi en mode Cadence
-let folieEnabled = false; // écran qui clignote et déstabilise le joueur
-let modeNames = {wave:'1',swing:'2',ship:'3',twokey:'4'}; // noms des modes, personnalisables en cliquant sur le bouton actif
-const LAG_LEVELS=[0,0.5,1];
-let lagDelay = 0;
-let pendingActions = [];
-function schedule(fn){ if(lagDelay>0) pendingActions.push({at:performance.now()+lagDelay*1000, fn}); else fn(); }
-function lagKey(){return String(lagDelay);}
-function lagLabel(){return lagDelay===0?'Désactivé':`${lagDelay}s`;}
+let randomLevelsEnabled = false; // si activé, les niveaux du Défi Aléatoire changent à chaque partie au lieu d'être toujours la même map fixe
+// ─── PARTIES PERSONNALISABLES ───────────────────────────────────────────────
+// Quand activée, la prochaine partie est jouée sur un terrain entièrement
+// ouvert (aucun obstacle) pendant toute sa durée, et chaque déplacement/appui
+// est enregistré image par image. À la fin de cette partie, la trajectoire
+// enregistrée devient un niveau (même mécanique que l'option Cadence : il
+// faut ensuite reproduire exactement les mêmes appuis pour rester dedans).
+let personnalisableEnabled = false;
+let customLevels = []; // [{id,name,mode,diff,easeWX,mainLen,traj:[...]}]
+let activeCustomLevel = null; // niveau en cours de relecture (ou null)
+let recordingCustom = false; // true pendant l'enregistrement d'une nouvelle partie créée
+let recBuf = []; // échantillons {wx,y} de la partie en cours d'enregistrement
+let modeNames = {wave:'1',swing:'2',ship:'3',twokey:'4',spider:'5'}; // noms des modes, personnalisables en cliquant sur le bouton actif
+function schedule(fn){ fn(); }
 
 // ─── KEYBINDINGS ──────────────────────────────────────────────────────────────
 let keyReset = 'KeyR', keyQuit = 'KeyQ', keyUp = 'ArrowUp', keyDown = 'ArrowDown', recordingKey = null;
@@ -269,7 +359,7 @@ function syncKeyLabels() {
 function saveSettings() {
   // le site doit rester jouable même si le stockage est indisponible (navigation
   // privée, quota plein, etc.) — on perd juste la sauvegarde, pas l'accès au jeu.
-  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,keyUp,keyDown,trailEnabled,lagDelay,cadenceEnabled,noclipEnabled,gapStartMul,folieEnabled,modeNames}));}catch(_){}
+  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,keyUp,keyDown,trailEnabled,cadenceEnabled,noclipEnabled,gapStartMul,randomLevelsEnabled,personnalisableEnabled,speedMul,angleMul,modeNames}));}catch(_){}
 }
 function loadSettings() {
   try {
@@ -282,11 +372,13 @@ function loadSettings() {
     if(typeof s.keyUp==='string')   keyUp  =s.keyUp;
     if(typeof s.keyDown==='string') keyDown=s.keyDown;
     if(typeof s.trailEnabled==='boolean')trailEnabled=s.trailEnabled;
-    if(typeof s.lagDelay==='number'&&LAG_LEVELS.includes(s.lagDelay))lagDelay=s.lagDelay;
     if(typeof s.cadenceEnabled==='boolean')cadenceEnabled=s.cadenceEnabled;
     if(typeof s.noclipEnabled==='boolean')noclipEnabled=s.noclipEnabled;
     if(typeof s.gapStartMul==='number'&&s.gapStartMul>=0.01&&s.gapStartMul<=10)gapStartMul=s.gapStartMul;
-    if(typeof s.folieEnabled==='boolean')folieEnabled=s.folieEnabled;
+    if(typeof s.randomLevelsEnabled==='boolean')randomLevelsEnabled=s.randomLevelsEnabled;
+    if(typeof s.personnalisableEnabled==='boolean')personnalisableEnabled=s.personnalisableEnabled;
+    if(typeof s.speedMul==='number'&&s.speedMul>=0.5&&s.speedMul<=2)speedMul=s.speedMul;
+    if(typeof s.angleMul==='number'&&s.angleMul>=0.5&&s.angleMul<=2)angleMul=s.angleMul;
     if(s.modeNames&&typeof s.modeNames==='object'){
       MODES.forEach(m=>{if(typeof s.modeNames[m]==='string'&&s.modeNames[m].trim())modeNames[m]=s.modeNames[m].trim().slice(0,12);});
     }
@@ -298,9 +390,6 @@ function applySettingsToUI() {
   const trailBtn=document.getElementById('trailToggle');
   trailBtn.classList.toggle('on',trailEnabled);
   trailBtn.textContent=trailEnabled?'Activée':'Désactivée';
-  const lagBtn=document.getElementById('lagToggle');
-  lagBtn.classList.toggle('on',lagDelay>0);
-  lagBtn.textContent=lagLabel();
   const cadBtn=document.getElementById('cadenceToggle');
   cadBtn.classList.toggle('on',cadenceEnabled);
   cadBtn.textContent=cadenceEnabled?'⏱ CADENCE ✓':'⏱ CADENCE';
@@ -308,9 +397,14 @@ function applySettingsToUI() {
   noclipBtn.classList.toggle('on',noclipEnabled);
   noclipBtn.textContent=noclipEnabled?'Activé':'Désactivé';
   document.getElementById('gapPctInput').value=Math.round(gapStartMul*100);
-  const folieBtn=document.getElementById('folieToggle');
-  folieBtn.classList.toggle('on',folieEnabled);
-  folieBtn.textContent=folieEnabled?'Activé':'Désactivé';
+  const persoBtn=document.getElementById('personnalisableToggle');
+  persoBtn.classList.toggle('on',personnalisableEnabled);
+  persoBtn.textContent=personnalisableEnabled?'Activé':'Désactivé';
+  const randomLevelsBtn=document.getElementById('randomLevelsToggle');
+  randomLevelsBtn.classList.toggle('on',randomLevelsEnabled);
+  randomLevelsBtn.textContent=randomLevelsEnabled?'Activé':'Désactivé';
+  document.getElementById('speedPctInput').value=Math.round(speedMul*100);
+  document.getElementById('anglePctInput').value=Math.round(angleMul*100);
   document.querySelectorAll('.tb[data-t]').forEach(b=>{
     const on=parseInt(b.dataset.t)===themeIdx;
     b.classList.toggle('on',on);
@@ -320,8 +414,249 @@ function applySettingsToUI() {
   syncKeyLabels();
 }
 
+// ─── PARTIES CRÉÉES (persistance + UI) ─────────────────────────────────────────
+function saveCustomLevels(){
+  try{localStorage.setItem('wave_custom_levels',JSON.stringify(customLevels));}catch(_){}
+}
+function loadCustomLevels(){
+  try{
+    const arr=JSON.parse(localStorage.getItem('wave_custom_levels'));
+    if(Array.isArray(arr))customLevels=arr;
+  }catch(_){}
+}
+function renderCustomList(){
+  const list=document.getElementById('customList');
+  const empty=document.getElementById('customEmpty');
+  list.innerHTML='';
+  empty.style.display=customLevels.length?'none':'';
+  customLevels.forEach(lvl=>{
+    const row=document.createElement('div');
+    row.className='customRow';
+    const nameCol=document.createElement('div');
+    nameCol.style.cssText='flex:1;text-align:left;';
+    const nameBtn=document.createElement('button');
+    nameBtn.className='cname';
+    nameBtn.textContent=lvl.name;
+    nameBtn.addEventListener('click',()=>{
+      const v=prompt('Renommer la partie créée :',lvl.name);
+      if(v&&v.trim()){lvl.name=v.trim().slice(0,24);saveCustomLevels();renderCustomList();}
+    });
+    const recBadge=document.createElement('div');
+    recBadge.style.cssText='color:#556677;font:.68em monospace;margin-top:2px;';
+    recBadge.textContent=lvl.bestDeaths===undefined?'record : --':`record : ${lvl.bestDeaths} mort${lvl.bestDeaths===1?'':'s'}`;
+    nameCol.append(nameBtn,recBadge);
+    const playBtn=document.createElement('button');
+    playBtn.className='kb';playBtn.textContent='▶ Jouer';
+    playBtn.addEventListener('click',()=>{
+      activeCustomLevel=lvl;mode=lvl.mode;diff=lvl.diff;
+      document.querySelectorAll('.mb[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===mode));
+      document.getElementById('customPanel').classList.remove('open');
+      startGame();
+    });
+    const editBtn=document.createElement('button');
+    editBtn.className='kb';editBtn.textContent='✎ Modifier';
+    editBtn.addEventListener('click',()=>openCustomEditor(lvl));
+    const delBtn=document.createElement('button');
+    delBtn.className='kb';delBtn.textContent='✕';
+    delBtn.addEventListener('click',()=>{
+      customLevels=customLevels.filter(l=>l.id!==lvl.id);
+      saveCustomLevels();renderCustomList();
+    });
+    row.append(nameCol,playBtn,editBtn,delBtn);
+    list.appendChild(row);
+  });
+}
+
+// ─── ÉDITEUR DE PARTIE CRÉÉE ────────────────────────────────────────────────────
+// Édition au pixel près : le tracé est redessiné à la souris/au doigt
+// directement sur un canvas qui représente tout le niveau (axe X = distance,
+// axe Y = hauteur), avec une résolution égale à celle du tunnel (pas SEG) —
+// bien plus précis qu'une poignée de points ajustables.
+let editingLevel=null, editIsNew=false, editTraj=[], editPiqueDraft=[], editPortalDraft=[], editDragging=false, editLastIdx=null;
+const editCv=document.getElementById('editCanvas'), editCx=editCv.getContext('2d');
+// Distance principale "standard" d'un niveau pour un mode/diff donné — la
+// même formule que buildLevel(), utilisée pour les niveaux vides créés à la
+// main (qui n'ont pas de partie réellement jouée derrière pour la définir).
+function standardMainLen(diff){
+  const cfg=DCFG[diff];
+  const totalLen=cfg.dur*cfg.speed+W+600,easeWX=cfg.speed*0.8;
+  return totalLen-easeWX-W;
+}
+function createBlankCustomLevel(){
+  const cfg=DCFG[diff];
+  const mainLen=standardMainLen(diff);
+  const nSamples=Math.ceil(mainLen/SEG);
+  const traj=new Array(nSamples).fill(H/2);
+  const lvl={id:Date.now()+'-'+Math.random().toString(36).slice(2),name:'Niveau '+(customLevels.length+1),mode,diff,mainLen,traj,piques:[],portals:[],clicks:[]};
+  openCustomEditor(lvl,true);
+}
+function openCustomEditor(lvl,isNew){
+  editingLevel=lvl;editIsNew=!!isNew;
+  editTraj=Array.from(lvl.traj);
+  editPiqueDraft=(lvl.piques||[]).map(p=>({wx:p.wx,band:p.band}));
+  editPortalDraft=(lvl.portals||[]).map(p=>({wx:p.wx,speedMul:p.speedMul,angleMul:p.angleMul,gapMul:p.gapMul}));
+  renderEditPiques();
+  renderEditPortals();
+  drawEditCanvas();
+  document.getElementById('editPanel').classList.add('open');
+}
+function drawEditCanvas(){
+  const w=editCv.width,h=editCv.height;
+  editCx.fillStyle='#04040c';editCx.fillRect(0,0,w,h);
+  editCx.strokeStyle='rgba(160,200,255,0.08)';editCx.lineWidth=1;
+  for(let gy=0;gy<h;gy+=h/4){editCx.beginPath();editCx.moveTo(0,gy);editCx.lineTo(w,gy);editCx.stroke();}
+  editCx.strokeStyle='#7de8ff';editCx.lineWidth=2;editCx.beginPath();
+  const n=editTraj.length;
+  for(let i=0;i<n;i++){
+    const x=i/(n-1)*w,y=editTraj[i]/H*h;
+    i===0?editCx.moveTo(x,y):editCx.lineTo(x,y);
+  }
+  editCx.stroke();
+  editCx.fillStyle='#ff3366';
+  for(const p of editPiqueDraft){
+    const x=p.wx*w;
+    const third=h/3;
+    const bandTop=p.band==='top'?0:(p.band==='mid'?third:2*third);
+    editCx.fillRect(x-3,bandTop,6,third);
+  }
+  editCx.strokeStyle='#33ddaa';editCx.lineWidth=2;
+  for(const p of editPortalDraft){
+    const x=p.wx*w;
+    editCx.beginPath();editCx.moveTo(x,0);editCx.lineTo(x,h);editCx.stroke();
+  }
+}
+function editCoordToIdx(clientX,clientY){
+  const r=editCv.getBoundingClientRect();
+  const fx=Math.max(0,Math.min(1,(clientX-r.left)/r.width));
+  const fy=Math.max(0,Math.min(1,(clientY-r.top)/r.height));
+  return{idx:fx*(editTraj.length-1),y:fy*H};
+}
+function editApplyAt(idx,y){
+  if(editLastIdx===null){
+    editTraj[Math.round(idx)]=y;
+  }else{
+    const i0=Math.round(editLastIdx.idx),i1=Math.round(idx);
+    const lo=Math.min(i0,i1),hi=Math.max(i0,i1);
+    for(let i=lo;i<=hi;i++){
+      const t=hi===lo?1:(i-lo)/(hi-lo);
+      const v=i0<=i1?editLastIdx.y+(y-editLastIdx.y)*t:y+(editLastIdx.y-y)*t;
+      editTraj[i]=v;
+    }
+  }
+  editLastIdx={idx,y};
+  drawEditCanvas();
+}
+function editPointerDown(clientX,clientY){editDragging=true;editLastIdx=null;const{idx,y}=editCoordToIdx(clientX,clientY);editApplyAt(idx,y);}
+function editPointerMove(clientX,clientY){if(!editDragging)return;const{idx,y}=editCoordToIdx(clientX,clientY);editApplyAt(idx,y);}
+function editPointerUp(){editDragging=false;editLastIdx=null;}
+editCv.addEventListener('mousedown',e=>{e.preventDefault();editPointerDown(e.clientX,e.clientY);});
+window.addEventListener('mousemove',e=>{if(editDragging)editPointerMove(e.clientX,e.clientY);});
+window.addEventListener('mouseup',()=>editPointerUp());
+editCv.addEventListener('touchstart',e=>{e.preventDefault();editPointerDown(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+editCv.addEventListener('touchmove',e=>{e.preventDefault();editPointerMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+editCv.addEventListener('touchend',e=>{e.preventDefault();editPointerUp();},{passive:false});
+function renderEditPiques(){
+  const wrap=document.getElementById('editPiques');
+  wrap.innerHTML='';
+  if(!editPiqueDraft.length){
+    const e=document.createElement('div');
+    e.style.cssText='color:#556677;font:.75em monospace;margin-bottom:8px;';
+    e.textContent='Aucun pique pour l\'instant.';
+    wrap.appendChild(e);
+  }
+  editPiqueDraft.forEach((p,i)=>{
+    const row=document.createElement('div');row.className='piqueRow';
+    const posInput=document.createElement('input');
+    posInput.type='range';posInput.min=0;posInput.max=100;posInput.value=Math.round(p.wx*100);
+    posInput.addEventListener('input',()=>{p.wx=parseInt(posInput.value,10)/100;drawEditCanvas();});
+    const sel=document.createElement('select');
+    [['top','Haut'],['mid','Milieu'],['bot','Bas']].forEach(([val,label])=>{
+      const opt=document.createElement('option');opt.value=val;opt.textContent=label;
+      if(p.band===val)opt.selected=true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change',()=>{p.band=sel.value;drawEditCanvas();});
+    const rm=document.createElement('button');rm.className='kb';rm.textContent='✕';
+    rm.addEventListener('click',()=>{editPiqueDraft.splice(i,1);renderEditPiques();drawEditCanvas();});
+    row.append(posInput,sel,rm);
+    wrap.appendChild(row);
+  });
+}
+document.getElementById('addPique').addEventListener('click',()=>{
+  editPiqueDraft.push({wx:0.5,band:'mid'});
+  renderEditPiques();
+  drawEditCanvas();
+});
+function renderEditPortals(){
+  const wrap=document.getElementById('editPortals');
+  wrap.innerHTML='';
+  if(!editPortalDraft.length){
+    const e=document.createElement('div');
+    e.style.cssText='color:#556677;font:.75em monospace;margin-bottom:8px;';
+    e.textContent='Aucun portail pour l\'instant.';
+    wrap.appendChild(e);return;
+  }
+  editPortalDraft.forEach((p,i)=>{
+    const row=document.createElement('div');row.className='portalRow';
+    const posInput=document.createElement('input');
+    posInput.type='range';posInput.min=0;posInput.max=100;posInput.value=Math.round(p.wx*100);
+    posInput.addEventListener('input',()=>{p.wx=parseInt(posInput.value,10)/100;drawEditCanvas();});
+    row.appendChild(posInput);
+    [['speedMul','Vit.'],['angleMul','Angle'],['gapMul','Tunnel']].forEach(([field,label])=>{
+      const lab=document.createElement('label');lab.textContent=label+' :';
+      const inp=document.createElement('input');inp.className='pinput';
+      inp.type='text';inp.inputMode='numeric';inp.maxLength=3;
+      inp.value=Math.round(p[field]*100);
+      inp.addEventListener('blur',()=>{p[field]=pctInputValue(inp,1);inp.value=Math.round(p[field]*100);});
+      row.append(lab,inp);
+    });
+    const rm=document.createElement('button');rm.className='kb';rm.textContent='✕';
+    rm.addEventListener('click',()=>{editPortalDraft.splice(i,1);renderEditPortals();drawEditCanvas();});
+    row.appendChild(rm);
+    wrap.appendChild(row);
+  });
+}
+document.getElementById('addPortal').addEventListener('click',()=>{
+  editPortalDraft.push({wx:0.5,speedMul:1,angleMul:1,gapMul:1});
+  renderEditPortals();
+  drawEditCanvas();
+});
+// Lit/contraint une valeur en %, retombe sur une valeur par défaut si invalide.
+function pctInputValue(input,def){
+  let v=parseInt(input.value,10);
+  if(!Number.isFinite(v))v=Math.round(def*100);
+  return Math.max(50,Math.min(200,v))/100;
+}
+document.getElementById('saveEdit').addEventListener('click',()=>{
+  if(!editingLevel)return;
+  editingLevel.traj=editTraj.slice();
+  editingLevel.piques=editPiqueDraft.map(p=>({wx:p.wx,band:p.band}));
+  editingLevel.portals=editPortalDraft.map(p=>({wx:p.wx,speedMul:p.speedMul,angleMul:p.angleMul,gapMul:p.gapMul}));
+  editingLevel.bestDeaths=undefined; // toute modification du tracé invalide le record précédent
+  if(editIsNew)customLevels.push(editingLevel);
+  saveCustomLevels();
+  document.getElementById('editPanel').classList.remove('open');
+  editingLevel=null;editIsNew=false;
+  renderCustomList();
+});
+document.getElementById('cancelEdit').addEventListener('click',()=>{
+  editingLevel=null;editIsNew=false;
+  document.getElementById('editPanel').classList.remove('open');
+});
+document.getElementById('createBlankLevel').addEventListener('click',createBlankCustomLevel);
+
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const W=800,H=400,SEG=4,PLAYER_R=4,PLAYER_SX=200,BAR_H=14;
+const PIQUE_HALF_W=14; // demi-largeur (en wx) du bloc-pique — un peu plus large que la hitbox d'origine
+const PIQUE_HEIGHT_RATIO=0.55; // hauteur du bloc = cette fraction du tiers de bande (un peu moins long)
+// Le bloc-pique dessiné est EXACTEMENT sa hitbox (même rectangle), pour qu'il
+// n'y ait jamais de décalage entre ce qui est affiché et ce qui tue.
+function piqueRect(p,top,bot){
+  const span=bot-top,third=span/3;
+  const bandTop=p.band==='top'?top:(p.band==='mid'?top+third:top+2*third);
+  const h=third*PIQUE_HEIGHT_RATIO,cy=bandTop+third/2;
+  return{top:cy-h/2,bot:cy+h/2};
+}
 
 // Vitesses de déplacement réduites de 30% (la durée reste 60s sur tous les
 // niveaux : ils sont juste plus courts en distance, pas plus courts en temps).
@@ -335,40 +670,50 @@ const DCFG={
 };
 
 // ─── RECORDS ──────────────────────────────────────────────────────────────────
-// Records séparés par mode de jeu, par réglage de lag (0 / 0.5s / 1s) ET par
-// option Cadence (avec/sans) — ce sont toutes des catégories de record distinctes.
-const MODES=['wave','swing','ship','twokey'];
-const LAG_KEYS=['0','0.5','1'];
+// Records séparés par mode de jeu ET par option Cadence (avec/sans) — ce sont
+// des catégories de record distinctes.
+const MODES=['wave','swing','ship','twokey','spider'];
 const CAD_KEYS=['0','1']; // '0'=sans Cadence, '1'=avec Cadence
 // Marge de sécurité supplémentaire selon le mode : les modes avec inertie
 // (vaisseau/swing) ont besoin de plus de distance pour inverser leur
 // direction qu'un mode à changement instantané (wave/double) — utilisé par
 // l'option Cadence pour garantir un niveau toujours faisable selon le mode actif.
-const MODE_SAFETY={wave:1,twokey:1,swing:1.4,ship:1.5};
+const MODE_SAFETY={wave:1,twokey:1,spider:1,swing:1.4,ship:1.5};
 function emptyRecords(){
-  const r={};MODES.forEach(m=>{r[m]={};LAG_KEYS.forEach(lk=>{r[m][lk]={};CAD_KEYS.forEach(ck=>r[m][lk][ck]={});});});return r;
+  const r={};MODES.forEach(m=>{r[m]={};CAD_KEYS.forEach(ck=>r[m][ck]={});});return r;
 }
 function loadRecords(){
   try{
-    const s=JSON.parse(localStorage.getItem('wave_records_v11'));
+    const s=JSON.parse(localStorage.getItem('wave_records_v13'));
     if(s&&typeof s==='object'){
       const r=emptyRecords();
-      MODES.forEach(m=>LAG_KEYS.forEach(lk=>CAD_KEYS.forEach(ck=>{
-        if(s[m]&&s[m][lk]&&s[m][lk][ck]&&typeof s[m][lk][ck]==='object')r[m][lk][ck]=s[m][lk][ck];
-      })));
+      MODES.forEach(m=>CAD_KEYS.forEach(ck=>{
+        if(s[m]&&s[m][ck]&&typeof s[m][ck]==='object')r[m][ck]=s[m][ck];
+      }));
       return r;
     }
   }catch(_){}
   return emptyRecords();
 }
-function saveRecords(){try{localStorage.setItem('wave_records_v11',JSON.stringify(records));}catch(_){}}
+function saveRecords(){try{localStorage.setItem('wave_records_v13',JSON.stringify(records));}catch(_){}}
 let records=loadRecords();
 function cadKey(){return cadenceEnabled?'1':'0';}
-function curRecords(){return records[mode][lagKey()][cadKey()];}
-function recordLabel(d){const r=curRecords()[d];if(r===undefined)return'--';return`${r} pts`;}
+function curRecords(){return records[mode][cadKey()];}
+function recordLabel(d){
+  if(activeCustomLevel){
+    const r=activeCustomLevel.bestDeaths;
+    return r===undefined?'--':`${r} mort${r===1?'':'s'}`;
+  }
+  const r=curRecords()[d];if(r===undefined)return'--';return`${r} mort${r===1?'':'s'}`;
+}
 // Un record ne compte que si le tunnel a démarré à sa taille prévue (100%)
 // et que l'option "Traverser les murs" était désactivée.
-function recordsEligible(){return gapStartMul===1&&!noclipEnabled;}
+// Éligible à un record dans la table GLOBALE (mode/lag/cadence) : jamais en
+// session d'enregistrement ni en relecture d'une partie créée (qui a sa
+// PROPRE table de records, gérée séparément — voir update()).
+function recordsEligible(){return gapStartMul===1&&!noclipEnabled&&!recordingCustom&&!activeCustomLevel;}
+// Éligible à un record sur la partie créée actuellement rejouée.
+function customRecordsEligible(){return gapStartMul===1&&!noclipEnabled;}
 
 // ─── MUSIQUE (une piste Spotify par niveau) ────────────────────────────────────
 const LEVEL_TRACKS={
@@ -417,10 +762,14 @@ const mcv=document.getElementById('miniMapCv'),mcx=mcv.getContext('2d');
 let diff=5,mode='wave',state='menu',pseudo='';
 let corridor=null,waypoints=[],particles=[],trail=[],endWallWX=0;
 let cadenceTraj=[],cadenceEaseWX=0; // trajectoire enregistrée pour l'option Cadence
-let playerWX=0,playerY=H/2,cameraX=0,holding=false,hitFlash=0,deathPulse=0,shipVel=0,gravityDir=1,jumpQueued=false,upHeld=false,downHeld=false;
+let playerWX=0,playerY=H/2,cameraX=0,holding=false,hitFlash=0,deathPulse=0,shipVel=0,gravityDir=1,jumpQueued=false,upHeld=false,downHeld=false,spiderState='bot';
 let trainingDeaths=0,startMs=0,trainingTotalStartMs=0,elapsed=0,totalLen=0,lastDeathMs=-999,difficultyEase=0;
 let score=0,lastScoreSec=0;
 let raf,prevNow;
+// Réglages effectifs de la run en cours : démarrent à la valeur des
+// Paramètres, mais peuvent être changés en cours de route en traversant un
+// portail modificateur posé dans l'éditeur de partie créée.
+let runtimeSpeedMul=1,runtimeAngleMul=1,runtimeGapMul=1,triggeredPortals=new Set();
 
 function setIngame(on){document.body.classList.toggle('ingame',on);}
 
@@ -507,12 +856,34 @@ function buildObstaclePool(){
 }
 const OBSTACLES=buildObstaclePool();
 const MIN_GAP=32; // largeur minimale absolue garantie, quel que soit le resserrement demandé
+const NONCADENCE_GAP_MUL=1.3; // les tunnels sans l'option Cadence démarrent 30% plus grands que la base cfg.gap
+// Le mode Araignée ne survit que tout en haut ou tout en bas du tunnel (aucune
+// position intermédiaire n'est possible) : il a besoin d'un tunnel plus large
+// que les autres modes pour rester franchissable.
+const MODE_GAP_MUL={spider:1.6};
+function modeGapMul(m){return MODE_GAP_MUL[m]||1;}
 // Option Cadence : largeur du tunnel d'enregistrement.
 // Le couloir trace exactement la trajectoire enregistrée — il faut donc
 // reproduire les mêmes appuis au même moment, à TOLERANCE_MS près, pour
 // rester dedans. La largeur inclut le diamètre du joueur + la distance
 // parcourue à vy pendant 2×TOLERANCE_MS (marge symétrique) + un peu de jeu
 // pour rester franchissable malgré le pas de simulation (~16ms/frame).
+// RNG déterministe (mulberry32) : permet de regénérer EXACTEMENT la même
+// map (mêmes obstacles / mêmes clics enregistrés) à chaque partie. Il y a
+// 5 graines fixes : une par mode en Cadence (4) + une seule partagée par
+// tous les modes en Défi Aléatoire (sans cadence) = 5 maps au total, qui
+// ne changent jamais.
+function mkRng(seed){
+  let s=seed>>>0;
+  return function(){
+    s|=0;s=s+0x6D2B79F5|0;
+    let t=Math.imul(s^s>>>15,1|s);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+const MAP_SEEDS={wave:101,swing:102,ship:103,twokey:104,spider:105};
+const NONCADENCE_SEED=200;
 const CADENCE_TOLERANCE_MS=20;
 function cadenceGap(vy){
   // ×2 : le tunnel Cadence démarre toujours deux fois plus gros que la
@@ -550,17 +921,47 @@ function recordCadenceTrajectory(cfg, mode, mainLen, easeWX){
   const dt=SEG/cfg.speed; // un échantillon par pas de couloir
   const nSamples=Math.ceil(mainLen/SEG);
   const accel=cfg.vy/0.18;
-  let y=H/2, vel=0, holding=false, gravityDir=1, twokeyState=0; // -1=monter,0=droit,1=descendre
-  let nextClickT=0.2+Math.random()*0.5;
+  const rng=randomLevelsEnabled?Math.random:mkRng(MAP_SEEDS[mode]);
+  const CENTER=H/2, MAX_DRIFT=H*0.16; // reste plutôt vers le centre, pas trop haut/bas
+  let y=H/2, vel=0, holding=false, gravityDir=1, twokeyState=0, spiderSt='bot'; // -1=monter,0=droit,1=descendre
+  // Bandes de tempo (lent/normal/rapide) qui changent toutes les quelques
+  // secondes, pour que le rythme demandé varie sans cesse au fil du niveau —
+  // en plus des fenêtres de spam forcées ci-dessous.
+  const PACES=[[0.45,0.75],[0.2,0.45],[0.12,0.28]];
+  let paceUntil=0, pace=PACES[0];
+  let nextClickT=0.2+rng()*0.5;
+  // Au moins une fenêtre de spam forcé (6-9 clics/s) dès le début, puis
+  // régulièrement ensuite — garantit qu'aucun niveau Cadence n'en est privé.
+  let burstUntil=-1, nextBurstT=3+rng()*3;
   let t=0;
   cadenceTraj=new Float32Array(nSamples);
   cadenceEaseWX=easeWX;
   for(let i=0;i<nSamples;i++){
+    if(t>=paceUntil){
+      pace=PACES[Math.floor(rng()*PACES.length)];
+      paceUntil=t+2+rng()*3;
+    }
+    if(t>=nextBurstT && t>=burstUntil){
+      burstUntil=t+1+rng()*1.5; // section forcée de spam, durée garantie ≥1s
+      nextBurstT=burstUntil+4+rng()*5;
+    }
+    const inBurst=t<burstUntil;
     if(t>=nextClickT){
-      if(mode==='wave'||mode==='ship'){ holding=!holding; }
-      else if(mode==='swing'){ gravityDir=-gravityDir; }
-      else if(mode==='twokey'){ const opts=[-1,0,1].filter(v=>v!==twokeyState); twokeyState=opts[Math.floor(Math.random()*opts.length)]; }
-      nextClickT=t+0.2+Math.random()*0.5; // 0.2s mini → 5 clics/s max
+      const tooLow=y>CENTER+MAX_DRIFT, tooHigh=y<CENTER-MAX_DRIFT;
+      if(mode==='wave'||mode==='ship'){
+        holding = tooLow?true:(tooHigh?false:(rng()<0.5));
+      } else if(mode==='swing'){
+        gravityDir = tooLow?-1:(tooHigh?1:(rng()<0.5?1:-1));
+      } else if(mode==='twokey'){
+        if(tooLow) twokeyState=-1;
+        else if(tooHigh) twokeyState=1;
+        else { const opts=[-1,0,1].filter(v=>v!==twokeyState); twokeyState=opts[Math.floor(rng()*opts.length)]; }
+      } else if(mode==='spider'){
+        // Pas de "centrage" possible : la position est toujours à un extrême,
+        // c'est le principe du mode — alternance équiprobable à chaque clic.
+        spiderSt = rng()<0.5?'top':'bot';
+      }
+      nextClickT = inBurst ? t+1/(6+rng()*3) : t+pace[0]+rng()*(pace[1]-pace[0]); // 6-9 cps en burst, sinon rythme variable selon la bande de tempo
     }
     if(mode==='ship'){
       vel+=(holding?-accel:accel)*dt;
@@ -572,6 +973,8 @@ function recordCadenceTrajectory(cfg, mode, mainLen, easeWX){
       y+=vel*dt;
     }else if(mode==='twokey'){
       y+=twokeyState*cfg.vy*dt;
+    }else if(mode==='spider'){
+      y=spiderSt==='top'?PLAYER_R+1:H-PLAYER_R-1;
     }else{ // wave
       y+=(holding?-1:1)*cfg.vy*dt;
     }
@@ -581,23 +984,79 @@ function recordCadenceTrajectory(cfg, mode, mainLen, easeWX){
   }
 }
 
+// Convertit l'enregistrement réel d'une partie (échantillons {wx,y} pris à
+// chaque frame pendant la session "Personnalisable") en une trajectoire
+// rééchantillonnée au même pas que le couloir (SEG), puis sauvegarde le
+// niveau créé. Annuler le prompt laisse l'option activée pour réessayer.
+function finalizeCustomRecording(cfg){
+  const easeWX=cfg.speed*0.8;
+  if(recBuf.length<2){return;} // run trop courte (quittée immédiatement) : rien à sauvegarder
+  // La distance réellement parcourue dépend de la vitesse réglée pendant
+  // l'enregistrement (runtimeSpeedMul) : à vitesse double, le joueur a
+  // parcouru deux fois plus loin en 60s, donc le niveau créé doit être deux
+  // fois plus long (et inversement à vitesse réduite) — on se base sur la
+  // distance RÉELLEMENT enregistrée plutôt que sur la distance théorique à
+  // vitesse normale.
+  const mainLen=Math.max(SEG,recBuf[recBuf.length-1].wx-easeWX);
+  const nSamples=Math.ceil(mainLen/SEG);
+  const traj=new Array(nSamples);
+  let j=0;
+  for(let i=0;i<nSamples;i++){
+    const targetWx=easeWX+i*SEG;
+    while(j<recBuf.length-2 && recBuf[j+1].wx<targetWx)j++;
+    const a=recBuf[j],b=recBuf[Math.min(j+1,recBuf.length-1)];
+    let y;
+    if(b.wx>a.wx){const t=Math.max(0,Math.min(1,(targetWx-a.wx)/(b.wx-a.wx)));y=a.y+(b.y-a.y)*t;}
+    else y=a.y;
+    traj[i]=y;
+  }
+  const name=prompt('Nom de la partie créée :','Partie '+(customLevels.length+1));
+  if(name===null)return; // annulé : pas de sauvegarde, l'option Personnalisable reste activée
+  customLevels.push({
+    id:Date.now()+'-'+Math.random().toString(36).slice(2),
+    name:(name.trim()||('Partie '+(customLevels.length+1))).slice(0,24),
+    mode,diff,mainLen,traj,piques:[],portals:[]
+  });
+  saveCustomLevels();
+  personnalisableEnabled=false;recordingCustom=false;recBuf=[];
+  applySettingsToUI();saveSettings();
+}
+
 // ─── LEVEL GENERATION ─────────────────────────────────────────────────────────
 function buildLevel(d){
+  // Repart toujours des Paramètres : un portail modificateur ne change les
+  // réglages que pour le reste de LA run en cours (voir update()) — un
+  // nouveau niveau/une nouvelle boucle repart des valeurs réglées.
+  runtimeSpeedMul=speedMul;runtimeAngleMul=angleMul;runtimeGapMul=gapStartMul;
   const cfg=DCFG[d];
   totalLen =cfg.dur*cfg.speed+W+600;
   endWallWX=cfg.dur*cfg.speed;
   const easeWX=cfg.speed*0.8;
   const nSeg=Math.ceil(totalLen/SEG)+2;
   corridor=new Float32Array(nSeg*2);
-  const gap=cfg.gap*gapStartMul,m=gap/2+10,rng=H-2*m;
+  const gap=cfg.gap*NONCADENCE_GAP_MUL*modeGapMul(mode)*gapStartMul,m=gap/2+10,rng=H-2*m;
   const TOP=m+rng*.06,HITOP=m+rng*.25,MID=m+rng*.50,HIBOT=m+rng*.75,BOT=m+rng*.94;
   const KEY={TOP,HITOP,MID,HIBOT,BOT};
   const mainLen=totalLen-easeWX-W;
 
   waypoints=[{wx:0,cy:MID},{wx:easeWX*.75,cy:MID}];
 
+  // Une "partie créée" en cours de relecture trace sa trajectoire enregistrée
+  // exactement comme l'option Cadence. Pendant l'ENREGISTREMENT d'une nouvelle
+  // partie créée (option Personnalisable activée, pas de relecture en cours),
+  // le niveau est entièrement ouvert : aucun obstacle, aucune trajectoire à
+  // suivre — c'est fillCorridor() qui garde un couloir maximal dans ce cas.
+  recordingCustom = personnalisableEnabled && !activeCustomLevel;
+  if(recordingCustom)recBuf=[];
+
   let wx=easeWX;
-  if(cadenceEnabled){
+  if(activeCustomLevel){
+    cadenceTraj=Float32Array.from(activeCustomLevel.traj);
+    cadenceEaseWX=easeWX;
+    wx=easeWX+activeCustomLevel.mainLen;
+  } else if(recordingCustom){
+    wx=easeWX+mainLen;
+  } else if(cadenceEnabled){
     // Option Cadence (enregistrement) : on simule d'abord une session de
     // clics ALÉATOIRES (au plus 5 clics/s) pour le mode actif, sur un
     // terrain ouvert sans aucun mur, et on enregistre la trajectoire
@@ -612,11 +1071,15 @@ function buildLevel(d){
     // Défi Aléatoire : enchaîne des obstacles tirés au hasard dans le pool,
     // dont la difficulté possible augmente progressivement avec la distance.
     const baseUnit=requiredBaseUnit(cfg,KEY)*MODE_SAFETY[mode];
+    // Graine fixe partagée par défaut (même map à chaque partie) — sauf si
+    // l'option "Niveaux aléatoires" est activée, où chaque partie tire une
+    // nouvelle disposition d'obstacles.
+    const rng=randomLevelsEnabled?Math.random:mkRng(NONCADENCE_SEED);
     while(wx<easeWX+mainLen){
       const progress=Math.min(1,(wx-easeWX)/mainLen);
       const maxH=progress<0.25?0:(progress<0.6?1:2);
       const pool=OBSTACLES.filter(o=>o.h<=maxH);
-      const ob=pool[Math.floor(Math.random()*pool.length)];
+      const ob=pool[Math.floor(rng()*pool.length)];
       const segLen=baseUnit*ob.sp;
       for(let k=1;k<ob.pts.length;k++){
         wx+=segLen;
@@ -637,9 +1100,14 @@ function fillCorridor(d){
   const cfg=DCFG[d];
   const easeWX=cfg.speed*0.8;
   const nSeg=corridor.length/2;
-  if(cadenceEnabled){
-    let gap=cadenceGap(cfg.vy)*gapStartMul+difficultyEase;
-    if(lagDelay>0)gap*=2;
+  if(recordingCustom){
+    // Enregistrement d'une partie créée : aucun obstacle, le couloir occupe
+    // toute la hauteur disponible pendant tout le niveau.
+    for(let i=0;i<nSeg;i++){corridor[i*2]=1;corridor[i*2+1]=H-1;}
+    return;
+  }
+  if(cadenceEnabled||activeCustomLevel){
+    let gap=cadenceGap(cfg.vy)*modeGapMul(mode)*runtimeGapMul+difficultyEase;
     const i0=Math.floor(cadenceEaseWX/SEG);
     for(let i=0;i<nSeg;i++){
       const wx=i*SEG;let cy,g=gap;
@@ -649,8 +1117,7 @@ function fillCorridor(d){
     }
     return;
   }
-  let gap=cfg.gap*gapStartMul+difficultyEase;
-  if(lagDelay>0)gap*=2;
+  let gap=cfg.gap*NONCADENCE_GAP_MUL*modeGapMul(mode)*runtimeGapMul+difficultyEase;
   for(let i=0;i<nSeg;i++){
     const wx=i*SEG;let cy,g;
     if(wx<easeWX){const t=wx/easeWX;cy=H/2;g=H*.68*(1-t)+gap*t;corridor[i*2]=cy-g/2;corridor[i*2+1]=cy+g/2;continue;}
@@ -664,14 +1131,14 @@ function fillCorridor(d){
 function resetRun(keepDeaths){
   playerWX=0;playerY=H/2;cameraX=-PLAYER_SX;
   holding=false;hitFlash=0;deathPulse=0;particles=[];trail=[];elapsed=0;shipVel=0;difficultyEase=0;
-  gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;
-  pendingActions=[];
+  gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;spiderState='bot';
   score=0;lastScoreSec=0;
+  runtimeSpeedMul=speedMul;runtimeAngleMul=angleMul;runtimeGapMul=gapStartMul;triggeredPortals=new Set();
   prevNow=startMs=performance.now();
   if(!keepDeaths){trainingDeaths=0;trainingTotalStartMs=performance.now();}
 }
 function startGame(){difficultyEase=0;buildLevel(diff);resetRun(false);state='playing';setIngame(true);playLevelMusic(diff);}
-function goToMenu(){state='menu';holding=false;heldKeys.clear();pendingActions=[];setIngame(false);stopLevelMusic();}
+function goToMenu(){state='menu';holding=false;heldKeys.clear();setIngame(false);stopLevelMusic();activeCustomLevel=null;buildLevel(diff);}
 
 function explode(px,py,col){
   for(let i=0;i<32;i++){const a=Math.random()*Math.PI*2,s=1.5+Math.random()*6;
@@ -680,25 +1147,22 @@ function explode(px,py,col){
 }
 function die(){
   if(state!=='playing')return;
-  if(elapsed<3.3){hitFlash=1;return;} // invincible 3.3s
+  if(elapsed<1.75){hitFlash=1;return;} // invincible 1.75s
   const now=performance.now();
   if(now-lastDeathMs<333)return; // cooldown 0.333s entre chaque mort
   lastDeathMs=now;
   hitFlash=1;trainingDeaths++;
   deathPulse=1;
   // Assistance progressive : chaque mort élargit un peu le couloir pour le
-  // reste de la run (plafonnée pour ne jamais devenir trivial).
-  difficultyEase+=2;
-  fillCorridor(diff);
+  // reste de la run (plafonnée pour ne jamais devenir trivial) — désactivable.
+  {
+    fillCorridor(diff);
+  }
 }
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
 function update(now){
   const dt=Math.min((now-prevNow)/1000,.05);prevNow=now;
-  if(pendingActions.length){
-    const ready=pendingActions.filter(a=>a.at<=now);
-    if(ready.length){pendingActions=pendingActions.filter(a=>a.at>now);ready.forEach(a=>a.fn());}
-  }
   for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.vy+=.15;p.life-=p.decay;}
   particles=particles.filter(p=>p.life>0);
   if(hitFlash>0)hitFlash=Math.max(0,hitFlash-dt*2.5);
@@ -706,19 +1170,27 @@ function update(now){
   if(state!=='playing')return;
   elapsed=(now-startMs)/1000;
   const cfg=DCFG[diff];
-  if(elapsed>=cfg.dur){
-    // sauvegarder le record (score max) — uniquement si la run est éligible
-    // (tunnel démarré à 100% et option "Traverser les murs" désactivée).
+  if(playerWX>=endWallWX){
+    // sauvegarder le record (morts minimales) — uniquement si la run est éligible.
     if(recordsEligible()){
       const rec=curRecords();
-      if(rec[diff]===undefined||score>rec[diff]){rec[diff]=score;saveRecords();}
+      if(rec[diff]===undefined||trainingDeaths<rec[diff]){rec[diff]=trainingDeaths;saveRecords();}
     }
+    if(activeCustomLevel&&customRecordsEligible()){
+      if(activeCustomLevel.bestDeaths===undefined||trainingDeaths<activeCustomLevel.bestDeaths){
+        activeCustomLevel.bestDeaths=trainingDeaths;saveCustomLevels();
+      }
+    }
+    if(recordingCustom)finalizeCustomRecording(cfg);
     difficultyEase=0;buildLevel(diff);resetRun(true);return;
   }
-  playerWX+=cfg.speed*dt;cameraX=playerWX-PLAYER_SX;
+  // La caméra est arrondie au pixel près : sans ça, les murs sont redessinés
+  // à une position infinitésimalement différente à chaque frame et semblent
+  // "trembler" à l'écran (anti-aliasing + halo qui scintille en sous-pixel).
+  playerWX+=cfg.speed*runtimeSpeedMul*dt;cameraX=Math.round(playerWX-PLAYER_SX);
   // "portails" : modifient temporairement la vitesse verticale max du joueur
   // tant qu'il traverse leur zone.
-  const vyNow=cfg.vy*vyMulAt(playerWX);
+  const vyNow=cfg.vy*runtimeSpeedMul*runtimeAngleMul*vyMulAt(playerWX);
   if(mode==='ship'){
     // VAISSEAU (façon Geometry Dash) : pas de changement instantané de
     // direction — une poussée vers le haut quand on maintient, sinon la
@@ -740,12 +1212,23 @@ function update(now){
     // fait monter, la touche "Descendre" fait descendre.
     const dir=(upHeld&&!downHeld)?-1:((downHeld&&!upHeld)?1:0);
     playerY+=dir*vyNow*dt;
+  } else if(mode==='spider'){
+    // ARAIGNÉE (façon Geometry Dash) : aucun mouvement progressif — chaque
+    // clic fait basculer instantanément du plafond au sol du tunnel (ou
+    // l'inverse), et on reste collé à ce côté tant qu'on ne clique pas.
+    if(jumpQueued){
+      jumpQueued=false;spiderState=spiderState==='top'?'bot':'top';
+      trail=[]; // sans ça, la traînée relie visuellement l'ancienne et la nouvelle position et donne l'impression d'un déplacement, pas d'un téléport
+    }
+    const{top:t0,bot:b0}=getCorridor(playerWX);
+    playerY=spiderState==='top'?t0+PLAYER_R+1:b0-PLAYER_R-1;
   } else {
     // WAVE : maintenir fait monter en ligne droite, relâcher fait descendre.
     const dir=holding?-1:1;
     playerY+=dir*vyNow*dt;
   }
   playerY=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,playerY));
+  if(recordingCustom)recBuf.push({wx:playerWX,y:playerY});
   trail.push({wx:playerWX,y:playerY});if(trail.length>28)trail.shift();
   const{top,bot}=getCorridor(playerWX);
   // Score : chaque seconde écoulée rapporte 30 points moins le nombre de morts
@@ -770,6 +1253,29 @@ function update(now){
     playerY=bot-PLAYER_R;
     if(inertial)shipVel=Math.min(0,shipVel);
     die();
+  }
+  // Piques ajoutés via l'éditeur de partie créée : hasard supplémentaire dans
+  // une bande (haut/milieu/bas) du tunnel à une position donnée du niveau.
+  if(!noclipEnabled&&activeCustomLevel&&activeCustomLevel.piques&&activeCustomLevel.piques.length){
+    const lvlWX=cadenceEaseWX+activeCustomLevel.mainLen;
+    for(const p of activeCustomLevel.piques){
+      const pwx=cadenceEaseWX+p.wx*activeCustomLevel.mainLen;
+      if(playerWX<pwx-PIQUE_HALF_W||playerWX>pwx+PIQUE_HALF_W)continue;
+      const r=piqueRect(p,top,bot);
+      if(playerY+PLAYER_R>r.top&&playerY-PLAYER_R<r.bot){die();break;}
+    }
+  }
+  // Portails modificateurs ajoutés via l'éditeur : changent vitesse, angle et
+  // épaisseur du tunnel pour le reste de CETTE run dès qu'on les franchit.
+  if(activeCustomLevel&&activeCustomLevel.portals&&activeCustomLevel.portals.length){
+    activeCustomLevel.portals.forEach((p,i)=>{
+      if(triggeredPortals.has(i))return;
+      const pwx=cadenceEaseWX+p.wx*activeCustomLevel.mainLen;
+      if(playerWX<pwx)return;
+      triggeredPortals.add(i);
+      runtimeSpeedMul=p.speedMul;runtimeAngleMul=p.angleMul;runtimeGapMul=p.gapMul;
+      fillCorridor(diff);
+    });
   }
 }
 
@@ -809,6 +1315,34 @@ function drawWalls(){
     if(prox>.3){cx.globalAlpha=prox*.18;cx.fillStyle=col;cx.fillRect(endSX-prox*30,ty,prox*30,by-ty);cx.globalAlpha=1;}
     cx.shadowBlur=0;cx.lineWidth=1;
   }
+}
+
+function drawPiques(){
+  if(!(activeCustomLevel&&activeCustomLevel.piques&&activeCustomLevel.piques.length))return;
+  for(const p of activeCustomLevel.piques){
+    const pwx=cadenceEaseWX+p.wx*activeCustomLevel.mainLen;
+    const sx=pwx-cameraX;
+    if(sx<-PIQUE_HALF_W-4||sx>W+PIQUE_HALF_W+4)continue;
+    const{top,bot}=getCorridor(pwx);
+    const r=piqueRect(p,top,bot);
+    cx.fillStyle='#ff3366cc';cx.shadowBlur=10;cx.shadowColor='#ff3366';
+    cx.fillRect(sx-PIQUE_HALF_W,r.top,PIQUE_HALF_W*2,r.bot-r.top);
+    cx.shadowBlur=0;
+  }
+}
+
+function drawPortals(){
+  if(!(activeCustomLevel&&activeCustomLevel.portals&&activeCustomLevel.portals.length))return;
+  activeCustomLevel.portals.forEach((p,i)=>{
+    const pwx=cadenceEaseWX+p.wx*activeCustomLevel.mainLen;
+    const sx=pwx-cameraX;
+    if(sx<-6||sx>W+6)return;
+    const{top,bot}=getCorridor(pwx);
+    const col=triggeredPortals.has(i)?'#556677':'#33ddaa';
+    cx.strokeStyle=col;cx.lineWidth=3;cx.shadowBlur=12;cx.shadowColor=col;
+    cx.beginPath();cx.moveTo(sx,top);cx.lineTo(sx,bot);cx.stroke();
+    cx.shadowBlur=0;
+  });
 }
 
 function drawPlayer(){
@@ -858,31 +1392,14 @@ function drawHUD(){
   cx.fillStyle=g;cx.fillRect(0,0,W*pct,BAR_H);
   cx.strokeStyle='rgba(255,255,255,.10)';cx.lineWidth=1;cx.strokeRect(0,0,W,BAR_H);
   cx.shadowBlur=10;cx.shadowColor=col;cx.fillStyle=col;cx.fillRect(W*pct-2,0,4,BAR_H);cx.shadowBlur=0;
-  // Pseudo — top center, just below bar (far from quit button at bottom)
-  const name=pseudo.trim()||'Joueur';
-  cx.textAlign='center';cx.font='bold 13px monospace';cx.fillStyle=col+'88';
-  cx.fillText(name,W/2,BAR_H+16);
-  // Chrono — right
-  cx.textAlign='right';cx.font='bold 13px monospace';cx.fillStyle='#ffffff66';
-  cx.fillText(`${chrono.toFixed(1)}s`,W-10,BAR_H+16);
-  // Score — left (pulse rouge au moment de la mort)
+  // Morts — centre sous la barre
   cx.save();
   const dscale=1+deathPulse*.6;
-  cx.textAlign='left';cx.font=`bold ${(12*dscale).toFixed(1)}px monospace`;
+  cx.textAlign='center';cx.font=`bold ${(13*dscale).toFixed(1)}px monospace`;
   cx.fillStyle=deathPulse>0?`rgba(255,70,80,${.7+deathPulse*.3})`:'#ffffff66';
   if(deathPulse>0){cx.shadowBlur=10*deathPulse;cx.shadowColor='#ff3366';}
-  cx.fillText(`points : ${score}`,10,BAR_H+16);
+  cx.fillText(`morts : ${trainingDeaths}`,W/2,BAR_H+16);
   cx.restore();
-  const rl=recordLabel(diff);
-  cx.textAlign='left';cx.font='12px monospace';
-  cx.fillStyle=rl==='--'?'#ffffff22':col+'88';
-  cx.fillText(`record : ${rl}`,10,BAR_H+30);
-  cx.fillStyle='#ffffff44';
-  cx.fillText(`morts : ${trainingDeaths}`,10,BAR_H+44);
-  // Badge : nom du mode actif (personnalisable en cliquant sur son bouton)
-  cx.textAlign='right';cx.font='bold 11px monospace';
-  cx.shadowBlur=6;cx.shadowColor='#dd88ff';cx.fillStyle='#dd88ffbb';
-  cx.fillText(modeNames[mode]||mode,W-10,H-6);cx.shadowBlur=0;
   if(hitFlash>0){cx.fillStyle=`rgba(255,40,40,${hitFlash*.42})`;cx.fillRect(0,0,W,H);}
 }
 
@@ -1023,8 +1540,8 @@ function drawMenu(){
   drawMenuBg();
   const col=DCFG[diff].col;
   const mods=modeNames[mode]||mode;
-  drawOverlay(DCFG[diff].name.toUpperCase(),
-    `${DCFG[diff].dur}s${mods?' · '+mods:''}`,
+  drawOverlay(mods.toUpperCase(),
+    DCFG[diff].name,
     "Cliquez JOUER ou appuyez sur n'importe quelle touche",col);
 }
 
@@ -1036,22 +1553,14 @@ function loop(now){
   try{
     update(now);drawBg();
     if(state==='menu'){drawMenu();return;}
-    // Écran fixe : pas de caméra qui suit ou zoome, la vue ne bouge jamais
-    // (sauf secousse aléatoire du Mode Folie, volontaire et indépendante).
-    const folieActive=folieEnabled&&state==='playing';
-    if(folieActive){cx.save();cx.translate((Math.random()-.5)*10,(Math.random()-.5)*10);}
-    drawWalls();drawParticles();
+    // Écran fixe : pas de caméra qui suit ou zoome, la vue ne bouge jamais.
+    drawWalls();drawPiques();drawPortals();drawParticles();
     if(state==='playing')drawPlayer();
-    if(folieActive){
-      cx.restore();
-      if(Math.random()<0.12){cx.fillStyle=`rgba(255,255,255,${0.15+Math.random()*0.35})`;cx.fillRect(0,0,W,H);}
-      else if(Math.random()<0.08){cx.fillStyle=`rgba(255,0,80,${0.12+Math.random()*0.25})`;cx.fillRect(0,0,W,H);}
-    }
     if(state==='playing'){drawHUD();drawMiniMap();}
     if(state==='dead'){drawHUD();drawMiniMap();
       drawOverlay('✗ MORT',`${elapsed.toFixed(1)}s survécu`,`${keyLabel(keyReset)} pour réessayer`,'#ff3366');}
     if(state==='win'){drawHUD();drawMiniMap();
-      drawOverlay('✓ VICTOIRE !',`${DCFG[diff].name} — ${DCFG[diff].dur}s !`,
+      drawOverlay('✓ VICTOIRE !',`${DCFG[diff].name} — ${elapsed.toFixed(1)}s !`,
         `${keyLabel(keyReset)} pour rejouer`,DCFG[diff].col);}
   }catch(e){console.error('Erreur d\'affichage (ignorée, le jeu continue) :',e);}
 }
@@ -1105,9 +1614,11 @@ document.addEventListener('keydown',e=>{
     recordingKey=null;clearRecordingUI();return;}
   if(document.getElementById('settingsPanel').classList.contains('open'))return;
   if(e.code==='Escape'){if(state!=='menu')goToMenu();return;}
+  // Redémarrer équivaut aussi à Jouer : ça doit fonctionner même depuis le
+  // menu, pas seulement en cours de partie.
+  if(e.code===keyReset){startGame();return;}
   if(state==='menu')return;
   if(e.code===keyQuit){goToMenu();return;}
-  if(e.code===keyReset){startGame();return;}
   if(e.code===keyUp)schedule(()=>{upHeld=true;});
   if(e.code===keyDown)schedule(()=>{downHeld=true;});
   if(state!=='playing')return;
@@ -1137,12 +1648,14 @@ document.querySelectorAll('.mb').forEach(btn=>btn.addEventListener('click',()=>{
     return;
   }
   document.querySelectorAll('.mb').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');mode=m;
-  shipVel=0;gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;
+  btn.classList.add('on');mode=m;activeCustomLevel=null;
+  shipVel=0;gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;spiderState='bot';
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
 }));
 document.getElementById('rulesBtn').addEventListener('click',()=>document.getElementById('rulesPanel').classList.add('open'));
 document.getElementById('closeRules').addEventListener('click',()=>document.getElementById('rulesPanel').classList.remove('open'));
+document.getElementById('customLevelsBtn').addEventListener('click',()=>{renderCustomList();document.getElementById('customPanel').classList.add('open');});
+document.getElementById('closeCustom').addEventListener('click',()=>document.getElementById('customPanel').classList.remove('open'));
 document.getElementById('settingsBtn').addEventListener('click',()=>document.getElementById('settingsPanel').classList.add('open'));
 document.getElementById('closeSettings').addEventListener('click',()=>{
   document.getElementById('settingsPanel').classList.remove('open');
@@ -1168,13 +1681,6 @@ document.getElementById('trailToggle').addEventListener('click',()=>{
   applySettingsToUI();
   saveSettings();
 });
-document.getElementById('lagToggle').addEventListener('click',()=>{
-  lagDelay=LAG_LEVELS[(LAG_LEVELS.indexOf(lagDelay)+1)%LAG_LEVELS.length];
-  applySettingsToUI();
-  saveSettings();
-  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
-  else if(state==='playing')fillCorridor(diff);
-});
 document.getElementById('cadenceToggle').addEventListener('click',()=>{
   cadenceEnabled=!cadenceEnabled;
   applySettingsToUI();
@@ -1186,21 +1692,29 @@ document.getElementById('noclipToggle').addEventListener('click',()=>{
   applySettingsToUI();
   saveSettings();
 });
+document.getElementById('personnalisableToggle').addEventListener('click',()=>{
+  personnalisableEnabled=!personnalisableEnabled;
+  if(personnalisableEnabled)activeCustomLevel=null; // un enregistrement ne peut pas être en même temps une relecture
+  applySettingsToUI();
+  saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('randomLevelsToggle').addEventListener('click',()=>{
+  randomLevelsEnabled=!randomLevelsEnabled;
+  applySettingsToUI();
+  saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
 document.getElementById('gapMinus').addEventListener('click',()=>{
-  // Pas multiplicatif (~15%) pour pouvoir couvrir toute la plage 1%-1000%.
-  gapStartMul=Math.max(0.01,Math.round(gapStartMul/1.15*100)/100);
+  // Pas fixe de 10 points de pourcentage (ex: 100% → 90% → 80%...).
+  gapStartMul=Math.max(0.01,Math.round((gapStartMul*100-10))/100);
   applySettingsToUI();saveSettings();
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
 });
 document.getElementById('gapPlus').addEventListener('click',()=>{
-  gapStartMul=Math.min(10,Math.round(gapStartMul*1.15*100)/100);
+  gapStartMul=Math.min(10,Math.round((gapStartMul*100+10))/100);
   applySettingsToUI();saveSettings();
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
-});
-document.getElementById('folieToggle').addEventListener('click',()=>{
-  folieEnabled=!folieEnabled;
-  applySettingsToUI();
-  saveSettings();
 });
 const gapPctInput=document.getElementById('gapPctInput');
 gapPctInput.addEventListener('keydown',e=>{
@@ -1222,6 +1736,58 @@ gapPctInput.addEventListener('blur',()=>{
   applySettingsToUI();saveSettings();
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
 });
+document.getElementById('speedMinus').addEventListener('click',()=>{
+  speedMul=Math.max(0.5,Math.round((speedMul*100-10))/100);
+  applySettingsToUI();saveSettings();
+});
+document.getElementById('speedPlus').addEventListener('click',()=>{
+  speedMul=Math.min(2,Math.round((speedMul*100+10))/100);
+  applySettingsToUI();saveSettings();
+});
+const speedPctInput=document.getElementById('speedPctInput');
+speedPctInput.addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(/^\d$/.test(e.key))return;
+  const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter','Home','End'];
+  if(!allowed.includes(e.key))e.preventDefault();
+  if(e.key==='Enter')speedPctInput.blur();
+});
+speedPctInput.addEventListener('input',()=>{
+  speedPctInput.value=speedPctInput.value.replace(/\D/g,'').slice(0,3);
+});
+speedPctInput.addEventListener('blur',()=>{
+  let v=parseInt(speedPctInput.value,10);
+  if(!Number.isFinite(v))v=100;
+  v=Math.max(50,Math.min(200,v));
+  speedMul=v/100;
+  applySettingsToUI();saveSettings();
+});
+document.getElementById('angleMinus').addEventListener('click',()=>{
+  angleMul=Math.max(0.5,Math.round((angleMul*100-10))/100);
+  applySettingsToUI();saveSettings();
+});
+document.getElementById('anglePlus').addEventListener('click',()=>{
+  angleMul=Math.min(2,Math.round((angleMul*100+10))/100);
+  applySettingsToUI();saveSettings();
+});
+const anglePctInput=document.getElementById('anglePctInput');
+anglePctInput.addEventListener('keydown',e=>{
+  e.stopPropagation();
+  if(/^\d$/.test(e.key))return;
+  const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter','Home','End'];
+  if(!allowed.includes(e.key))e.preventDefault();
+  if(e.key==='Enter')anglePctInput.blur();
+});
+anglePctInput.addEventListener('input',()=>{
+  anglePctInput.value=anglePctInput.value.replace(/\D/g,'').slice(0,3);
+});
+anglePctInput.addEventListener('blur',()=>{
+  let v=parseInt(anglePctInput.value,10);
+  if(!Number.isFinite(v))v=100;
+  v=Math.max(50,Math.min(200,v));
+  angleMul=v/100;
+  applySettingsToUI();saveSettings();
+});
 document.getElementById('play').style.background=DCFG[diff].col;
 document.getElementById('play').addEventListener('click',startGame);
 
@@ -1229,6 +1795,7 @@ document.getElementById('play').addEventListener('click',startGame);
 // Le site doit toujours se lancer, même si une étape (réglages sauvegardés
 // corrompus, etc.) échoue — quitte à perdre cette donnée plutôt que bloquer la page.
 try{loadSettings();}catch(_){}
+try{loadCustomLevels();}catch(_){}
 try{applySettingsToUI();}catch(_){}
 try{buildLevel(diff);}catch(_){
   diff=1;mode='wave';
