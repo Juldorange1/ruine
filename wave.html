@@ -11,9 +11,6 @@ html,body { background:#080818; user-select:none; overflow:hidden; touch-action:
 canvas { display:block; }
 #cvWrap { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; }
 #cv { width:100%; height:100%; display:block; touch-action:none; }
-#miniMapBar { position:fixed; left:50%; bottom:54px; transform:translateX(-50%); width:90vw; max-width:1100px; height:24px; z-index:5; display:none; }
-body.ingame #miniMapBar { display:block; }
-#miniMapCv { width:100%; height:100%; display:block; }
 
 #ui { position:fixed; top:0; left:0; right:0; z-index:10; text-align:center; padding:8px 6px 6px; }
 #row { display:flex; gap:5px; align-items:center; justify-content:center; flex-wrap:wrap; }
@@ -61,7 +58,7 @@ body.ingame #hint { display:none; }
 .customRow .cname:hover { color:#7de8ff; }
 .customRow button { padding:4px 10px; font:.75em monospace; }
 #customEmpty { color:#556677; font:.82em monospace; margin:10px 0 18px; }
-#editPanel { display:none; position:fixed; inset:0; background:rgba(4,4,18,0.93); align-items:center; justify-content:center; z-index:101; }
+#editPanel { display:none; position:fixed; inset:0; background:#04040c; align-items:stretch; justify-content:stretch; flex-direction:column; z-index:101; }
 #editPanel.open { display:flex; }
 #editBox { background:#0d1120; border:2px solid #223; border-radius:12px; padding:28px 36px; width:min(760px,94vw); max-height:90vh; overflow-y:auto; text-align:center; box-shadow:0 0 60px #0008; }
 #editBox h2 { font-family:'Arial Black',Arial,sans-serif; font-size:1.2em; color:#7de8ff; letter-spacing:2px; margin-bottom:10px; }
@@ -99,6 +96,11 @@ body.ingame #hint { display:none; }
 #closeSettings { margin-top:6px; padding:7px 22px; background:#7de8ff; border:none; color:#080818; font:bold .90em 'Arial Black',Arial,sans-serif; cursor:pointer; border-radius:6px; }
 #closeSettings:hover { background:#aaf0ff; }
 
+#editBox { background:#04040c; border:none; border-radius:0; padding:12px 16px 8px; width:100%; height:100vh; max-height:none; overflow:hidden; text-align:center; display:flex; flex-direction:column; gap:0; }
+#editBox h2 { font-family:'Arial Black',Arial,sans-serif; font-size:1.1em; color:#7de8ff; letter-spacing:2px; }
+.editTool { padding:6px 14px; border:2px solid #1e3044; background:#0c1825; color:#8899aa; cursor:pointer; border-radius:6px; font:.80em monospace; transition:.12s; }
+.editTool:hover { border-color:#7de8ff88; color:#7de8ffcc; }
+.editTool.active { border-color:#7de8ff; color:#7de8ff; background:#7de8ff18; font-weight:bold; }
 /* Mobile : boutons plus compacts, panneaux moins de padding, pas de hover-only feedback nécessaire */
 @media (max-width:520px) {
   #row { gap:4px; padding:0 4px; }
@@ -129,7 +131,7 @@ body.ingame #hint { display:none; }
 </div>
 
 <div id="cvWrap"><canvas id="cv" width="800" height="400"></canvas></div>
-<div id="miniMapBar"><canvas id="miniMapCv" width="1100" height="24"></canvas></div>
+
 <div id="hint">n'importe quelle touche / Clic : monter &nbsp;·&nbsp; relâcher : descendre</div>
 <iframe id="spotifyFrame" style="position:fixed;bottom:0;left:0;width:300px;height:80px;border:none;z-index:5;display:none;" allow="autoplay; encrypted-media" src=""></iframe>
 
@@ -155,20 +157,6 @@ body.ingame #hint { display:none; }
       <button class="tb on" id="trailToggle">Activée</button>
     </div>
     <div class="srow">
-      <label>Vitesse perso (50-200%) :</label>
-      <button class="kb" id="speedMinus" style="min-width:36px">−</button>
-      <input id="speedPctInput" type="text" inputmode="numeric" maxlength="3" value="100" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
-      <span style="color:#aaa;font:.82em monospace;">%</span>
-      <button class="kb" id="speedPlus" style="min-width:36px">+</button>
-    </div>
-    <div class="srow">
-      <label>Angle déplacement (50-200%) :</label>
-      <button class="kb" id="angleMinus" style="min-width:36px">−</button>
-      <input id="anglePctInput" type="text" inputmode="numeric" maxlength="3" value="100" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
-      <span style="color:#aaa;font:.82em monospace;">%</span>
-      <button class="kb" id="anglePlus" style="min-width:36px">+</button>
-    </div>
-    <div class="srow">
       <label>Traverser les murs :</label>
       <button class="tb" id="noclipToggle">Désactivé</button>
     </div>
@@ -181,11 +169,13 @@ body.ingame #hint { display:none; }
       <button class="tb" id="randomLevelsToggle">Désactivé</button>
     </div>
     <div class="srow">
-      <label>Épaisseur tunnel (départ) :</label>
-      <button class="kb" id="gapMinus" style="min-width:36px">−</button>
-      <input id="gapPctInput" type="text" inputmode="numeric" maxlength="4" value="100" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
-      <span style="color:#aaa;font:.82em monospace;">%</span>
-      <button class="kb" id="gapPlus" style="min-width:36px">+</button>
+      <label>Mode Practice :</label>
+      <button class="tb" id="practiceModeToggle">Désactivé</button>
+    </div>
+    <div class="srow" id="practiceIntervalRow" style="display:none;">
+      <label>Checkpoint toutes les :</label>
+      <input id="checkpointIntervalInput" type="text" inputmode="numeric" maxlength="3" value="10" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
+      <span style="color:#aaa;font:.82em monospace;">s</span>
     </div>
     <hr id="settingsSep">
     <div class="srow">
@@ -281,21 +271,48 @@ body.ingame #hint { display:none; }
   </div>
 </div>
 
-<div id="editPanel">
+<div id="editPanel" tabindex="-1">
   <div id="editBox">
-    <h2>✎ MODIFIER LE NIVEAU</h2>
-    <div style="color:#556677;font:.75em monospace;margin-bottom:14px;">Clique-glisse directement sur le tracé pour le redessiner, point par point (précision totale). Ajoute des piques (obstacles) le long du niveau. Enregistrer réinitialise le record de ce niveau.</div>
-    <canvas id="editCanvas" width="700" height="200" style="width:100%;max-width:700px;height:200px;background:#04040c;border:2px solid #223;border-radius:8px;cursor:crosshair;touch-action:none;margin-bottom:18px;"></canvas>
-    <h3 style="color:#dd88ff;font:.85em monospace;margin:0 0 8px;text-align:left;">Piques</h3>
-    <div id="editPiques" style="margin-bottom:10px;"></div>
-    <button class="kb" id="addPique" style="margin-bottom:18px;">+ Ajouter un pique</button>
-    <h3 style="color:#33ddaa;font:.85em monospace;margin:0 0 8px;text-align:left;">Portails modificateurs</h3>
-    <div style="color:#556677;font:.72em monospace;margin-bottom:8px;text-align:left;">Dès qu'on les franchit, ils changent la vitesse, l'angle et l'épaisseur du tunnel pour le reste de la partie.</div>
-    <div id="editPortals" style="margin-bottom:10px;"></div>
-    <button class="kb" id="addPortal" style="margin-bottom:18px;">+ Ajouter un portail</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h2 style="margin:0;">✎ MODIFIER</h2>
+      <div style="display:flex;gap:6px;">
+        <button class="kb" id="editZoomOut" style="min-width:32px;padding:3px 8px;">−</button>
+        <span id="editZoomLabel" style="color:#aaa;font:.78em monospace;min-width:40px;text-align:center;line-height:28px;">100%</span>
+        <button class="kb" id="editZoomIn" style="min-width:32px;padding:3px 8px;">+</button>
+      </div>
+    </div>
+    <!-- Toolbar outils -->
+    <div id="editToolbar" style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;justify-content:center;">
+      <button class="editTool active" data-tool="select">⬜ Sélection</button>
+      <button class="editTool" data-tool="pique">⚠ Pique</button>
+      <button class="editTool" data-tool="portal">🌀 Portail</button>
+      <button class="editTool" data-tool="effect">✨ Effet</button>
+      <button class="editTool" id="editUndo" style="border-color:#ffd16644;color:#ffd166aa;">↩ Annuler</button>
+    </div>
+    <!-- Canvas principal -->
+    <canvas id="editCanvas" height="400" style="width:100%;flex:1;min-height:100px;background:#04040c;border:2px solid #1a2535;border-radius:8px;cursor:crosshair;touch-action:none;display:block;"></canvas>
+    <!-- Scrollbar -->
+    <div id="editScrollWrap" style="position:relative;height:14px;background:#0c1825;border:1px solid #1a2535;border-radius:4px;margin:5px 0 3px;cursor:pointer;flex-shrink:0;">
+      <div id="editScrollThumb" style="position:absolute;top:2px;height:10px;background:#2a3a4a;border-radius:3px;cursor:grab;"></div>
+    </div>
+    <!-- Panneau propriétés de l'objet sélectionné/en cours -->
+    <div id="editProps" style="flex-shrink:0;min-height:52px;max-height:100px;overflow-y:auto;background:#0b1a28;border:2px solid #1e3044;border-radius:8px;padding:10px 16px;margin:4px 0 6px;text-align:left;font:.86em monospace;color:#8899aa;">
+      Sélectionne un outil, puis clique sur le niveau pour placer un élément.
+    </div>
+    <!-- Zone Tracer par le jeu -->
+    <div id="editTraceBar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#080f18;border:1px solid #1a2535;border-radius:7px;padding:6px 12px;margin-bottom:6px;font:.82em monospace;">
+      <span style="color:#ffd166;font-weight:bold;">▶ Tracer par le jeu :</span>
+      <span style="color:#556677;">De</span>
+      <input id="traceFrom" type="number" value="0" min="0" max="99" step="1" style="width:48px;background:#0c1e30;border:1px solid #2a4060;border-radius:5px;color:#eee;font:.85em monospace;padding:2px 5px;text-align:center;">
+      <span style="color:#556677;">%  à</span>
+      <input id="traceTo" type="number" value="100" min="1" max="100" step="1" style="width:48px;background:#0c1e30;border:1px solid #2a4060;border-radius:5px;color:#eee;font:.85em monospace;padding:2px 5px;text-align:center;">
+      <span style="color:#556677;">%</span>
+      <button id="tracePlayBtn" style="padding:3px 12px;background:#ffd166;border:none;color:#080818;font:bold .80em monospace;cursor:pointer;border-radius:5px;">▶ Jouer et tracer</button>
+      <span style="color:#334455;font-size:.78em;">ESC = revenir à l'éditeur</span>
+    </div>
     <div style="display:flex;gap:10px;justify-content:center;">
-      <button id="saveEdit">Enregistrer</button>
-      <button id="cancelEdit" style="background:#334;color:#aaa;">Annuler</button>
+      <button id="saveEdit" style="padding:6px 20px;background:#7de8ff;border:none;color:#080818;font:bold .90em 'Arial Black',Arial,sans-serif;cursor:pointer;border-radius:6px;">Enregistrer</button>
+      <button id="cancelEdit" style="padding:6px 16px;background:#334;color:#aaa;border:none;cursor:pointer;border-radius:6px;font:.85em monospace;">Annuler</button>
     </div>
   </div>
 </div>
@@ -323,6 +340,8 @@ let speedMul = 1; // vitesse de déplacement du personnage (50%-200%) — augmen
 let angleMul = 1; // pourcentage de taille d'angle des déplacements (50%-200%), indépendant de la vitesse
 let gapStartMul = 1; // épaisseur du tunnel au démarrage des parties (1%-1000%), aussi en mode Cadence
 let randomLevelsEnabled = false; // si activé, les niveaux du Défi Aléatoire changent à chaque partie au lieu d'être toujours la même map fixe
+let practiceMode = false;
+let checkpointInterval = 10; // secondes
 // ─── PARTIES PERSONNALISABLES ───────────────────────────────────────────────
 // Quand activée, la prochaine partie est jouée sur un terrain entièrement
 // ouvert (aucun obstacle) pendant toute sa durée, et chaque déplacement/appui
@@ -334,6 +353,11 @@ let customLevels = []; // [{id,name,mode,diff,easeWX,mainLen,traj:[...]}]
 let activeCustomLevel = null; // niveau en cours de relecture (ou null)
 let recordingCustom = false; // true pendant l'enregistrement d'une nouvelle partie créée
 let recBuf = []; // échantillons {wx,y} de la partie en cours d'enregistrement
+let traceRecordMode = false;   // mode "tracer par le jeu"
+let traceFromFrac = 0;         // fraction début de la zone à tracer
+let traceToFrac   = 1;         // fraction fin de la zone à tracer
+let traceEditTraj = null;      // référence directe à editTraj pendant le tracé
+let traceEditingLevel = null;  // référence à editingLevel pendant le tracé
 let modeNames = {wave:'1',swing:'2',ship:'3',twokey:'4',spider:'5'}; // noms des modes, personnalisables en cliquant sur le bouton actif
 function schedule(fn){ fn(); }
 
@@ -359,7 +383,7 @@ function syncKeyLabels() {
 function saveSettings() {
   // le site doit rester jouable même si le stockage est indisponible (navigation
   // privée, quota plein, etc.) — on perd juste la sauvegarde, pas l'accès au jeu.
-  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,keyUp,keyDown,trailEnabled,cadenceEnabled,noclipEnabled,gapStartMul,randomLevelsEnabled,personnalisableEnabled,speedMul,angleMul,modeNames}));}catch(_){}
+  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,keyUp,keyDown,trailEnabled,cadenceEnabled,noclipEnabled,gapStartMul,randomLevelsEnabled,personnalisableEnabled,speedMul,angleMul,modeNames,practiceMode,checkpointInterval}));}catch(_){}
 }
 function loadSettings() {
   try {
@@ -382,6 +406,8 @@ function loadSettings() {
     if(s.modeNames&&typeof s.modeNames==='object'){
       MODES.forEach(m=>{if(typeof s.modeNames[m]==='string'&&s.modeNames[m].trim())modeNames[m]=s.modeNames[m].trim().slice(0,12);});
     }
+    if(typeof s.practiceMode==='boolean')practiceMode=s.practiceMode;
+    if(typeof s.checkpointInterval==='number'&&s.checkpointInterval>=3)checkpointInterval=s.checkpointInterval;
   }catch(_){}
 }
 function applySettingsToUI() {
@@ -396,15 +422,17 @@ function applySettingsToUI() {
   const noclipBtn=document.getElementById('noclipToggle');
   noclipBtn.classList.toggle('on',noclipEnabled);
   noclipBtn.textContent=noclipEnabled?'Activé':'Désactivé';
-  document.getElementById('gapPctInput').value=Math.round(gapStartMul*100);
   const persoBtn=document.getElementById('personnalisableToggle');
   persoBtn.classList.toggle('on',personnalisableEnabled);
   persoBtn.textContent=personnalisableEnabled?'Activé':'Désactivé';
   const randomLevelsBtn=document.getElementById('randomLevelsToggle');
   randomLevelsBtn.classList.toggle('on',randomLevelsEnabled);
   randomLevelsBtn.textContent=randomLevelsEnabled?'Activé':'Désactivé';
-  document.getElementById('speedPctInput').value=Math.round(speedMul*100);
-  document.getElementById('anglePctInput').value=Math.round(angleMul*100);
+  const pmBtn=document.getElementById('practiceModeToggle');
+  pmBtn.classList.toggle('on',practiceMode);
+  pmBtn.textContent=practiceMode?'Activé':'Désactivé';
+  document.getElementById('practiceIntervalRow').style.display=practiceMode?'':'none';
+  document.getElementById('checkpointIntervalInput').value=checkpointInterval;
   document.querySelectorAll('.tb[data-t]').forEach(b=>{
     const on=parseInt(b.dataset.t)===themeIdx;
     b.classList.toggle('on',on);
@@ -415,6 +443,20 @@ function applySettingsToUI() {
 }
 
 // ─── PARTIES CRÉÉES (persistance + UI) ─────────────────────────────────────────
+const _ADJ=['Acide','Astral','Brisé','Céleste','Cristal','Danger','Éclair','Ferro','Glacé','Hyper','Infernal','Jade','Krypto','Luna','Méga','Néon','Obscur','Plasma','Quantum','Radio','Solaire','Turbo','Ultra','Vortex','Xenon','Zéphyr'];
+const _NOM=['Abysse','Bastion','Canyon','Dôme','Eclipse','Faille','Gouffre','Horizon','Impact','Jungle','Kraken','Labyrinthe','Mirage','Nexus','Orage','Portail','Quasar','Rift','Sommet','Tunnel','Unité','Vide','Warp','Xénith','Zénith','Apex'];
+function generateLevelName(){
+  const a=_ADJ[Math.floor(Math.random()*_ADJ.length)];
+  const n=_NOM[Math.floor(Math.random()*_NOM.length)];
+  const num=Math.floor(Math.random()*900)+100;
+  return `${a} ${n} ${num}`;
+}
+function levelToCode(lvl){
+  try{return btoa(unescape(encodeURIComponent(JSON.stringify(lvl))));}catch(_){return null;}
+}
+function codeToLevel(code){
+  try{return JSON.parse(decodeURIComponent(escape(atob(code.trim()))));}catch(_){return null;}
+}
 function saveCustomLevels(){
   try{localStorage.setItem('wave_custom_levels',JSON.stringify(customLevels));}catch(_){}
 }
@@ -456,23 +498,55 @@ function renderCustomList(){
     const editBtn=document.createElement('button');
     editBtn.className='kb';editBtn.textContent='✎ Modifier';
     editBtn.addEventListener('click',()=>openCustomEditor(lvl));
+    const shareBtn=document.createElement('button');
+    shareBtn.className='kb';shareBtn.textContent='📋';shareBtn.title='Copier le code de partage';
+    shareBtn.addEventListener('click',()=>{
+      const code=levelToCode(lvl);
+      if(!code){alert('Erreur export');return;}
+      navigator.clipboard.writeText(code).then(()=>{
+        shareBtn.textContent='✓';setTimeout(()=>shareBtn.textContent='📋',1500);
+      }).catch(()=>{
+        prompt('Copie ce code pour partager le niveau :',code);
+      });
+    });
     const delBtn=document.createElement('button');
     delBtn.className='kb';delBtn.textContent='✕';
     delBtn.addEventListener('click',()=>{
       customLevels=customLevels.filter(l=>l.id!==lvl.id);
       saveCustomLevels();renderCustomList();
     });
-    row.append(nameCol,playBtn,editBtn,delBtn);
+    row.append(nameCol,playBtn,editBtn,shareBtn,delBtn);
     list.appendChild(row);
   });
+
+  // Bouton importer
+  const importRow=document.createElement('div');
+  importRow.style.cssText='display:flex;gap:6px;margin-top:10px;';
+  const importInput=document.createElement('input');
+  importInput.type='text';importInput.placeholder='Coller un code reçu…';
+  importInput.style.cssText='flex:1;background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.75em monospace;padding:4px 8px;';
+  const importBtn=document.createElement('button');
+  importBtn.className='kb';importBtn.textContent='📥 Importer';
+  importBtn.addEventListener('click',()=>{
+    const lvl=codeToLevel(importInput.value);
+    if(!lvl||!lvl.traj){alert('Code invalide');return;}
+    lvl.id=Date.now()+'-'+Math.random().toString(36).slice(2);
+    lvl.bestDeaths=undefined;
+    customLevels.push(lvl);
+    saveCustomLevels();renderCustomList();
+    importInput.value='';
+  });
+  importRow.append(importInput,importBtn);
+  list.appendChild(importRow);
 }
 
 // ─── ÉDITEUR DE PARTIE CRÉÉE ────────────────────────────────────────────────────
-// Édition au pixel près : le tracé est redessiné à la souris/au doigt
-// directement sur un canvas qui représente tout le niveau (axe X = distance,
-// axe Y = hauteur), avec une résolution égale à celle du tunnel (pas SEG) —
-// bien plus précis qu'une poignée de points ajustables.
 let editingLevel=null, editIsNew=false, editTraj=[], editPiqueDraft=[], editPortalDraft=[], editDragging=false, editLastIdx=null;
+let editEffectDraft = []; // [{wx,type,color,duration,message,intensity}]
+let editTool = 'draw';    // 'draw'|'pique'|'portal'|'effect'|'erase'
+let editViewStart = 0;    // fraction du niveau visible (début, 0.0 à 1.0)
+let editViewWidth = 1;    // fraction du niveau visible (largeur)
+let editSelected = null;  // {type:'pique'|'portal'|'effect', idx:number}
 const editCv=document.getElementById('editCanvas'), editCx=editCv.getContext('2d');
 // Distance principale "standard" d'un niveau pour un mode/diff donné — la
 // même formule que buildLevel(), utilisée pour les niveaux vides créés à la
@@ -487,162 +561,1041 @@ function createBlankCustomLevel(){
   const mainLen=standardMainLen(diff);
   const nSamples=Math.ceil(mainLen/SEG);
   const traj=new Array(nSamples).fill(H/2);
-  const lvl={id:Date.now()+'-'+Math.random().toString(36).slice(2),name:'Niveau '+(customLevels.length+1),mode,diff,mainLen,traj,piques:[],portals:[],clicks:[]};
+  const lvl={id:Date.now()+'-'+Math.random().toString(36).slice(2),name:generateLevelName(),mode,diff,mainLen,traj,piques:[],portals:[],clicks:[]};
   openCustomEditor(lvl,true);
 }
-function openCustomEditor(lvl,isNew){
-  editingLevel=lvl;editIsNew=!!isNew;
-  editTraj=Array.from(lvl.traj);
-  editPiqueDraft=(lvl.piques||[]).map(p=>({wx:p.wx,band:p.band}));
-  editPortalDraft=(lvl.portals||[]).map(p=>({wx:p.wx,speedMul:p.speedMul,angleMul:p.angleMul,gapMul:p.gapMul}));
-  renderEditPiques();
-  renderEditPortals();
-  drawEditCanvas();
-  document.getElementById('editPanel').classList.add('open');
+
+// ─── ÉDITEUR GD-STYLE ─────────────────────────────────────────────────────────
+const EFFECT_TYPES = [
+  {type:'flash',    label:'Flash lumière', col:'#ffffff', defaults:{color:'#ffffff',duration:0.4}},
+  {type:'shake',    label:'Secousse',      col:'#ff9922', defaults:{intensity:8,duration:0.4}},
+  {type:'text',     label:'Texte',         col:'#ffd166', defaults:{message:'!',duration:2}},
+  {type:'bgpulse',  label:'Fond coloré',   col:'#4488ff', defaults:{color:'#4488ff',duration:0.6}},
+  {type:'particles',label:'Explosion',     col:'#dd88ff', defaults:{color:'#dd88ff',count:30}},
+];
+
+function edCanvasW(){ return editCv.getBoundingClientRect().width||editCv.width; }
+function edCanvasH(){ return editCv.getBoundingClientRect().height||240; }
+
+function edFracToCanvasX(frac){
+  return ((frac - editViewStart) / editViewWidth) * edCanvasW();
 }
+function edCanvasXToFrac(cx2){ return editViewStart + (cx2 / edCanvasW()) * editViewWidth; }
+function edCanvasYToGameY(cy2){ return (cy2 / edCanvasH()) * H; }
+function edFracToIdx(frac){ return Math.round(frac * (editTraj.length - 1)); }
+
+function edGetGap(){
+  if(!editingLevel) return 80;
+  const cfg = DCFG[editingLevel.diff];
+  return cadenceGap(cfg.vy) * modeGapMul(editingLevel.mode) * gapStartMul;
+}
+
 function drawEditCanvas(){
-  const w=editCv.width,h=editCv.height;
-  editCx.fillStyle='#04040c';editCx.fillRect(0,0,w,h);
-  editCx.strokeStyle='rgba(160,200,255,0.08)';editCx.lineWidth=1;
-  for(let gy=0;gy<h;gy+=h/4){editCx.beginPath();editCx.moveTo(0,gy);editCx.lineTo(w,gy);editCx.stroke();}
-  editCx.strokeStyle='#7de8ff';editCx.lineWidth=2;editCx.beginPath();
-  const n=editTraj.length;
-  for(let i=0;i<n;i++){
-    const x=i/(n-1)*w,y=editTraj[i]/H*h;
-    i===0?editCx.moveTo(x,y):editCx.lineTo(x,y);
+  const cvW = editCv.width, cvH = editCv.height;
+  editCx.clearRect(0,0,cvW,cvH);
+  editCx.fillStyle='#04040c'; editCx.fillRect(0,0,cvW,cvH);
+
+  // Grille verticale légère
+  editCx.strokeStyle='rgba(160,200,255,0.05)'; editCx.lineWidth=1;
+  for(let gx=0; gx<cvW; gx+=cvW/10){
+    editCx.beginPath(); editCx.moveTo(gx,0); editCx.lineTo(gx,cvH); editCx.stroke();
+  }
+  for(let gy=0; gy<cvH; gy+=cvH/4){
+    editCx.beginPath(); editCx.moveTo(0,gy); editCx.lineTo(cvW,gy); editCx.stroke();
+  }
+
+  if(!editTraj || !editTraj.length) return;
+  const n = editTraj.length;
+  const gap = edGetGap();
+
+  const i0 = Math.max(0, Math.floor(editViewStart*(n-1)));
+  const i1 = Math.min(n-1, Math.ceil((editViewStart+editViewWidth)*(n-1)));
+
+  // Remplir le mur du haut
+  editCx.beginPath();
+  for(let i=i0;i<=i1;i++){
+    const frac = i/(n-1);
+    const x = edFracToCanvasX(frac);
+    const topY = (editTraj[i] - gap/2) / H * cvH;
+    i===i0 ? editCx.moveTo(x, topY) : editCx.lineTo(x, topY);
+  }
+  editCx.lineTo(edFracToCanvasX(i1/(n-1)), 0);
+  editCx.lineTo(edFracToCanvasX(i0/(n-1)), 0);
+  editCx.closePath();
+  editCx.fillStyle='rgba(13,13,36,0.92)'; editCx.fill();
+
+  // Remplir le mur du bas
+  editCx.beginPath();
+  for(let i=i0;i<=i1;i++){
+    const frac = i/(n-1);
+    const x = edFracToCanvasX(frac);
+    const botY = (editTraj[i] + gap/2) / H * cvH;
+    i===i0 ? editCx.moveTo(x, botY) : editCx.lineTo(x, botY);
+  }
+  editCx.lineTo(edFracToCanvasX(i1/(n-1)), cvH);
+  editCx.lineTo(edFracToCanvasX(i0/(n-1)), cvH);
+  editCx.closePath();
+  editCx.fillStyle='rgba(13,13,36,0.92)'; editCx.fill();
+
+  // Bordures du tunnel (lignes lumineuses)
+  const col = editingLevel ? DCFG[editingLevel.diff].col : '#7de8ff';
+  editCx.strokeStyle=col; editCx.lineWidth=2;
+  editCx.shadowBlur=8; editCx.shadowColor=col;
+  editCx.beginPath();
+  for(let i=i0;i<=i1;i++){
+    const frac=i/(n-1), x=edFracToCanvasX(frac), y=(editTraj[i]-gap/2)/H*cvH;
+    i===i0?editCx.moveTo(x,y):editCx.lineTo(x,y);
   }
   editCx.stroke();
-  editCx.fillStyle='#ff3366';
-  for(const p of editPiqueDraft){
-    const x=p.wx*w;
-    const third=h/3;
-    const bandTop=p.band==='top'?0:(p.band==='mid'?third:2*third);
-    editCx.fillRect(x-3,bandTop,6,third);
+  editCx.beginPath();
+  for(let i=i0;i<=i1;i++){
+    const frac=i/(n-1), x=edFracToCanvasX(frac), y=(editTraj[i]+gap/2)/H*cvH;
+    i===i0?editCx.moveTo(x,y):editCx.lineTo(x,y);
   }
-  editCx.strokeStyle='#33ddaa';editCx.lineWidth=2;
-  for(const p of editPortalDraft){
-    const x=p.wx*w;
-    editCx.beginPath();editCx.moveTo(x,0);editCx.lineTo(x,h);editCx.stroke();
+  editCx.stroke();
+  editCx.shadowBlur=0;
+
+  // Tracé central (trajectoire)
+  editCx.strokeStyle=col+'55'; editCx.lineWidth=1;
+  editCx.beginPath();
+  for(let i=i0;i<=i1;i++){
+    const frac=i/(n-1), x=edFracToCanvasX(frac), y=editTraj[i]/H*cvH;
+    i===i0?editCx.moveTo(x,y):editCx.lineTo(x,y);
+  }
+  editCx.stroke();
+
+  // Piques
+  for(let pi=0; pi<editPiqueDraft.length; pi++){
+    const p = editPiqueDraft[pi];
+    if(p.wx < editViewStart || p.wx > editViewStart+editViewWidth+0.01) continue;
+    const x = edFracToCanvasX(p.wx);
+    const idx = Math.round(p.wx*(n-1));
+    const cy = editTraj[idx]||H/2;
+    const third = gap/3, halfW = 6;
+    const bandY = p.band==='top'?cy-gap/2:(p.band==='mid'?cy-gap/6:cy+gap/6);
+    const rTop = (bandY)/H*cvH;
+    const rH = (third*0.55)/H*cvH;
+    const isSelected = editSelected && editSelected.type==='pique' && editSelected.idx===pi;
+    editCx.fillStyle = isSelected ? '#ff88aa' : '#ff3366cc';
+    editCx.shadowBlur = isSelected ? 18 : 8; editCx.shadowColor='#ff3366';
+    editCx.fillRect(x-halfW, rTop-rH/2, halfW*2, rH);
+    editCx.shadowBlur=0;
+  }
+
+  // Portails
+  for(let pi=0; pi<editPortalDraft.length; pi++){
+    const p = editPortalDraft[pi];
+    if(p.wx < editViewStart || p.wx > editViewStart+editViewWidth+0.01) continue;
+    const x = edFracToCanvasX(p.wx);
+    const idx = Math.round(p.wx*(n-1));
+    const cy = editTraj[idx]||H/2;
+    const topY = (cy-gap/2)/H*cvH, botY = (cy+gap/2)/H*cvH;
+    const isSelected = editSelected && editSelected.type==='portal' && editSelected.idx===pi;
+    const c = isSelected?'#aaffdd':(p.invisible?'#33ddaa55':'#33ddaa');
+    editCx.strokeStyle=c; editCx.lineWidth=isSelected?4:2.5;
+    editCx.shadowBlur=isSelected?20:(p.invisible?0:10); editCx.shadowColor=c;
+    if(p.invisible) editCx.setLineDash([4,5]);
+    editCx.beginPath(); editCx.moveTo(x,topY); editCx.lineTo(x,botY); editCx.stroke();
+    editCx.setLineDash([]);
+    const spd = p.speedMul||1;
+    editCx.fillStyle=c;
+    editCx.font='bold 10px monospace';
+    editCx.textAlign='center';
+    editCx.fillText(`×${spd}${p.invisible?' 👁':''}`, x, topY-4);
+    editCx.shadowBlur=0;
+  }
+
+  // Effets visuels
+  for(let ei=0; ei<editEffectDraft.length; ei++){
+    const e = editEffectDraft[ei];
+    if(e.wx < editViewStart || e.wx > editViewStart+editViewWidth+0.01) continue;
+    const x = edFracToCanvasX(e.wx);
+    const einfo = EFFECT_TYPES.find(t=>t.type===e.type)||EFFECT_TYPES[0];
+    const isSelected = editSelected && editSelected.type==='effect' && editSelected.idx===ei;
+    editCx.strokeStyle=isSelected?'#ffffaa':einfo.col;
+    editCx.lineWidth=isSelected?4:2;
+    editCx.shadowBlur=isSelected?20:10; editCx.shadowColor=einfo.col;
+    editCx.setLineDash([4,4]);
+    editCx.beginPath(); editCx.moveTo(x,0); editCx.lineTo(x,cvH); editCx.stroke();
+    editCx.setLineDash([]);
+    editCx.font='bold 13px monospace'; editCx.textAlign='center'; editCx.fillStyle=einfo.col;
+    editCx.fillText(einfo.type==='flash'?'⚡':einfo.type==='shake'?'〰':einfo.type==='text'?'T':einfo.type==='bgpulse'?'◉':'✦', x, 14);
+    editCx.shadowBlur=0;
+  }
+
+  // Zones inoffensives du tunnel
+  for(const seg of editNoKillSegs){
+    const x0=edFracToCanvasX(seg.wx0), x1=edFracToCanvasX(seg.wx1);
+    editCx.fillStyle='rgba(50,220,120,0.10)';
+    editCx.fillRect(x0,0,x1-x0,cvH);
+    editCx.strokeStyle='rgba(50,220,120,0.5)';editCx.lineWidth=1;
+    editCx.setLineDash([3,4]);
+    editCx.strokeRect(x0,0,x1-x0,cvH);
+    editCx.setLineDash([]);
+    editCx.fillStyle='rgba(50,220,120,0.8)';editCx.font='bold 10px monospace';editCx.textAlign='center';
+    editCx.fillText('✓ safe',(x0+x1)/2,22);
+  }
+
+  // Zones invisibles du tunnel
+  for(const seg of editInvisSegs){
+    const x0=edFracToCanvasX(seg.wx0), x1=edFracToCanvasX(seg.wx1);
+    editCx.fillStyle='rgba(255,60,120,0.10)';
+    editCx.fillRect(x0,0,x1-x0,cvH);
+    editCx.strokeStyle='rgba(255,60,120,0.45)';editCx.lineWidth=1;
+    editCx.setLineDash([3,4]);
+    editCx.strokeRect(x0,0,x1-x0,cvH);
+    editCx.setLineDash([]);
+    editCx.fillStyle='rgba(255,60,120,0.7)';editCx.font='bold 10px monospace';editCx.textAlign='center';
+    editCx.fillText('👁 invis',(x0+x1)/2,10);
+  }
+
+  // Sélection de segment de tunnel
+  if(editSegSel){
+    const n=editTraj.length;
+    const x0=edFracToCanvasX(editSegSel.i0/(n-1));
+    const x1=edFracToCanvasX(editSegSel.i1/(n-1));
+    editCx.fillStyle='rgba(100,200,255,0.12)';
+    editCx.fillRect(x0,0,x1-x0,cvH);
+    editCx.strokeStyle='rgba(100,200,255,0.8)';editCx.lineWidth=1.5;
+    editCx.setLineDash([5,3]);
+    editCx.strokeRect(x0,0,x1-x0,cvH);
+    editCx.setLineDash([]);
+  }
+
+  // Surlignage multi-sélection
+  if(editMultiSelect.length>1){
+    for(const sel of editMultiSelect){
+      let wx=null;
+      if(sel.type==='pique'&&editPiqueDraft[sel.idx]) wx=editPiqueDraft[sel.idx].wx;
+      else if(sel.type==='portal'&&editPortalDraft[sel.idx]) wx=editPortalDraft[sel.idx].wx;
+      else if(sel.type==='effect'&&editEffectDraft[sel.idx]) wx=editEffectDraft[sel.idx].wx;
+      if(wx===null) continue;
+      const x=edFracToCanvasX(wx);
+      editCx.strokeStyle='#ffe066'; editCx.lineWidth=2;
+      editCx.shadowBlur=12; editCx.shadowColor='#ffe066';
+      editCx.beginPath(); editCx.arc(x, cvH/2, 10, 0, Math.PI*2); editCx.stroke();
+      editCx.shadowBlur=0;
+    }
+  }
+
+  // Rectangle lasso
+  if(editBoxSelRect){
+    const {x0,y0,x1,y1}=editBoxSelRect;
+    editCx.save();
+    editCx.strokeStyle='rgba(255,230,102,0.9)'; editCx.lineWidth=1.5;
+    editCx.fillStyle='rgba(255,230,102,0.08)';
+    editCx.setLineDash([5,4]);
+    editCx.beginPath();
+    editCx.rect(Math.min(x0,x1),Math.min(y0,y1),Math.abs(x1-x0),Math.abs(y1-y0));
+    editCx.fill(); editCx.stroke();
+    editCx.setLineDash([]);
+    editCx.restore();
+  }
+
+  updateEditScrollbar();
+}
+
+function updateEditScrollbar(){
+  const thumb = document.getElementById('editScrollThumb');
+  const track = document.getElementById('editScrollWrap');
+  if(!thumb||!track) return;
+  const tw = track.getBoundingClientRect().width||200;
+  const thumbW = Math.max(20, editViewWidth * tw);
+  const thumbX = editViewStart * tw;
+  thumb.style.width = thumbW+'px';
+  thumb.style.left = thumbX+'px';
+  const zPct = Math.round(100/editViewWidth);
+  const zLabel = document.getElementById('editZoomLabel');
+  if(zLabel) zLabel.textContent = zPct+'%';
+}
+
+function edClampView(){
+  if(editViewWidth>1) editViewWidth=1;
+  if(editViewWidth<0.05) editViewWidth=0.05;
+  if(editViewStart<0) editViewStart=0;
+  if(editViewStart+editViewWidth>1) editViewStart=1-editViewWidth;
+}
+
+function editSnapshot(){
+  editHistory.push({
+    traj:editTraj.slice(),
+    piques:editPiqueDraft.map(p=>({...p})),
+    portals:editPortalDraft.map(p=>({...p})),
+    effects:editEffectDraft.map(e=>({...e})),
+    invisSegs:editInvisSegs.map(s=>({...s})),
+    noKillSegs:editNoKillSegs.map(s=>({...s})),
+  });
+  if(editHistory.length>40)editHistory.shift();
+}
+function editUndo(){
+  if(!editHistory.length)return;
+  const snap=editHistory.pop();
+  editTraj=snap.traj.slice();
+  editPiqueDraft=snap.piques.map(p=>({...p}));
+  editPortalDraft=snap.portals.map(p=>({...p}));
+  editEffectDraft=snap.effects.map(e=>({...e}));
+  editInvisSegs=(snap.invisSegs||[]).map(s=>({...s}));
+  editNoKillSegs=(snap.noKillSegs||[]).map(s=>({...s}));
+  editSelected=null;editSegSel=null;showEditProps();drawEditCanvas();
+}
+
+function edPointerDown(clientX, clientY){
+  const r = editCv.getBoundingClientRect();
+  const cx2 = (clientX-r.left) * (editCv.width/r.width);
+  const cy2 = (clientY-r.top) * (editCv.height/r.height);
+  const frac = edCanvasXToFrac(cx2);
+  const gameY = edCanvasYToGameY(cy2);
+
+  if(editTool==='select'){
+    const hitMulti=edFindNearestObj(frac,cx2,cy2,18);
+    if(hitMulti && editMultiSelect.length>1){
+      const inMul=editMultiSelect.findIndex(o=>o.type===hitMulti.type&&o.idx===hitMulti.idx);
+      if(inMul>=0){
+        // Prépare un drag — si l'utilisateur bouge c'est un déplacement, sinon c'est une désélection
+        editSnapshot();
+        editMultiDragPending={
+          startFrac:frac, startCx:cx2, hitObj:{...hitMulti},
+          items:editMultiSelect.map(o=>{
+            let wx=0;
+            if(o.type==='pique') wx=editPiqueDraft[o.idx]?.wx??0;
+            else if(o.type==='portal') wx=editPortalDraft[o.idx]?.wx??0;
+            else if(o.type==='effect') wx=editEffectDraft[o.idx]?.wx??0;
+            return{...o,origWx:wx};
+          })
+        };
+        editMultiDragActive=false;
+        editDragging=true;
+        return;
+      }
+    }
+    // Clic sur objet existant hors multi-sélection → sélection simple
+    if(hitMulti){
+      editMultiSelect=[];editMultiDragPending=null;editMultiDragActive=false;
+      editSelected=hitMulti;showEditProps();drawEditCanvas();return;
+    }
+    // Clic près d'un mur du tunnel → drag de segment
+    if(edTrySegmentDrag(frac,cx2,cy2)){return;}
+    // Sinon → début du lasso
+    editMultiSelect=[];editMultiDragPending=null;editMultiDragActive=false;editSelected=null;
+    editBoxSelStart={cx:cx2,cy:cy2};editBoxSelRect=null;
+    showEditProps();drawEditCanvas();
+  } else if(edTrySelect(frac, cx2, cy2)){
+    // clic sur un objet existant dans n'importe quel outil → sélection
+  } else if(editTool==='pique'){
+    editSnapshot();
+    const idx = edFracToIdx(frac);
+    const cy_traj = editTraj[Math.max(0,Math.min(editTraj.length-1,idx))]||H/2;
+    const gap = edGetGap();
+    const third = gap/3;
+    let band;
+    if(gameY < cy_traj - third/2) band='top';
+    else if(gameY > cy_traj + third/2) band='bot';
+    else band='mid';
+    editPiqueDraft.push({wx:Math.max(0,Math.min(1,frac)), band});
+    editSelected={type:'pique', idx:editPiqueDraft.length-1};
+    showEditProps();drawEditCanvas();
+  } else if(editTool==='portal'){
+    editSnapshot();
+    editPortalDraft.push({wx:Math.max(0,Math.min(1,frac)), speedMul:lastPortalCfg.speedMul, angleMul:lastPortalCfg.angleMul, gapMul:lastPortalCfg.gapMul});
+    editSelected={type:'portal', idx:editPortalDraft.length-1};
+    showEditProps();drawEditCanvas();
+  } else if(editTool==='effect'){
+    editSnapshot();
+    editEffectDraft.push({wx:Math.max(0,Math.min(1,frac)), type:lastEffectCfg.type, color:lastEffectCfg.color, duration:lastEffectCfg.duration, intensity:lastEffectCfg.intensity, message:lastEffectCfg.message, count:lastEffectCfg.count});
+    editSelected={type:'effect', idx:editEffectDraft.length-1};
+    showEditProps();drawEditCanvas();
   }
 }
-function editCoordToIdx(clientX,clientY){
-  const r=editCv.getBoundingClientRect();
-  const fx=Math.max(0,Math.min(1,(clientX-r.left)/r.width));
-  const fy=Math.max(0,Math.min(1,(clientY-r.top)/r.height));
-  return{idx:fx*(editTraj.length-1),y:fy*H};
+
+function edPointerMove(clientX, clientY){
+  const r = editCv.getBoundingClientRect();
+  const cx2 = (clientX-r.left)*(editCv.width/r.width);
+  const cy2 = (clientY-r.top)*(editCv.height/r.height);
+
+  if(editMultiDragPending){
+    const moved=Math.abs(cx2-editMultiDragPending.startCx);
+    if(moved>4){
+      editMultiDragActive=true;
+    }
+    if(editMultiDragActive){
+      const frac2=edCanvasXToFrac(cx2);
+      const delta=frac2-editMultiDragPending.startFrac;
+      for(const item of editMultiDragPending.items){
+        const newWx=Math.max(0,Math.min(1,item.origWx+delta));
+        if(item.type==='pique'&&editPiqueDraft[item.idx]) editPiqueDraft[item.idx].wx=newWx;
+        else if(item.type==='portal'&&editPortalDraft[item.idx]) editPortalDraft[item.idx].wx=newWx;
+        else if(item.type==='effect'&&editEffectDraft[item.idx]) editEffectDraft[item.idx].wx=newWx;
+      }
+      drawEditCanvas();
+    }
+    return;
+  }
+
+  if(editSegPending){
+    const dy=Math.abs(cy2-editSegPending.startCy);
+    if(dy>4){
+      edActivateSegDrag(editSegPending.idx, editSegPending.startCy);
+      editSegPending=null;
+    } else { return; }
+  }
+
+  if(editSegDrag){
+    const frac = edCanvasXToFrac(cx2);
+    const idx = edFracToIdx(frac);
+    const y = Math.max(PLAYER_R+1, Math.min(H-PLAYER_R-1, edCanvasYToGameY(cy2)));
+    const i0 = Math.min(editSegDrag.lastIdx, idx);
+    const i1 = Math.max(editSegDrag.lastIdx, idx);
+    for(let i=i0;i<=i1;i++) editTraj[i]=y;
+    editSegDrag.lastIdx=idx;
+    drawEditCanvas();
+    return;
+  }
+
+  if(editBoxSelStart){
+    editBoxSelRect={x0:editBoxSelStart.cx,y0:editBoxSelStart.cy,x1:cx2,y1:cy2};
+    drawEditCanvas();
+    return;
+  }
+
+  if(editDragging && editTool!=='select'){
+    edApplyDraw(edCanvasXToFrac(cx2), edCanvasYToGameY(cy2));
+  }
 }
-function editApplyAt(idx,y){
+
+function edPointerUp(){
+  // Multi-drag : si pas de mouvement → désélection de l'objet cliqué
+  if(editMultiDragPending){
+    if(!editMultiDragActive){
+      // simple clic → retirer de la sélection
+      const hit=editMultiDragPending.hitObj;
+      const inMul=editMultiSelect.findIndex(o=>o.type===hit.type&&o.idx===hit.idx);
+      if(inMul>=0) editMultiSelect.splice(inMul,1);
+      if(editMultiSelect.length===0) editSelected=null;
+      else if(editMultiSelect.length===1) editSelected=editMultiSelect[0];
+      else editSelected=null;
+      // annuler le snapshot inutile
+      editHistory.pop();
+      showEditProps();
+    } else {
+      // drag effectué : mettre à jour les origWx pour le prochain drag
+      editMultiDragPending=null;
+      editMultiDragActive=false;
+      showEditProps();
+    }
+    editMultiDragPending=null;
+    editMultiDragActive=false;
+    editDragging=false;editLastIdx=null;
+    drawEditCanvas();
+    return;
+  }
+
+  if(editBoxSelStart && editBoxSelRect){
+    const rx0=Math.min(editBoxSelRect.x0,editBoxSelRect.x1);
+    const rx1=Math.max(editBoxSelRect.x0,editBoxSelRect.x1);
+    if(rx1-rx0>6){
+      editMultiSelect=[];
+      for(let i=0;i<editPiqueDraft.length;i++){
+        const x=edFracToCanvasX(editPiqueDraft[i].wx);
+        if(x>=rx0&&x<=rx1) editMultiSelect.push({type:'pique',idx:i});
+      }
+      for(let i=0;i<editPortalDraft.length;i++){
+        const x=edFracToCanvasX(editPortalDraft[i].wx);
+        if(x>=rx0&&x<=rx1) editMultiSelect.push({type:'portal',idx:i});
+      }
+      for(let i=0;i<editEffectDraft.length;i++){
+        const x=edFracToCanvasX(editEffectDraft[i].wx);
+        if(x>=rx0&&x<=rx1) editMultiSelect.push({type:'effect',idx:i});
+      }
+      editSelected=editMultiSelect.length===1?editMultiSelect[0]:null;
+      showEditProps();
+    }
+  }
+  editBoxSelStart=null; editBoxSelRect=null;
+  editSegDrag=null;
+  if(editSegPending){
+    // simple clic → sélectionner plage autour du point
+    const HALF=Math.round(editTraj.length*0.04); // ±4% du niveau
+    const i0=Math.max(0,editSegPending.idx-HALF);
+    const i1=Math.min(editTraj.length-1,editSegPending.idx+HALF);
+    editSegSel={i0,i1};
+    editSelected=null; editMultiSelect=[];
+    editSegPending=null;
+    showEditProps();
+  }
+  editSegPending=null;
+  editDragging=false; editLastIdx=null;
+  drawEditCanvas();
+}
+
+function edApplyDraw(frac, gameY){
+  const idx = edFracToIdx(frac);
+  const y = Math.max(PLAYER_R+1, Math.min(H-PLAYER_R-1, gameY));
   if(editLastIdx===null){
-    editTraj[Math.round(idx)]=y;
-  }else{
-    const i0=Math.round(editLastIdx.idx),i1=Math.round(idx);
-    const lo=Math.min(i0,i1),hi=Math.max(i0,i1);
+    editTraj[idx] = y;
+  } else {
+    const i0=editLastIdx.idx, i1=idx;
+    const lo=Math.min(i0,i1), hi=Math.max(i0,i1);
     for(let i=lo;i<=hi;i++){
       const t=hi===lo?1:(i-lo)/(hi-lo);
       const v=i0<=i1?editLastIdx.y+(y-editLastIdx.y)*t:y+(editLastIdx.y-y)*t;
-      editTraj[i]=v;
+      editTraj[i]=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,v));
     }
   }
-  editLastIdx={idx,y};
+  editLastIdx={idx, y};
   drawEditCanvas();
 }
-function editPointerDown(clientX,clientY){editDragging=true;editLastIdx=null;const{idx,y}=editCoordToIdx(clientX,clientY);editApplyAt(idx,y);}
-function editPointerMove(clientX,clientY){if(!editDragging)return;const{idx,y}=editCoordToIdx(clientX,clientY);editApplyAt(idx,y);}
-function editPointerUp(){editDragging=false;editLastIdx=null;}
-editCv.addEventListener('mousedown',e=>{e.preventDefault();editPointerDown(e.clientX,e.clientY);});
-window.addEventListener('mousemove',e=>{if(editDragging)editPointerMove(e.clientX,e.clientY);});
-window.addEventListener('mouseup',()=>editPointerUp());
-editCv.addEventListener('touchstart',e=>{e.preventDefault();editPointerDown(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
-editCv.addEventListener('touchmove',e=>{e.preventDefault();editPointerMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
-editCv.addEventListener('touchend',e=>{e.preventDefault();editPointerUp();},{passive:false});
-function renderEditPiques(){
-  const wrap=document.getElementById('editPiques');
-  wrap.innerHTML='';
-  if(!editPiqueDraft.length){
-    const e=document.createElement('div');
-    e.style.cssText='color:#556677;font:.75em monospace;margin-bottom:8px;';
-    e.textContent='Aucun pique pour l\'instant.';
-    wrap.appendChild(e);
+
+function edFindNearestObj(frac, cx2, cy2, thresh=18){
+  let best=null, bestD=thresh;
+  for(let i=0;i<editPiqueDraft.length;i++){
+    const d=Math.abs(edFracToCanvasX(editPiqueDraft[i].wx)-cx2);
+    if(d<bestD){bestD=d;best={type:'pique',idx:i};}
   }
-  editPiqueDraft.forEach((p,i)=>{
-    const row=document.createElement('div');row.className='piqueRow';
-    const posInput=document.createElement('input');
-    posInput.type='range';posInput.min=0;posInput.max=100;posInput.value=Math.round(p.wx*100);
-    posInput.addEventListener('input',()=>{p.wx=parseInt(posInput.value,10)/100;drawEditCanvas();});
-    const sel=document.createElement('select');
-    [['top','Haut'],['mid','Milieu'],['bot','Bas']].forEach(([val,label])=>{
-      const opt=document.createElement('option');opt.value=val;opt.textContent=label;
-      if(p.band===val)opt.selected=true;
-      sel.appendChild(opt);
-    });
-    sel.addEventListener('change',()=>{p.band=sel.value;drawEditCanvas();});
-    const rm=document.createElement('button');rm.className='kb';rm.textContent='✕';
-    rm.addEventListener('click',()=>{editPiqueDraft.splice(i,1);renderEditPiques();drawEditCanvas();});
-    row.append(posInput,sel,rm);
-    wrap.appendChild(row);
-  });
-}
-document.getElementById('addPique').addEventListener('click',()=>{
-  editPiqueDraft.push({wx:0.5,band:'mid'});
-  renderEditPiques();
-  drawEditCanvas();
-});
-function renderEditPortals(){
-  const wrap=document.getElementById('editPortals');
-  wrap.innerHTML='';
-  if(!editPortalDraft.length){
-    const e=document.createElement('div');
-    e.style.cssText='color:#556677;font:.75em monospace;margin-bottom:8px;';
-    e.textContent='Aucun portail pour l\'instant.';
-    wrap.appendChild(e);return;
+  for(let i=0;i<editPortalDraft.length;i++){
+    const d=Math.abs(edFracToCanvasX(editPortalDraft[i].wx)-cx2);
+    if(d<bestD){bestD=d;best={type:'portal',idx:i};}
   }
-  editPortalDraft.forEach((p,i)=>{
-    const row=document.createElement('div');row.className='portalRow';
-    const posInput=document.createElement('input');
-    posInput.type='range';posInput.min=0;posInput.max=100;posInput.value=Math.round(p.wx*100);
-    posInput.addEventListener('input',()=>{p.wx=parseInt(posInput.value,10)/100;drawEditCanvas();});
-    row.appendChild(posInput);
-    [['speedMul','Vit.'],['angleMul','Angle'],['gapMul','Tunnel']].forEach(([field,label])=>{
-      const lab=document.createElement('label');lab.textContent=label+' :';
-      const inp=document.createElement('input');inp.className='pinput';
-      inp.type='text';inp.inputMode='numeric';inp.maxLength=3;
-      inp.value=Math.round(p[field]*100);
-      inp.addEventListener('blur',()=>{p[field]=pctInputValue(inp,1);inp.value=Math.round(p[field]*100);});
-      row.append(lab,inp);
-    });
-    const rm=document.createElement('button');rm.className='kb';rm.textContent='✕';
-    rm.addEventListener('click',()=>{editPortalDraft.splice(i,1);renderEditPortals();drawEditCanvas();});
-    row.appendChild(rm);
-    wrap.appendChild(row);
-  });
+  for(let i=0;i<editEffectDraft.length;i++){
+    const d=Math.abs(edFracToCanvasX(editEffectDraft[i].wx)-cx2);
+    if(d<bestD){bestD=d;best={type:'effect',idx:i};}
+  }
+  return best;
 }
-document.getElementById('addPortal').addEventListener('click',()=>{
-  editPortalDraft.push({wx:0.5,speedMul:1,angleMul:1,gapMul:1});
-  renderEditPortals();
+function edTrySelect(frac, cx2, cy2){
+  const best=edFindNearestObj(frac,cx2,cy2,18);
+  if(best){editSelected=best;editMultiSelect=[];showEditProps();drawEditCanvas();return true;}
+  return false;
+}
+function edTrySegmentDrag(frac, cx2, cy2){
+  if(!editTraj||!editTraj.length)return false;
+  const gap=edGetGap();
+  const idx=edFracToIdx(frac);
+  const cy_traj=editTraj[Math.max(0,Math.min(editTraj.length-1,idx))]||H/2;
+  const topY=(cy_traj-gap/2)/H*edCanvasH();
+  const botY=(cy_traj+gap/2)/H*edCanvasH();
+  const THRESH=14;
+  if(Math.abs(cy2-topY)<THRESH||Math.abs(cy2-botY)<THRESH){
+    editSegPending={idx,startCx:cx2,startCy:cy2};
+    editDragging=true;
+    return true;
+  }
+  return false;
+}
+function edActivateSegDrag(idx, cy2){
+  editSnapshot();
+  editSegDrag={lastIdx:idx};
+  editTraj[idx]=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,edCanvasYToGameY(cy2)));
   drawEditCanvas();
-});
-// Lit/contraint une valeur en %, retombe sur une valeur par défaut si invalide.
-function pctInputValue(input,def){
-  let v=parseInt(input.value,10);
-  if(!Number.isFinite(v))v=Math.round(def*100);
-  return Math.max(50,Math.min(200,v))/100;
 }
+
+function edTryErase(frac, cx2, cy2){
+  const THRESH = 12;
+  let best=null, bestD=THRESH;
+  for(let i=0;i<editPiqueDraft.length;i++){
+    const x = edFracToCanvasX(editPiqueDraft[i].wx);
+    const d = Math.abs(x-cx2);
+    if(d<bestD){bestD=d;best={type:'pique',idx:i};}
+  }
+  for(let i=0;i<editPortalDraft.length;i++){
+    const x = edFracToCanvasX(editPortalDraft[i].wx);
+    const d = Math.abs(x-cx2);
+    if(d<bestD){bestD=d;best={type:'portal',idx:i};}
+  }
+  for(let i=0;i<editEffectDraft.length;i++){
+    const x = edFracToCanvasX(editEffectDraft[i].wx);
+    const d = Math.abs(x-cx2);
+    if(d<bestD){bestD=d;best={type:'effect',idx:i};}
+  }
+  if(best){
+    if(best.type==='pique') editPiqueDraft.splice(best.idx,1);
+    else if(best.type==='portal') editPortalDraft.splice(best.idx,1);
+    else editEffectDraft.splice(best.idx,1);
+    editSelected=null;
+    showEditProps();
+    drawEditCanvas();
+  }
+}
+
+function showEditProps(){
+  const wrap = document.getElementById('editProps');
+  if(!wrap) return;
+  if(editMultiSelect.length>1){
+    wrap.innerHTML='';
+    const IS='background:#0c1e30;border:2px solid #2a4060;border-radius:6px;color:#e0eeff;font:.86em monospace;padding:4px 8px;outline:none;';
+
+    const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+
+    const lbl=document.createElement('span');
+    lbl.textContent=`${editMultiSelect.length} objets · glisse pour déplacer`;
+    lbl.style.cssText='color:#ffe066;font:bold .85em monospace;';
+    row.appendChild(lbl);
+
+    const btnDel=document.createElement('button');
+    btnDel.textContent='🗑 Supr.';
+    btnDel.style.cssText='background:#c0392b;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font:.8em monospace;';
+    btnDel.onclick=()=>{
+      editSnapshot();
+      const byType=(type,arr)=>{
+        const idxs=editMultiSelect.filter(o=>o.type===type).map(o=>o.idx).sort((a,b)=>b-a);
+        idxs.forEach(i=>arr.splice(i,1));
+      };
+      byType('pique',editPiqueDraft);byType('portal',editPortalDraft);byType('effect',editEffectDraft);
+      editMultiSelect=[];editSelected=null;showEditProps();drawEditCanvas();
+    };
+    row.appendChild(btnDel);
+
+    const btnClr=document.createElement('button');
+    btnClr.textContent='✕';
+    btnClr.style.cssText='background:#34495e;color:#fff;border:none;border-radius:6px;padding:3px 8px;cursor:pointer;font:.8em monospace;';
+    btnClr.onclick=()=>{editMultiSelect=[];editSelected=null;showEditProps();drawEditCanvas();};
+    row.appendChild(btnClr);
+
+    wrap.appendChild(row);
+
+    // Propriétés communes si même type
+    const types=new Set(editMultiSelect.map(o=>o.type));
+    if(types.size===1){
+      const type=[...types][0];
+      const propRow=document.createElement('div');propRow.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;';
+
+      if(type==='portal'){
+        const props=['speedMul','angleMul','gapMul'];
+        const labels=['×Vitesse','×Angle','×Gap'];
+        props.forEach((prop,i)=>{
+          const s=document.createElement('span');s.textContent=labels[i]+' :';s.style.cssText='color:#aabbcc;font:.78em monospace;';
+          propRow.appendChild(s);
+          const inp=document.createElement('input');inp.type='number';inp.style.cssText=IS+'width:60px;';
+          const firstVal=editPortalDraft[editMultiSelect[0].idx]?.[prop]??1;
+          inp.value=firstVal;inp.min=0.1;inp.max=5;inp.step=0.1;
+          inp.oninput=()=>{
+            const v=parseFloat(inp.value);if(!isFinite(v)||v<=0)return;
+            editMultiSelect.forEach(o=>{if(editPortalDraft[o.idx])editPortalDraft[o.idx][prop]=v;});
+            drawEditCanvas();
+          };
+          propRow.appendChild(inp);
+        });
+      } else if(type==='effect'){
+        const s=document.createElement('span');s.textContent='Type :';s.style.cssText='color:#aabbcc;font:.78em monospace;';
+        propRow.appendChild(s);
+        const sel=document.createElement('select');sel.style.cssText=IS;
+        EFFECT_TYPES.forEach(et=>{const o=document.createElement('option');o.value=et.type;o.textContent=et.type;sel.appendChild(o);});
+        sel.value=editEffectDraft[editMultiSelect[0].idx]?.type||'flash';
+        sel.onchange=()=>{
+          editMultiSelect.forEach(o=>{if(editEffectDraft[o.idx])editEffectDraft[o.idx].type=sel.value;});
+          drawEditCanvas();
+        };
+        propRow.appendChild(sel);
+
+        const sc=document.createElement('span');sc.textContent='Couleur :';sc.style.cssText='color:#aabbcc;font:.78em monospace;';
+        propRow.appendChild(sc);
+        const col=document.createElement('input');col.type='color';col.style.cssText='width:36px;height:26px;border:2px solid #2a4060;border-radius:5px;background:#0c1e30;cursor:pointer;padding:1px;';
+        col.value=editEffectDraft[editMultiSelect[0].idx]?.color||'#ffffff';
+        col.oninput=()=>{
+          editMultiSelect.forEach(o=>{if(editEffectDraft[o.idx])editEffectDraft[o.idx].color=col.value;});
+          drawEditCanvas();
+        };
+        propRow.appendChild(col);
+      } else if(type==='pique'){
+        const s=document.createElement('span');s.textContent='Bande :';s.style.cssText='color:#aabbcc;font:.78em monospace;';
+        propRow.appendChild(s);
+        const sel=document.createElement('select');sel.style.cssText=IS;
+        [['top','Haut'],['mid','Milieu'],['bot','Bas']].forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;sel.appendChild(o);});
+        sel.value=editPiqueDraft[editMultiSelect[0].idx]?.band||'mid';
+        sel.onchange=()=>{
+          editMultiSelect.forEach(o=>{if(editPiqueDraft[o.idx])editPiqueDraft[o.idx].band=sel.value;});
+          drawEditCanvas();
+        };
+        propRow.appendChild(sel);
+      }
+
+      if(propRow.children.length) wrap.appendChild(propRow);
+    }
+    return;
+  }
+  if(editSegSel){
+    wrap.innerHTML='';
+    const n=editTraj.length;
+    const pct0=Math.round(editSegSel.i0/(n-1)*100);
+    const pct1=Math.round(editSegSel.i1/(n-1)*100);
+    const IS='background:#0c1e30;border:2px solid #2a4060;border-radius:6px;color:#e0eeff;font:.86em monospace;padding:3px 7px;outline:none;';
+    const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+
+    const lbl=document.createElement('span');
+    lbl.textContent=`Segment ${pct0}%–${pct1}%`;
+    lbl.style.cssText='color:#7de8ff;font:bold .85em monospace;';
+    row.appendChild(lbl);
+
+    // Largeur de la sélection
+    const wLbl=document.createElement('span');wLbl.textContent='Largeur ±%:';wLbl.style.cssText='color:#aabbcc;font:.78em monospace;';
+    row.appendChild(wLbl);
+    const wInp=document.createElement('input');wInp.type='number';wInp.value=Math.max(1,Math.round((pct1-pct0)/2));wInp.min=1;wInp.max=50;wInp.style.cssText=IS+'width:52px;';
+    wInp.onchange=()=>{
+      const half=Math.round(Math.max(1,parseFloat(wInp.value)||1)/100*(n-1));
+      const mid=Math.round((editSegSel.i0+editSegSel.i1)/2);
+      editSegSel={i0:Math.max(0,mid-half),i1:Math.min(n-1,mid+half)};
+      showEditProps();drawEditCanvas();
+    };
+    row.appendChild(wInp);
+
+    // Checkbox invisible
+    const isInvis=editInvisSegs.some(s=>Math.abs(s.wx0-editSegSel.i0/(n-1))<0.01&&Math.abs(s.wx1-editSegSel.i1/(n-1))<0.01);
+    const invLbl=document.createElement('label');invLbl.style.cssText='display:inline-flex;align-items:center;gap:4px;color:#ff6699;font:.85em monospace;cursor:pointer;';
+    const invChk=document.createElement('input');invChk.type='checkbox';invChk.checked=isInvis||editInvisSegs.some(s=>s.wx0<=editSegSel.i0/(n-1)&&s.wx1>=editSegSel.i1/(n-1));
+    invChk.onchange=()=>{
+      editSnapshot();
+      const wx0=editSegSel.i0/(n-1), wx1=editSegSel.i1/(n-1);
+      if(invChk.checked){ editInvisSegs.push({wx0,wx1}); }
+      else { editInvisSegs=editInvisSegs.filter(s=>s.wx1<wx0||s.wx0>wx1); }
+      drawEditCanvas();
+    };
+    invLbl.appendChild(invChk);invLbl.appendChild(document.createTextNode('Mur invisible'));
+    row.appendChild(invLbl);
+
+    // Checkbox inoffensif
+    const nokLbl=document.createElement('label');nokLbl.style.cssText='display:inline-flex;align-items:center;gap:4px;color:#32dc78;font:.85em monospace;cursor:pointer;';
+    const nokChk=document.createElement('input');nokChk.type='checkbox';
+    const wx0c=editSegSel.i0/(n-1), wx1c=editSegSel.i1/(n-1);
+    nokChk.checked=editNoKillSegs.some(s=>s.wx0<=wx0c+0.001&&s.wx1>=wx1c-0.001);
+    nokChk.onchange=()=>{
+      editSnapshot();
+      const wx0=editSegSel.i0/(n-1), wx1=editSegSel.i1/(n-1);
+      if(nokChk.checked){ editNoKillSegs.push({wx0,wx1}); }
+      else { editNoKillSegs=editNoKillSegs.filter(s=>s.wx1<wx0||s.wx0>wx1); }
+      drawEditCanvas();
+    };
+    nokLbl.appendChild(nokChk);nokLbl.appendChild(document.createTextNode('Inoffensif'));
+    row.appendChild(nokLbl);
+
+    const btnClr=document.createElement('button');
+    btnClr.textContent='✕ Désél.';
+    btnClr.style.cssText='background:#1a2535;color:#7de8ff;border:1px solid #2a4060;border-radius:5px;padding:3px 8px;cursor:pointer;font:.78em monospace;';
+    btnClr.onclick=()=>{editSegSel=null;showEditProps();drawEditCanvas();};
+    row.appendChild(btnClr);
+
+    wrap.appendChild(row);
+    return;
+  }
+
+  if(!editSelected){
+    wrap.innerHTML='<span style="color:#5577aa;font:.82em monospace;">Sélectionne un outil → clique sur le niveau pour placer · clique sur un objet existant pour le modifier</span>';
+    return;
+  }
+  wrap.innerHTML='';
+
+  const IS='background:#0c1e30;border:2px solid #2a4060;border-radius:6px;color:#e0eeff;font:.92em monospace;padding:6px 10px;outline:none;';
+  const IS_NUM=IS+'width:80px;text-align:center;';
+  const LBL='color:#aabbcc;font:.86em monospace;white-space:nowrap;';
+  const COL_IN='width:44px;height:32px;border:2px solid #2a4060;border-radius:5px;background:#0c1e30;cursor:pointer;padding:1px;';
+
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:2px 0;';
+
+  const mkLbl=(txt,col='#aabbcc')=>{const s=document.createElement('span');s.style.cssText=`color:${col};font:.80em monospace;white-space:nowrap;`;s.textContent=txt;return s;};
+  const mkNum=(val,min,max,step,onChange)=>{
+    const wrap2=document.createElement('span');wrap2.style.cssText='display:inline-flex;align-items:center;gap:2px;';
+    const inp=document.createElement('input');inp.type='number';inp.value=val;inp.min=min;inp.max=max;inp.step=step;
+    inp.style.cssText=IS_NUM;
+    inp.addEventListener('input',()=>onChange(parseFloat(inp.value)));
+    inp.addEventListener('change',()=>onChange(parseFloat(inp.value)));
+    const bm=document.createElement('button');bm.textContent='−';bm.style.cssText='padding:4px 9px;background:#0c1e30;border:2px solid #2a4060;color:#aabbcc;border-radius:5px;cursor:pointer;font:.88em monospace;line-height:1;';
+    bm.addEventListener('click',()=>{inp.value=parseFloat(inp.value)-step;onChange(parseFloat(inp.value));});
+    const bp=document.createElement('button');bp.textContent='+';bp.style.cssText='padding:4px 9px;background:#0c1e30;border:2px solid #2a4060;color:#aabbcc;border-radius:5px;cursor:pointer;font:.88em monospace;line-height:1;';
+    bp.addEventListener('click',()=>{inp.value=parseFloat(inp.value)+step;onChange(parseFloat(inp.value));});
+    wrap2.appendChild(bm);wrap2.appendChild(inp);wrap2.appendChild(bp);
+    return {el:wrap2,inp};
+  };
+  const mkCol=(val,onChange)=>{
+    const ci=document.createElement('input');ci.type='color';ci.value=val||'#ffffff';
+    ci.style.cssText=COL_IN;
+    ci.addEventListener('input',()=>onChange(ci.value));
+    return ci;
+  };
+  const mkSel=(options,cur,onChange)=>{
+    const s=document.createElement('select');s.style.cssText=IS;
+    options.forEach(([v,l])=>{const o=document.createElement('option');o.value=v;o.textContent=l;if(v===cur)o.selected=true;s.appendChild(o);});
+    s.addEventListener('change',()=>onChange(s.value));
+    return s;
+  };
+  const mkDel=(onDel)=>{const b=document.createElement('button');b.textContent='🗑 Suppr.';b.style.cssText='padding:3px 10px;background:#2a0a0a;border:1.5px solid #aa3333;color:#ff6666;border-radius:5px;cursor:pointer;font:.78em monospace;margin-left:6px;';b.addEventListener('click',onDel);return b;};
+
+  // ── Champ position commun ─────────────────────────────────────────────────
+  const addPos=(obj, pxVal)=>{
+    row.appendChild(mkLbl('Pos (%) :'));
+    const {el,inp}=mkNum(Math.round(pxVal*100), 0, 100, 1, v=>{
+      if(isFinite(v)) obj.wx=Math.max(0,Math.min(1,v/100));
+      drawEditCanvas();
+    });
+    row.appendChild(el);
+    return inp;
+  };
+
+  if(editSelected.type==='pique'){
+    const p=editPiqueDraft[editSelected.idx]; if(!p){showEditProps();return;}
+    row.appendChild(mkLbl('⚠ PIQUE','#ff6680'));
+    addPos(p, p.wx);
+    row.appendChild(mkLbl('Bande :'));
+    row.appendChild(mkSel([['top','Haut'],['mid','Milieu'],['bot','Bas']], p.band, v=>{p.band=v;drawEditCanvas();}));
+    row.appendChild(mkDel(()=>{editPiqueDraft.splice(editSelected.idx,1);editSelected=null;showEditProps();drawEditCanvas();}));
+
+  } else if(editSelected.type==='portal'){
+    const p=editPortalDraft[editSelected.idx]; if(!p){showEditProps();return;}
+    row.appendChild(mkLbl('🌀 PORTAIL','#33ddaa'));
+    addPos(p, p.wx);
+    [['speedMul','Vitesse ×','#7de8ff'],['angleMul','Angle ×','#ffd166'],['gapMul','Tunnel ×','#dd88ff']].forEach(([field,label,col])=>{
+      row.appendChild(mkLbl(label+':', col));
+      const {el,inp}=mkNum(+(p[field]*100).toFixed(0), 10, 500, 5, v=>{
+        if(isFinite(v)&&v>=10){p[field]=v/100; lastPortalCfg[field]=p[field];} drawEditCanvas();
+      });
+      // Ajouter unité "%" visible
+      const w=document.createElement('span');w.style.cssText='display:inline-flex;align-items:center;gap:2px;';
+      w.appendChild(el);
+      const pct=document.createElement('span');pct.textContent='%';pct.style.cssText='color:#aabbcc;font:.78em monospace;';
+      w.appendChild(pct);
+      row.appendChild(w);
+    });
+    // Checkbox invisible
+    const invLbl=document.createElement('label');invLbl.style.cssText='display:inline-flex;align-items:center;gap:4px;color:#aabbcc;font:.82em monospace;cursor:pointer;';
+    const invChk=document.createElement('input');invChk.type='checkbox';invChk.checked=!!p.invisible;
+    invChk.onchange=()=>{p.invisible=invChk.checked;drawEditCanvas();};
+    invLbl.appendChild(invChk);invLbl.appendChild(document.createTextNode('Invisible'));
+    row.appendChild(invLbl);
+    row.appendChild(mkDel(()=>{editPortalDraft.splice(editSelected.idx,1);editSelected=null;showEditProps();drawEditCanvas();}));
+
+  } else if(editSelected.type==='effect'){
+    const e=editEffectDraft[editSelected.idx]; if(!e){showEditProps();return;}
+    const einfo=EFFECT_TYPES.find(t=>t.type===e.type)||EFFECT_TYPES[0];
+    row.appendChild(mkLbl('✨ EFFET',einfo.col));
+    row.appendChild(mkSel(EFFECT_TYPES.map(t=>[t.type,t.label]), e.type, v=>{e.type=v;lastEffectCfg.type=v;showEditProps();drawEditCanvas();}));
+    addPos(e, e.wx);
+
+    // Couleur disponible pour TOUS les effets
+    row.appendChild(mkLbl('Couleur :', einfo.col));
+    row.appendChild(mkCol(e.color||einfo.col, v=>{e.color=v;lastEffectCfg.color=v;}));
+
+    if(e.type==='flash'||e.type==='bgpulse'){
+      row.appendChild(mkLbl('Intensité (%):'));
+      const {el:ei}=mkNum(e.intensity!==undefined?e.intensity:100, 5, 100, 5, v=>{if(isFinite(v))e.intensity=Math.max(5,Math.min(100,v));});
+      row.appendChild(ei);
+      row.appendChild(mkLbl('Durée (s) :'));
+      const {el}=mkNum(e.duration||0.4, 0.1, 10, 0.1, v=>{if(isFinite(v)&&v>0)e.duration=v;});
+      row.appendChild(el);
+    } else if(e.type==='shake'){
+      row.appendChild(mkLbl('Force (px) :'));
+      const {el:ei}=mkNum(e.intensity||8, 1, 40, 1, v=>{if(isFinite(v)&&v>0)e.intensity=v;});
+      row.appendChild(ei);
+      row.appendChild(mkLbl('Durée (s) :'));
+      const {el:ed}=mkNum(e.duration||0.4, 0.1, 5, 0.1, v=>{if(isFinite(v)&&v>0)e.duration=v;});
+      row.appendChild(ed);
+    } else if(e.type==='text'){
+      row.appendChild(mkLbl('Message :'));
+      const mi=document.createElement('input');mi.type='text';mi.value=e.message||'!';mi.maxLength=40;
+      mi.style.cssText=IS+'width:130px;';
+      mi.addEventListener('input',()=>{e.message=mi.value;});
+      row.appendChild(mi);
+      row.appendChild(mkLbl('Couleur :'));
+      const ci=document.createElement('input');ci.type='color';ci.value=e.color||'#ffd166';
+      ci.style.cssText=COL_IN;ci.addEventListener('input',()=>{e.color=ci.value;});
+      row.appendChild(ci);
+      row.appendChild(mkLbl('Taille (%):'));
+      const {el:esi}=mkNum(e.intensity!==undefined?e.intensity:100, 20, 200, 10, v=>{if(isFinite(v))e.intensity=Math.max(20,v);});
+      row.appendChild(esi);
+      row.appendChild(mkLbl('Durée (s) :'));
+      const {el}=mkNum(e.duration||2, 0.5, 15, 0.5, v=>{if(isFinite(v)&&v>0)e.duration=v;});
+      row.appendChild(el);
+    } else if(e.type==='particles'){
+      row.appendChild(mkLbl('Nb particules :'));
+      const {el}=mkNum(e.count||20, 1, 80, 1, v=>{if(isFinite(v)&&v>0)e.count=Math.round(v);});
+      row.appendChild(el);
+    }
+    row.appendChild(mkDel(()=>{editEffectDraft.splice(editSelected.idx,1);editSelected=null;showEditProps();drawEditCanvas();}));
+  }
+  wrap.appendChild(row);
+}
+
+function openCustomEditor(lvl, isNew){
+  editingLevel=lvl; editIsNew=!!isNew;
+  editTraj=Array.from(lvl.traj);
+  editPiqueDraft=(lvl.piques||[]).map(p=>({wx:p.wx,band:p.band}));
+  editPortalDraft=(lvl.portals||[]).map(p=>({wx:p.wx,speedMul:p.speedMul,angleMul:p.angleMul,gapMul:p.gapMul,invisible:!!p.invisible}));
+  editEffectDraft=(lvl.effects||[]).map(e=>({...e}));
+  editInvisSegs=(lvl.invisSegs||[]).map(s=>({...s}));
+  editNoKillSegs=(lvl.noKillSegs||[]).map(s=>({...s}));
+  editSegSel=null;
+  editTool='select'; editViewStart=0; editViewWidth=1; editSelected=null; editDragging=false; editLastIdx=null;
+  editHistory=[];
+  document.querySelectorAll('.editTool').forEach(b=>b.classList.toggle('active',b.dataset.tool==='select'));
+  document.getElementById('editPanel').classList.add('open');
+  setTimeout(()=>{
+    const r=editCv.getBoundingClientRect();
+    if(r.width>0) editCv.width=Math.round(r.width);
+    if(r.height>0) editCv.height=Math.round(r.height);
+    showEditProps();
+    drawEditCanvas();
+    document.getElementById('editPanel').focus();
+  },32);
+}
+
+// — Pointer events sur le canvas —
+editCv.addEventListener('mousedown',e=>{e.preventDefault();edPointerDown(e.clientX,e.clientY);});
+window.addEventListener('mousemove',e=>{edPointerMove(e.clientX,e.clientY);});
+window.addEventListener('mouseup',()=>{ edPointerUp(); });
+editCv.addEventListener('touchstart',e=>{e.preventDefault();edPointerDown(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+editCv.addEventListener('touchmove',e=>{e.preventDefault();edPointerMove(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+editCv.addEventListener('touchend',e=>{e.preventDefault();edPointerUp();},{passive:false});
+
+// — Toolbar outils —
+document.querySelectorAll('.editTool[data-tool]').forEach(btn=>{
+  if(!btn.dataset.tool)return;
+  btn.addEventListener('click',()=>{
+    editTool=btn.dataset.tool;
+    document.querySelectorAll('.editTool[data-tool]').forEach(b=>b.classList.toggle('active',b===btn));
+    editSelected=null;showEditProps();drawEditCanvas();
+  });
+});
+
+// — Bouton Annuler —
+document.getElementById('editUndo').addEventListener('click',editUndo);
+
+// — Touche Del/Backspace dans l'éditeur pour supprimer l'objet sélectionné —
+document.getElementById('editPanel').addEventListener('keydown',e=>{
+  const inInput = document.activeElement && ['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName);
+  if(e.key==='Escape'){
+    editMultiSelect=[];editSelected=null;editBoxSelStart=null;editBoxSelRect=null;
+    showEditProps();drawEditCanvas();e.preventDefault();
+  } else if(e.key==='Delete'||e.key==='Backspace'){
+    if(inInput) return; // laisser l'input gérer la touche
+    if(editMultiSelect.length>1){
+      editSnapshot();
+      // supprimer dans l'ordre décroissant pour ne pas décaler les indices
+      const byType=(type,arr)=>{
+        const idxs=editMultiSelect.filter(o=>o.type===type).map(o=>o.idx).sort((a,b)=>b-a);
+        idxs.forEach(i=>arr.splice(i,1));
+      };
+      byType('pique',editPiqueDraft);
+      byType('portal',editPortalDraft);
+      byType('effect',editEffectDraft);
+      editMultiSelect=[];editSelected=null;showEditProps();drawEditCanvas();
+      e.preventDefault();
+    } else if(editSelected){
+      editSnapshot();
+      if(editSelected.type==='pique') editPiqueDraft.splice(editSelected.idx,1);
+      else if(editSelected.type==='portal') editPortalDraft.splice(editSelected.idx,1);
+      else if(editSelected.type==='effect') editEffectDraft.splice(editSelected.idx,1);
+      editSelected=null;showEditProps();drawEditCanvas();
+      e.preventDefault();
+    }
+  } else if((e.ctrlKey||e.metaKey)&&e.key==='z'){
+    editUndo();e.preventDefault();
+  }
+});
+
+// — Zoom —
+document.getElementById('editZoomIn').addEventListener('click',()=>{
+  const center=editViewStart+editViewWidth/2;
+  editViewWidth=Math.max(0.05,editViewWidth/1.5);
+  editViewStart=center-editViewWidth/2;
+  edClampView(); drawEditCanvas();
+});
+document.getElementById('editZoomOut').addEventListener('click',()=>{
+  const center=editViewStart+editViewWidth/2;
+  editViewWidth=Math.min(1,editViewWidth*1.5);
+  editViewStart=center-editViewWidth/2;
+  edClampView(); drawEditCanvas();
+});
+
+// — Scrollbar —
+(function(){
+  const wrap=document.getElementById('editScrollWrap');
+  const thumb=document.getElementById('editScrollThumb');
+  let draggingScroll=false, scrollStartX=0, scrollStartViewStart=0;
+  thumb.addEventListener('mousedown',e=>{draggingScroll=true;scrollStartX=e.clientX;scrollStartViewStart=editViewStart;e.stopPropagation();});
+  window.addEventListener('mousemove',e=>{
+    if(!draggingScroll)return;
+    const tw=wrap.getBoundingClientRect().width||200;
+    const dx=(e.clientX-scrollStartX)/tw;
+    editViewStart=Math.max(0,Math.min(1-editViewWidth,scrollStartViewStart+dx));
+    drawEditCanvas();
+  });
+  window.addEventListener('mouseup',()=>{draggingScroll=false;});
+  wrap.addEventListener('click',e=>{
+    if(e.target===thumb)return;
+    const r=wrap.getBoundingClientRect();
+    const frac=(e.clientX-r.left)/r.width;
+    editViewStart=Math.max(0,Math.min(1-editViewWidth,frac-editViewWidth/2));
+    drawEditCanvas();
+  });
+})();
+
+// — Scroll canvas avec molette —
+editCv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  if(e.ctrlKey||e.metaKey){
+    const r=editCv.getBoundingClientRect();
+    const fx=edCanvasXToFrac((e.clientX-r.left)*(editCv.width/r.width));
+    const factor=e.deltaY>0?1.3:1/1.3;
+    editViewWidth=Math.max(0.05,Math.min(1,editViewWidth*factor));
+    editViewStart=fx-editViewWidth*(fx-editViewStart)/((editViewWidth/factor));
+    edClampView();
+  } else {
+    editViewStart+=editViewWidth*(e.deltaY>0?0.1:-0.1);
+    edClampView();
+  }
+  drawEditCanvas();
+},{passive:false});
+
+// — saveEdit —
 document.getElementById('saveEdit').addEventListener('click',()=>{
   if(!editingLevel)return;
   editingLevel.traj=editTraj.slice();
   editingLevel.piques=editPiqueDraft.map(p=>({wx:p.wx,band:p.band}));
-  editingLevel.portals=editPortalDraft.map(p=>({wx:p.wx,speedMul:p.speedMul,angleMul:p.angleMul,gapMul:p.gapMul}));
-  editingLevel.bestDeaths=undefined; // toute modification du tracé invalide le record précédent
+  editingLevel.portals=editPortalDraft.map(p=>({wx:p.wx,speedMul:p.speedMul,angleMul:p.angleMul,gapMul:p.gapMul,invisible:!!p.invisible}));
+  editingLevel.effects=editEffectDraft.map(e=>({...e}));
+  editingLevel.invisSegs=editInvisSegs.map(s=>({...s}));
+  editingLevel.noKillSegs=editNoKillSegs.map(s=>({...s}));
+  editingLevel.bestDeaths=undefined;
   if(editIsNew)customLevels.push(editingLevel);
   saveCustomLevels();
   document.getElementById('editPanel').classList.remove('open');
   editingLevel=null;editIsNew=false;
   renderCustomList();
 });
+
 document.getElementById('cancelEdit').addEventListener('click',()=>{
   editingLevel=null;editIsNew=false;
   document.getElementById('editPanel').classList.remove('open');
 });
+
+document.getElementById('tracePlayBtn').addEventListener('click',()=>{
+  if(!editingLevel)return;
+  const fromPct=Math.max(0,Math.min(99,parseFloat(document.getElementById('traceFrom').value)||0));
+  const toPct  =Math.max(fromPct+1,Math.min(100,parseFloat(document.getElementById('traceTo').value)||100));
+  // Sauvegarder l'état éditeur dans le niveau temporairement
+  editingLevel.traj=editTraj.slice();
+  editingLevel.piques=editPiqueDraft.map(p=>({...p}));
+  editingLevel.portals=editPortalDraft.map(p=>({...p}));
+  editingLevel.effects=editEffectDraft.map(e=>({...e}));
+  editingLevel.invisSegs=editInvisSegs.map(s=>({...s}));
+  // Armer le mode tracé
+  traceRecordMode=true;
+  traceFromFrac=fromPct/100;
+  traceToFrac=toPct/100;
+  traceEditTraj=editTraj;
+  traceEditingLevel=editingLevel;
+  // Démarrer le jeu
+  activeCustomLevel=editingLevel;
+  mode=editingLevel.mode;
+  diff=editingLevel.diff;
+  document.getElementById('editPanel').classList.remove('open');
+  startGame();
+  // Téléporter le joueur au début de la zone
+  requestAnimationFrame(()=>{
+    if(activeCustomLevel&&traceRecordMode){
+      playerWX=cadenceEaseWX+traceFromFrac*activeCustomLevel.mainLen;
+      fillCorridor(diff);
+    }
+  });
+});
+
 document.getElementById('createBlankLevel').addEventListener('click',createBlankCustomLevel);
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
@@ -711,7 +1664,7 @@ function recordLabel(d){
 // Éligible à un record dans la table GLOBALE (mode/lag/cadence) : jamais en
 // session d'enregistrement ni en relecture d'une partie créée (qui a sa
 // PROPRE table de records, gérée séparément — voir update()).
-function recordsEligible(){return gapStartMul===1&&!noclipEnabled&&!recordingCustom&&!activeCustomLevel;}
+function recordsEligible(){return gapStartMul===1&&!noclipEnabled&&!recordingCustom&&!activeCustomLevel&&!practiceMode;}
 // Éligible à un record sur la partie créée actuellement rejouée.
 function customRecordsEligible(){return gapStartMul===1&&!noclipEnabled;}
 
@@ -758,7 +1711,7 @@ function playClickSound(){
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const cv=document.getElementById('cv'),cx=cv.getContext('2d');
-const mcv=document.getElementById('miniMapCv'),mcx=mcv.getContext('2d');
+
 let diff=5,mode='wave',state='menu',pseudo='';
 let corridor=null,waypoints=[],particles=[],trail=[],endWallWX=0;
 let cadenceTraj=[],cadenceEaseWX=0; // trajectoire enregistrée pour l'option Cadence
@@ -770,6 +1723,27 @@ let raf,prevNow;
 // Paramètres, mais peuvent être changés en cours de route en traversant un
 // portail modificateur posé dans l'éditeur de partie créée.
 let runtimeSpeedMul=1,runtimeAngleMul=1,runtimeGapMul=1,triggeredPortals=new Set();
+let triggeredEffects = new Set();
+let screenShakeX=0, screenShakeY=0, screenShakeUntil=0, screenShakeIntensity=0, screenShakeStart=0;
+let flashAlpha=0, flashColor='#ffffff', flashUntil=0, flashDur=1;
+let textEffectStr='', textEffectUntil=0, textEffectScale=1, textEffectColor='#ffd166';
+let bgPulseAlpha=0, bgPulseColor='#4488ff', bgPulseUntil=0, bgPulseDur=1;
+let practiceCheckpoints = []; // [{playerWX,playerY,elapsed,trainingDeaths,runtimeSpeedMul,runtimeAngleMul,runtimeGapMul,spiderState,gravityDir,shipVel,triggeredPortals,triggeredEffects}]
+let lastCpElapsed = 0;
+let respawnInvincibleUntil = 0;
+let editHistory = []; // undo stack
+let lastPortalCfg = {speedMul:1,angleMul:1,gapMul:1};
+let lastEffectCfg = {type:'flash',color:'#ffffff',duration:0.4,intensity:100,message:'!',count:20};
+let editMultiSelect = [];      // [{type,idx}] — sélection multiple (lasso)
+let editBoxSelStart = null;    // {cx,cy} canvas px — début du lasso
+let editBoxSelRect  = null;    // {x,y,w,h} canvas px — rect courant
+let editSegDrag = null;        // {lastIdx,lastY} — drag de segment tunnel
+let editMultiDragPending = null; // {startFrac,startCx,hitObj,items:[{type,idx,origWx}]} — mousedown sur objet sélectionné
+let editMultiDragActive = false; // true dès que le drag a dépassé le seuil de mouvement
+let editSegSel = null;       // {i0,i1} — plage d'indices traj sélectionnée
+let editInvisSegs = [];      // [{wx0,wx1}] — segments tunnel invisibles (fractions niveau)
+let editNoKillSegs = [];     // [{wx0,wx1}] — segments tunnel inoffensifs (pas de mort)
+let editSegPending = null;   // {idx,startCx,startCy} — mousedown près mur, attente décision
 
 function setIngame(on){document.body.classList.toggle('ingame',on);}
 
@@ -1127,6 +2101,28 @@ function fillCorridor(d){
   }
 }
 
+// ─── EFFETS VISUELS ───────────────────────────────────────────────────────────
+function triggerEffect(e){
+  const now2=performance.now();
+  const str=(e.intensity!==undefined?e.intensity:100)/100; // intensité 0-100 → 0-1
+  if(e.type==='flash'){
+    flashColor=e.color||'#ffffff'; flashDur=(e.duration||0.4)*1000; flashUntil=now2+flashDur; flashAlpha=Math.max(0.05,str);
+  } else if(e.type==='shake'){
+    screenShakeIntensity=(e.intensity||8); screenShakeUntil=now2+(e.duration||0.4)*1000; screenShakeStart=now2;
+  } else if(e.type==='text'){
+    textEffectStr=e.message||'!'; textEffectUntil=now2+(e.duration||2)*1000; textEffectScale=Math.max(0.3,str); textEffectColor=e.color||'#ffd166';
+  } else if(e.type==='bgpulse'){
+    bgPulseColor=e.color||'#4488ff'; bgPulseDur=(e.duration||0.6)*1000; bgPulseUntil=now2+bgPulseDur; bgPulseAlpha=Math.max(0.05,str);
+  } else if(e.type==='particles'){
+    const col=e.color||'#dd88ff';
+    const count=Math.max(1,Math.min(80,e.count||20));
+    for(let i=0;i<count;i++){
+      const a=Math.random()*Math.PI*2, s=1.5+Math.random()*6;
+      particles.push({x:PLAYER_SX,y:playerY,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.2,life:1,decay:.012+Math.random()*.02,r:2+Math.random()*5,col});
+    }
+  }
+}
+
 // ─── GAME CONTROL ─────────────────────────────────────────────────────────────
 function resetRun(keepDeaths){
   playerWX=0;playerY=H/2;cameraX=-PLAYER_SX;
@@ -1134,6 +2130,10 @@ function resetRun(keepDeaths){
   gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;spiderState='bot';
   score=0;lastScoreSec=0;
   runtimeSpeedMul=speedMul;runtimeAngleMul=angleMul;runtimeGapMul=gapStartMul;triggeredPortals=new Set();
+  triggeredEffects=new Set();
+  screenShakeX=0;screenShakeY=0;screenShakeUntil=0;
+  flashAlpha=0;textEffectStr='';bgPulseAlpha=0;
+  practiceCheckpoints=[]; lastCpElapsed=0; respawnInvincibleUntil=0;
   prevNow=startMs=performance.now();
   if(!keepDeaths){trainingDeaths=0;trainingTotalStartMs=performance.now();}
 }
@@ -1145,19 +2145,43 @@ function explode(px,py,col){
     particles.push({x:px,y:py,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.2,
       life:1,decay:.015+Math.random()*.022,r:2+Math.random()*5,col});}
 }
+function makeCpSnapshot(){
+  return {playerWX,playerY,elapsed,trainingDeaths,
+    runtimeSpeedMul,runtimeAngleMul,runtimeGapMul,
+    spiderState,gravityDir,shipVel:shipVel||0,
+    triggeredPortals:new Set(triggeredPortals),
+    triggeredEffects:new Set(triggeredEffects)};
+}
+function placeCheckpoint(){
+  if(state!=='playing'||!practiceMode)return;
+  // Si déjà un checkpoint à moins de 2% du niveau → on le retire
+  const NEAR=endWallWX*0.02;
+  const idx=practiceCheckpoints.findIndex(c=>Math.abs(c.playerWX-playerWX)<NEAR);
+  if(idx>=0){ practiceCheckpoints.splice(idx,1); }
+  else { practiceCheckpoints.push(makeCpSnapshot()); practiceCheckpoints.sort((a,b)=>a.playerWX-b.playerWX); }
+}
 function die(){
   if(state!=='playing')return;
-  if(elapsed<1.75){hitFlash=1;return;} // invincible 1.75s
+  if(elapsed<1.75){hitFlash=1;return;}
   const now=performance.now();
-  if(now-lastDeathMs<333)return; // cooldown 0.333s entre chaque mort
+  if(now<respawnInvincibleUntil)return; // invincible après respawn checkpoint
+  if(now-lastDeathMs<333)return;
   lastDeathMs=now;
-  hitFlash=1;trainingDeaths++;
-  deathPulse=1;
-  // Assistance progressive : chaque mort élargit un peu le couloir pour le
-  // reste de la run (plafonnée pour ne jamais devenir trivial) — désactivable.
-  {
+  hitFlash=1;trainingDeaths++;deathPulse=1;
+  if(practiceMode&&practiceCheckpoints.length){
+    const cp=[...practiceCheckpoints].reverse().find(c=>c.playerWX<=playerWX)||practiceCheckpoints[0];
+    playerWX=cp.playerWX;playerY=cp.playerY;
+    elapsed=cp.elapsed;startMs=performance.now()-cp.elapsed*1000;prevNow=performance.now();
+    runtimeSpeedMul=cp.runtimeSpeedMul;runtimeAngleMul=cp.runtimeAngleMul;runtimeGapMul=cp.runtimeGapMul;
+    spiderState=cp.spiderState;gravityDir=cp.gravityDir;shipVel=cp.shipVel;
+    triggeredPortals=new Set(cp.triggeredPortals);
+    triggeredEffects=new Set(cp.triggeredEffects);
+    trail=[];jumpQueued=false;upHeld=false;downHeld=false;
+    respawnInvincibleUntil=performance.now()+1000;
     fillCorridor(diff);
+    return;
   }
+  {fillCorridor(diff);}
 }
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
@@ -1188,6 +2212,19 @@ function update(now){
   // à une position infinitésimalement différente à chaque frame et semblent
   // "trembler" à l'écran (anti-aliasing + halo qui scintille en sous-pixel).
   playerWX+=cfg.speed*runtimeSpeedMul*dt;cameraX=Math.round(playerWX-PLAYER_SX);
+  // Mode tracé : enregistrer la position du joueur dans editTraj
+  if(traceRecordMode&&traceEditTraj&&activeCustomLevel){
+    const frac=(playerWX-cadenceEaseWX)/activeCustomLevel.mainLen;
+    if(frac>=traceFromFrac&&frac<=traceToFrac){
+      const idx=Math.round(frac*(traceEditTraj.length-1));
+      if(idx>=0&&idx<traceEditTraj.length) traceEditTraj[idx]=playerY;
+    }
+    if(frac>traceToFrac){ // zone terminée → retour éditeur
+      traceRecordMode=false;
+      openCustomEditor(traceEditingLevel,editIsNew);
+      traceEditTraj=null;traceEditingLevel=null;
+    }
+  }
   // "portails" : modifient temporairement la vitesse verticale max du joueur
   // tant qu'il traverse leur zone.
   const vyNow=cfg.vy*runtimeSpeedMul*runtimeAngleMul*vyMulAt(playerWX);
@@ -1243,16 +2280,22 @@ function update(now){
   // sans lui ajouter de vitesse — juste assez pour ne jamais traverser ni
   // rester figé "dans" le mur.
   const inertial=mode==='ship'||mode==='swing';
+  const nokill=(()=>{
+    const segs=activeCustomLevel?.noKillSegs;
+    if(!segs||!segs.length)return false;
+    const f=(playerWX-cadenceEaseWX)/(activeCustomLevel.mainLen||1);
+    return segs.some(s=>f>=s.wx0&&f<=s.wx1);
+  })();
   if(noclipEnabled){
     // Traverser les murs : aucune collision, aucune mort.
   }else if(playerY-PLAYER_R<top){
     playerY=top+PLAYER_R;
     if(inertial)shipVel=Math.max(0,shipVel);
-    die();
+    if(!nokill)die();
   }else if(playerY+PLAYER_R>bot){
     playerY=bot-PLAYER_R;
     if(inertial)shipVel=Math.min(0,shipVel);
-    die();
+    if(!nokill)die();
   }
   // Piques ajoutés via l'éditeur de partie créée : hasard supplémentaire dans
   // une bande (haut/milieu/bas) du tunnel à une position donnée du niveau.
@@ -1277,6 +2320,24 @@ function update(now){
       fillCorridor(diff);
     });
   }
+  // Effets visuels des niveaux créés
+  if(activeCustomLevel&&activeCustomLevel.effects&&activeCustomLevel.effects.length){
+    const now3=performance.now();
+    activeCustomLevel.effects.forEach((e,i)=>{
+      if(triggeredEffects.has(i))return;
+      const ewx=cadenceEaseWX+e.wx*activeCustomLevel.mainLen;
+      if(playerWX>=ewx){triggeredEffects.add(i);triggerEffect(e);}
+    });
+  }
+  // Mise à jour shake/flash/text/bgpulse
+  const nowFx=performance.now();
+  if(nowFx<screenShakeUntil){
+    const t=(screenShakeUntil-nowFx)/(screenShakeUntil-screenShakeStart+1);
+    screenShakeX=0;
+    screenShakeY=(Math.random()-.5)*screenShakeIntensity*t*2;
+  }else{screenShakeX=0;screenShakeY=0;}
+  if(nowFx<flashUntil){flashAlpha=Math.max(0,(flashUntil-nowFx)/flashDur);}else{flashAlpha=0;}
+  if(nowFx<bgPulseUntil){bgPulseAlpha=Math.max(0,(bgPulseUntil-nowFx)/bgPulseDur);}else{bgPulseAlpha=0;}
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────────
@@ -1291,19 +2352,47 @@ function drawBg(){
 
 function drawWalls(){
   const col=DCFG[diff].col,wall=THEMES[themeIdx].wall,step=4;
-  cx.beginPath();cx.moveTo(-step,-1);
-  for(let sx=-step;sx<=W+step;sx+=step)cx.lineTo(sx,getCorridor(cameraX+sx).top);
-  cx.lineTo(W+step,-1);cx.closePath();cx.fillStyle=wall;cx.fill();
-  cx.beginPath();cx.moveTo(-step,H+1);
-  for(let sx=-step;sx<=W+step;sx+=step)cx.lineTo(sx,getCorridor(cameraX+sx).bot);
-  cx.lineTo(W+step,H+1);cx.closePath();cx.fillStyle=wall;cx.fill();
+  const segs=activeCustomLevel?.invisSegs;
+  const mainLen=activeCustomLevel?.mainLen||1;
+  function isInvis(wx){
+    if(!segs||!segs.length)return false;
+    const f=(wx-cadenceEaseWX)/mainLen;
+    return segs.some(s=>f>=s.wx0&&f<=s.wx1);
+  }
+  // fills top
+  let open=false;
+  for(let sx=-step;sx<=W+step;sx+=step){
+    const wx=cameraX+sx;
+    if(isInvis(wx)){if(open){cx.lineTo(sx,-1);cx.closePath();cx.fillStyle=wall;cx.fill();open=false;}}
+    else{if(!open){cx.beginPath();cx.moveTo(sx,-1);open=true;}cx.lineTo(sx,getCorridor(wx).top);}
+  }
+  if(open){cx.lineTo(W+step,-1);cx.closePath();cx.fillStyle=wall;cx.fill();}
+  // fills bot
+  open=false;
+  for(let sx=-step;sx<=W+step;sx+=step){
+    const wx=cameraX+sx;
+    if(isInvis(wx)){if(open){cx.lineTo(sx,H+1);cx.closePath();cx.fillStyle=wall;cx.fill();open=false;}}
+    else{if(!open){cx.beginPath();cx.moveTo(sx,H+1);open=true;}cx.lineTo(sx,getCorridor(wx).bot);}
+  }
+  if(open){cx.lineTo(W+step,H+1);cx.closePath();cx.fillStyle=wall;cx.fill();}
+  // neon top
   cx.lineWidth=2.5;cx.strokeStyle=col;cx.shadowBlur=14;cx.shadowColor=col;
-  cx.beginPath();
-  for(let sx=0;sx<=W;sx+=step){const y=getCorridor(cameraX+sx).top;sx===0?cx.moveTo(sx,y):cx.lineTo(sx,y);}
-  cx.stroke();
-  cx.beginPath();
-  for(let sx=0;sx<=W;sx+=step){const y=getCorridor(cameraX+sx).bot;sx===0?cx.moveTo(sx,y):cx.lineTo(sx,y);}
-  cx.stroke();cx.shadowBlur=0;
+  open=false;
+  for(let sx=0;sx<=W;sx+=step){
+    const wx=cameraX+sx;
+    if(isInvis(wx)){if(open){cx.stroke();open=false;}}
+    else{const y=getCorridor(wx).top;if(!open){cx.beginPath();cx.moveTo(sx,y);open=true;}else cx.lineTo(sx,y);}
+  }
+  if(open)cx.stroke();
+  // neon bot
+  open=false;
+  for(let sx=0;sx<=W;sx+=step){
+    const wx=cameraX+sx;
+    if(isInvis(wx)){if(open){cx.stroke();open=false;}}
+    else{const y=getCorridor(wx).bot;if(!open){cx.beginPath();cx.moveTo(sx,y);open=true;}else cx.lineTo(sx,y);}
+  }
+  if(open)cx.stroke();
+  cx.shadowBlur=0;
   // End wall
   const endSX=endWallWX-cameraX;
   if(endSX>-60&&endSX<W+60){
@@ -1338,6 +2427,7 @@ function drawPortals(){
     const sx=pwx-cameraX;
     if(sx<-6||sx>W+6)return;
     const{top,bot}=getCorridor(pwx);
+    if(p.invisible)return;
     const col=triggeredPortals.has(i)?'#556677':'#33ddaa';
     cx.strokeStyle=col;cx.lineWidth=3;cx.shadowBlur=12;cx.shadowColor=col;
     cx.beginPath();cx.moveTo(sx,top);cx.lineTo(sx,bot);cx.stroke();
@@ -1366,6 +2456,14 @@ function drawPlayer(){
   cx.beginPath();cx.moveTo(0,-PLAYER_R-3);cx.lineTo(PLAYER_R+4,0);
   cx.lineTo(0,PLAYER_R+3);cx.lineTo(-PLAYER_R-4,0);cx.closePath();cx.fill();
   // Level color main body
+  // Halo d'invincibilité après respawn checkpoint
+  const invT = (respawnInvincibleUntil - performance.now()) / 1000;
+  if(invT > 0){
+    const pulse = 0.5 + 0.5*Math.sin(performance.now()/60);
+    cx.shadowBlur = 30 + pulse*20; cx.shadowColor = '#ffd166';
+    cx.strokeStyle = `rgba(255,209,102,${0.4+pulse*0.5})`; cx.lineWidth = 2.5;
+    cx.beginPath(); cx.arc(0,0,PLAYER_R+5+pulse*3,0,Math.PI*2); cx.stroke();
+  }
   cx.shadowBlur=18;cx.shadowColor=col;cx.fillStyle=col;
   cx.beginPath();cx.moveTo(0,-PLAYER_R-1);cx.lineTo(PLAYER_R+2,0);
   cx.lineTo(0,PLAYER_R+1);cx.lineTo(-PLAYER_R-2,0);cx.closePath();cx.fill();
@@ -1400,47 +2498,20 @@ function drawHUD(){
   if(deathPulse>0){cx.shadowBlur=10*deathPulse;cx.shadowColor='#ff3366';}
   cx.fillText(`morts : ${trainingDeaths}`,W/2,BAR_H+16);
   cx.restore();
+  // Record affiché à droite
+  const recStr=recordLabel(diff);
+  if(recStr!=='--'){
+    cx.save();cx.textAlign='right';cx.font='bold 11px monospace';
+    cx.fillStyle='#ffffff44';cx.fillText(`record : ${recStr}`,W-8,BAR_H+16);cx.restore();
+  }
+  if(practiceMode){
+    cx.textAlign='right';cx.font='bold 11px monospace';cx.fillStyle='#ffd16688';
+    const lastCp=[...practiceCheckpoints].reverse().find(c=>c.playerWX<=playerWX);
+    cx.fillText(lastCp?`★ CP — [C] placer/supp.`:'★ PRACTICE — [C] pour checkpoint',W-10,BAR_H+16);
+  }
   if(hitFlash>0){cx.fillStyle=`rgba(255,40,40,${hitFlash*.42})`;cx.fillRect(0,0,W,H);}
 }
 
-function miniMapEnvelope(cols){
-  // Pour chaque colonne, on prend le min(top) et max(bot) réels du corridor sur la
-  // plage couverte (et non un simple échantillonnage qui raterait les zigzags rapides).
-  const nIdx=Math.floor(endWallWX/SEG),idxPerCol=nIdx/cols;
-  const tops=new Float32Array(cols+1),bots=new Float32Array(cols+1);
-  for(let c=0;c<=cols;c++){
-    const i0=Math.max(0,Math.floor(c*idxPerCol)),i1=Math.min(nIdx,Math.ceil((c+1)*idxPerCol));
-    let mn=Infinity,mx=-Infinity;
-    for(let i=i0;i<=i1&&i*2+1<corridor.length;i++){
-      const t=corridor[i*2],b=corridor[i*2+1];
-      if(t<mn)mn=t;if(b>mx)mx=b;
-    }
-    if(mn===Infinity){const g=getCorridor(c*idxPerCol*SEG);mn=g.top;mx=g.bot;}
-    tops[c]=mn;bots[c]=mx;
-  }
-  return{tops,bots};
-}
-// Dessinée sur son propre canvas (#miniMapCv), en dehors de l'écran de jeu.
-function drawMiniMap(){
-  const MW=mcv.width,MHt=mcv.height;
-  mcx.clearRect(0,0,MW,MHt);
-  const col=DCFG[diff].col,MH=MHt/2-1,MY=MHt/2,MLEN=MW,MX0=0,pct=playerWX/endWallWX;
-  const cols=Math.round(MLEN);
-  const{tops,bots}=miniMapEnvelope(cols);
-  mcx.fillStyle='rgba(255,255,255,.06)';mcx.fillRect(MX0,MY-MH,MLEN,MH*2);
-  mcx.beginPath();
-  for(let c=0;c<=cols;c++){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(tops[c]/H)*(MH*2);c===0?mcx.moveTo(sx,sy):mcx.lineTo(sx,sy);}
-  for(let c=cols;c>=0;c--){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(bots[c]/H)*(MH*2);mcx.lineTo(sx,sy);}
-  mcx.closePath();mcx.fillStyle=col+'1e';mcx.fill();
-  mcx.strokeStyle=col+'55';mcx.lineWidth=1;
-  mcx.beginPath();
-  for(let c=0;c<=cols;c++){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(tops[c]/H)*(MH*2);c===0?mcx.moveTo(sx,sy):mcx.lineTo(sx,sy);}mcx.stroke();
-  mcx.beginPath();
-  for(let c=0;c<=cols;c++){const sx=MX0+(c/cols)*MLEN,sy=MY-MH+(bots[c]/H)*(MH*2);c===0?mcx.moveTo(sx,sy):mcx.lineTo(sx,sy);}mcx.stroke();
-  const pmx=MX0+Math.min(1,pct)*MLEN,pmy=MY-MH+(playerY/H)*(MH*2);
-  mcx.beginPath();mcx.arc(pmx,pmy,2.5,0,Math.PI*2);
-  mcx.fillStyle=col;mcx.shadowBlur=6;mcx.shadowColor=col;mcx.fill();mcx.shadowBlur=0;
-}
 
 function drawOverlay(title,line1,line2,col){
   const th=THEMES[themeIdx];
@@ -1553,14 +2624,25 @@ function loop(now){
   try{
     update(now);drawBg();
     if(state==='menu'){drawMenu();return;}
-    // Écran fixe : pas de caméra qui suit ou zoome, la vue ne bouge jamais.
+    cx.save();
+    if(screenShakeX||screenShakeY) cx.translate(screenShakeX,screenShakeY);
     drawWalls();drawPiques();drawPortals();drawParticles();
     if(state==='playing')drawPlayer();
+    cx.restore();
+    // Overlays effets
+    const nowR=performance.now();
+    if(bgPulseAlpha>0){cx.globalAlpha=bgPulseAlpha*.45;cx.fillStyle=bgPulseColor;cx.fillRect(0,0,W,H);cx.globalAlpha=1;}
+    if(flashAlpha>0){cx.globalAlpha=flashAlpha*.75;cx.fillStyle=flashColor;cx.fillRect(0,0,W,H);cx.globalAlpha=1;}
+    if(textEffectStr&&nowR<textEffectUntil){
+      const a=Math.min(1,(textEffectUntil-nowR)/400);
+      const fs=Math.round(30*textEffectScale);
+      cx.globalAlpha=a;cx.textAlign='center';cx.font=`bold ${fs}px Arial Black,Arial,sans-serif`;
+      cx.shadowBlur=24;cx.shadowColor=textEffectColor;cx.fillStyle=textEffectColor;
+      cx.fillText(textEffectStr,W/2,H/2-55);cx.shadowBlur=0;cx.globalAlpha=1;
+    }
     if(state==='playing'){drawHUD();drawMiniMap();}
-    if(state==='dead'){drawHUD();drawMiniMap();
-      drawOverlay('✗ MORT',`${elapsed.toFixed(1)}s survécu`,`${keyLabel(keyReset)} pour réessayer`,'#ff3366');}
-    if(state==='win'){drawHUD();drawMiniMap();
-      drawOverlay('✓ VICTOIRE !',`${DCFG[diff].name} — ${elapsed.toFixed(1)}s !`,
+    if(state==='dead'){drawHUD();      drawOverlay('✗ MORT',`${elapsed.toFixed(1)}s survécu`,`${keyLabel(keyReset)} pour réessayer`,'#ff3366');}
+    if(state==='win'){drawHUD();      drawOverlay('✓ VICTOIRE !',`${DCFG[diff].name} — ${elapsed.toFixed(1)}s !`,
         `${keyLabel(keyReset)} pour rejouer`,DCFG[diff].col);}
   }catch(e){console.error('Erreur d\'affichage (ignorée, le jeu continue) :',e);}
 }
@@ -1613,7 +2695,17 @@ document.addEventListener('keydown',e=>{
     }
     recordingKey=null;clearRecordingUI();return;}
   if(document.getElementById('settingsPanel').classList.contains('open'))return;
-  if(e.code==='Escape'){if(state!=='menu')goToMenu();return;}
+  if(e.code==='Escape'){
+    if(traceRecordMode&&traceEditingLevel){
+      traceRecordMode=false;
+      const lvl=traceEditingLevel;const isNew=editIsNew;
+      traceEditTraj=null;traceEditingLevel=null;
+      goToMenu();
+      openCustomEditor(lvl,isNew);
+      return;
+    }
+    if(state!=='menu')goToMenu();return;
+  }
   // Redémarrer équivaut aussi à Jouer : ça doit fonctionner même depuis le
   // menu, pas seulement en cours de partie.
   if(e.code===keyReset){startGame();return;}
@@ -1621,6 +2713,7 @@ document.addEventListener('keydown',e=>{
   if(e.code===keyQuit){goToMenu();return;}
   if(e.code===keyUp)schedule(()=>{upHeld=true;});
   if(e.code===keyDown)schedule(()=>{downHeld=true;});
+  if(e.code==='KeyC'){placeCheckpoint();return;}
   if(state!=='playing')return;
   if(/^F\d+$/.test(e.code))return;
   e.preventDefault();
@@ -1705,88 +2798,13 @@ document.getElementById('randomLevelsToggle').addEventListener('click',()=>{
   saveSettings();
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
 });
-document.getElementById('gapMinus').addEventListener('click',()=>{
-  // Pas fixe de 10 points de pourcentage (ex: 100% → 90% → 80%...).
-  gapStartMul=Math.max(0.01,Math.round((gapStartMul*100-10))/100);
-  applySettingsToUI();saveSettings();
-  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+document.getElementById('practiceModeToggle').addEventListener('click',()=>{
+  practiceMode=!practiceMode; applySettingsToUI(); saveSettings();
 });
-document.getElementById('gapPlus').addEventListener('click',()=>{
-  gapStartMul=Math.min(10,Math.round((gapStartMul*100+10))/100);
-  applySettingsToUI();saveSettings();
-  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
-});
-const gapPctInput=document.getElementById('gapPctInput');
-gapPctInput.addEventListener('keydown',e=>{
-  e.stopPropagation();
-  // Seuls les chiffres (+ touches de navigation/édition) sont autorisés.
-  if(/^\d$/.test(e.key))return;
-  const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter','Home','End'];
-  if(!allowed.includes(e.key))e.preventDefault();
-  if(e.key==='Enter')gapPctInput.blur();
-});
-gapPctInput.addEventListener('input',()=>{
-  gapPctInput.value=gapPctInput.value.replace(/\D/g,'').slice(0,4);
-});
-gapPctInput.addEventListener('blur',()=>{
-  let v=parseInt(gapPctInput.value,10);
-  if(!Number.isFinite(v))v=100;
-  v=Math.max(1,Math.min(1000,v));
-  gapStartMul=v/100;
-  applySettingsToUI();saveSettings();
-  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
-});
-document.getElementById('speedMinus').addEventListener('click',()=>{
-  speedMul=Math.max(0.5,Math.round((speedMul*100-10))/100);
-  applySettingsToUI();saveSettings();
-});
-document.getElementById('speedPlus').addEventListener('click',()=>{
-  speedMul=Math.min(2,Math.round((speedMul*100+10))/100);
-  applySettingsToUI();saveSettings();
-});
-const speedPctInput=document.getElementById('speedPctInput');
-speedPctInput.addEventListener('keydown',e=>{
-  e.stopPropagation();
-  if(/^\d$/.test(e.key))return;
-  const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter','Home','End'];
-  if(!allowed.includes(e.key))e.preventDefault();
-  if(e.key==='Enter')speedPctInput.blur();
-});
-speedPctInput.addEventListener('input',()=>{
-  speedPctInput.value=speedPctInput.value.replace(/\D/g,'').slice(0,3);
-});
-speedPctInput.addEventListener('blur',()=>{
-  let v=parseInt(speedPctInput.value,10);
-  if(!Number.isFinite(v))v=100;
-  v=Math.max(50,Math.min(200,v));
-  speedMul=v/100;
-  applySettingsToUI();saveSettings();
-});
-document.getElementById('angleMinus').addEventListener('click',()=>{
-  angleMul=Math.max(0.5,Math.round((angleMul*100-10))/100);
-  applySettingsToUI();saveSettings();
-});
-document.getElementById('anglePlus').addEventListener('click',()=>{
-  angleMul=Math.min(2,Math.round((angleMul*100+10))/100);
-  applySettingsToUI();saveSettings();
-});
-const anglePctInput=document.getElementById('anglePctInput');
-anglePctInput.addEventListener('keydown',e=>{
-  e.stopPropagation();
-  if(/^\d$/.test(e.key))return;
-  const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Enter','Home','End'];
-  if(!allowed.includes(e.key))e.preventDefault();
-  if(e.key==='Enter')anglePctInput.blur();
-});
-anglePctInput.addEventListener('input',()=>{
-  anglePctInput.value=anglePctInput.value.replace(/\D/g,'').slice(0,3);
-});
-anglePctInput.addEventListener('blur',()=>{
-  let v=parseInt(anglePctInput.value,10);
-  if(!Number.isFinite(v))v=100;
-  v=Math.max(50,Math.min(200,v));
-  angleMul=v/100;
-  applySettingsToUI();saveSettings();
+document.getElementById('checkpointIntervalInput').addEventListener('input',()=>{
+  const v=parseInt(document.getElementById('checkpointIntervalInput').value,10);
+  if(isFinite(v)&&v>=3) checkpointInterval=v;
+  saveSettings();
 });
 document.getElementById('play').style.background=DCFG[diff].col;
 document.getElementById('play').addEventListener('click',startGame);
