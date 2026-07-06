@@ -451,11 +451,24 @@ function generateLevelName(){
   const num=Math.floor(Math.random()*900)+100;
   return `${a} ${n} ${num}`;
 }
-function levelToCode(lvl){
-  try{return btoa(unescape(encodeURIComponent(JSON.stringify(lvl))));}catch(_){return null;}
+// Stockage en ligne : jsonstore.io — clé courte 5 caractères partageable
+const _STORE = 'https://www.jsonstore.io/d8f4e2a1b7c345908f2d1e6a3c8b5d9f';
+function _rndCode(){ return Math.random().toString(36).slice(2,7).toUpperCase(); }
+async function saveLevelOnline(lvl){
+  const code=_rndCode();
+  const r=await fetch(`${_STORE}/${code}`,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(lvl)
+  });
+  if(!r.ok) throw new Error('Erreur serveur');
+  return code;
 }
-function codeToLevel(code){
-  try{return JSON.parse(decodeURIComponent(escape(atob(code.trim()))));}catch(_){return null;}
+async function loadLevelOnline(code){
+  const r=await fetch(`${_STORE}/${code.trim().toUpperCase()}`);
+  if(!r.ok) throw new Error('Code introuvable');
+  const j=await r.json();
+  if(!j.result||!j.result.traj) throw new Error('Données invalides');
+  return j.result;
 }
 function saveCustomLevels(){
   try{localStorage.setItem('wave_custom_levels',JSON.stringify(customLevels));}catch(_){}
@@ -499,15 +512,20 @@ function renderCustomList(){
     editBtn.className='kb';editBtn.textContent='✎ Modifier';
     editBtn.addEventListener('click',()=>openCustomEditor(lvl));
     const shareBtn=document.createElement('button');
-    shareBtn.className='kb';shareBtn.textContent='📋';shareBtn.title='Copier le code de partage';
-    shareBtn.addEventListener('click',()=>{
-      const code=levelToCode(lvl);
-      if(!code){alert('Erreur export');return;}
-      navigator.clipboard.writeText(code).then(()=>{
-        shareBtn.textContent='✓';setTimeout(()=>shareBtn.textContent='📋',1500);
-      }).catch(()=>{
-        prompt('Copie ce code pour partager le niveau :',code);
-      });
+    shareBtn.className='kb';shareBtn.textContent='📤 Partager';shareBtn.title='Générer un code court de partage';
+    shareBtn.addEventListener('click',async()=>{
+      shareBtn.textContent='⏳…';shareBtn.disabled=true;
+      try{
+        const code=await saveLevelOnline(lvl);
+        lvl.shareCode=code; saveCustomLevels();
+        await navigator.clipboard.writeText(code).catch(()=>{});
+        shareBtn.textContent='✓ Copié!';
+        setTimeout(()=>{shareBtn.textContent='📤 Partager';shareBtn.disabled=false;},2500);
+        alert(`Code de partage : ${code}\n\nIl a été copié dans le presse-papier.\nDonne ce code à tes amis — ils peuvent l'entrer dans "Importer un code".`);
+      }catch(e){
+        shareBtn.textContent='📤 Partager';shareBtn.disabled=false;
+        alert('Impossible de générer le code : '+e.message);
+      }
     });
     const delBtn=document.createElement('button');
     delBtn.className='kb';delBtn.textContent='✕';
@@ -523,18 +541,26 @@ function renderCustomList(){
   const importRow=document.createElement('div');
   importRow.style.cssText='display:flex;gap:6px;margin-top:10px;';
   const importInput=document.createElement('input');
-  importInput.type='text';importInput.placeholder='Coller un code reçu…';
+  importInput.type='text';importInput.placeholder='Code 5 lettres (ex: AB3KZ)';importInput.maxLength=5;importInput.style.textTransform='uppercase';
   importInput.style.cssText='flex:1;background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.75em monospace;padding:4px 8px;';
   const importBtn=document.createElement('button');
   importBtn.className='kb';importBtn.textContent='📥 Importer';
-  importBtn.addEventListener('click',()=>{
-    const lvl=codeToLevel(importInput.value);
-    if(!lvl||!lvl.traj){alert('Code invalide');return;}
-    lvl.id=Date.now()+'-'+Math.random().toString(36).slice(2);
-    lvl.bestDeaths=undefined;
-    customLevels.push(lvl);
-    saveCustomLevels();renderCustomList();
-    importInput.value='';
+  importBtn.addEventListener('click',async()=>{
+    const code=importInput.value.trim();
+    if(!code){return;}
+    importBtn.textContent='⏳…';importBtn.disabled=true;
+    try{
+      const lvl=await loadLevelOnline(code);
+      lvl.id=Date.now()+'-'+Math.random().toString(36).slice(2);
+      lvl.bestDeaths=undefined;
+      customLevels.push(lvl);
+      saveCustomLevels();renderCustomList();
+      importInput.value='';
+    }catch(e){
+      alert('Code introuvable ou invalide : '+e.message);
+    }finally{
+      importBtn.textContent='📥 Importer';importBtn.disabled=false;
+    }
   });
   importRow.append(importInput,importBtn);
   list.appendChild(importRow);
