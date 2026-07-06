@@ -314,7 +314,7 @@ const PAD_TILE       = SIZE * 1.6;
 const HERO_MAXHP     = 50;
 const HERO_REGEN     = 0.2;     // PV/s
 const WAVE_INTERVAL  = 20;      // s entre vagues
-const WAVE_ENEMY_BASE= 20;      // ennemis par vague (avant ajouts d'Enzo)
+const WAVE_ENEMY_BASE= 10;      // ennemis a la vague 1, +1 par vague suivante (avant ajouts d'Enzo)
 const MATCH_DURATION = 900;     // 15 min
 const GUARD_INIT     = 3;
 const SPEEDS         = [1, 3];
@@ -379,7 +379,7 @@ const I18N = {
     dailyMapInfo:'Carte du jour — {n} cases',
     lastGame:'Derniere partie',
     rulesText:'<b>But</b> : proteger le heros contre les monstres en placant des gardes. Score = points accumules en 15 minutes.<br><br>'+
-      '<b>Vagues</b> : une nouvelle vague toutes les 20 secondes. Chaque vague fait apparaitre au moins 20 ennemis, repartis regulierement sur les 20 secondes (pas tous d\'un coup).<br><br>'+
+      '<b>Vagues</b> : une nouvelle vague toutes les 20 secondes. La 1ere vague fait apparaitre 10 ennemis, puis +1 ennemi a chaque nouvelle vague, repartis regulierement sur les 20 secondes (pas tous d\'un coup).<br><br>'+
       '<b>Types d\'ennemis</b> (menace equivalente, juste une specialite differente) : Rapide (+50% vitesse, bleu) · PV (+40% vie, jaune) · Degats (+50% degats, rouge).<br><br>'+
       '<b>Ciblage</b> : les ennemis visent toujours la cible la plus proche qu\'ils peuvent attaquer (heros, allie invoque...) et reevaluent leur trajet des qu\'une cible plus proche apparait.<br><br>'+
       '<b>Heros</b> : regenere 0,2 PV/s. 3 gardes gratuits a placer au debut de chaque partie.<br><br>'+
@@ -437,7 +437,7 @@ const I18N = {
     dailyMapInfo:'Daily map — {n} tiles',
     lastGame:'Last game',
     rulesText:'<b>Goal</b>: protect your hero from monsters by placing guards. Score = points earned in 15 minutes.<br><br>'+
-      '<b>Waves</b>: a new wave every 20 seconds. Each wave spawns at least 20 enemies, spread evenly across the 20 seconds (not all at once).<br><br>'+
+      '<b>Waves</b>: a new wave every 20 seconds. The 1st wave spawns 10 enemies, then +1 enemy each new wave, spread evenly across the 20 seconds (not all at once).<br><br>'+
       '<b>Enemy types</b> (equal threat level, just a different specialty): Fast (+50% speed, blue) · HP (+40% health, yellow) · Damage (+50% damage, red).<br><br>'+
       '<b>Targeting</b>: enemies always aim for the closest thing they can attack (hero, summoned ally...) and re-evaluate their path as soon as a closer target appears.<br><br>'+
       '<b>Hero</b>: regens 0.2 HP/s. 3 free guards to place at the start of each game.<br><br>'+
@@ -826,7 +826,7 @@ function startWave(){
     waveSpawnTotal=MONSTER_TYPES.reduce((s,t)=>s+enzoRemainingThisWave[t],0);
     updateEnzoDisplay();
   } else {
-    waveSpawnTotal=WAVE_ENEMY_BASE;
+    waveSpawnTotal=WAVE_ENEMY_BASE+(waveNum-1);
   }
   pickRandomSpawnPoints();
   document.getElementById('wave').textContent=waveNum;
