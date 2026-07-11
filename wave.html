@@ -119,7 +119,6 @@ body.ingame #hint { display:none; }
     <button class="mb on" data-m="wave">WAVE</button>
     <button id="cadenceToggle">⏱ CADENCE</button>
     <button id="customLevelsBtn">📁 PARTIES CRÉÉES</button>
-    <button id="rulesBtn">📜 RÈGLES</button>
     <button id="settingsBtn">⚙ PARAMÈTRES</button>
     <button id="play">▶ JOUER</button>
   </div>
@@ -169,14 +168,10 @@ body.ingame #hint { display:none; }
       <button class="tb" id="randomLevelsToggle">Désactivé</button>
     </div>
     <div class="srow">
-      <label>Mode Practice :</label>
-      <button class="tb" id="practiceModeToggle">Désactivé</button>
+      <label>Mode Entraînement :</label>
+      <button class="tb" id="trainingModeToggle">Désactivé</button>
     </div>
-    <div class="srow" id="practiceIntervalRow" style="display:none;">
-      <label>Checkpoint toutes les :</label>
-      <input id="checkpointIntervalInput" type="text" inputmode="numeric" maxlength="3" value="10" style="background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.82em monospace;padding:5px 4px;width:46px;text-align:center;outline:none;">
-      <span style="color:#aaa;font:.82em monospace;">s</span>
-    </div>
+    <div id="trainingModeHint" style="display:none;color:#556677;font:.72em monospace;margin-bottom:8px;">Clic sur la barre = téléportation · ↑↓ en mode Double</div>
     <hr id="settingsSep">
     <div class="srow">
       <label>Reset niveau :</label>
@@ -186,80 +181,10 @@ body.ingame #hint { display:none; }
       <label>Quitter niveau :</label>
       <button class="kb" id="bindQuit">Q</button>
     </div>
-    <div class="srow">
-      <label>Monter (Double) :</label>
-      <button class="kb" id="bindUp">↑</button>
-    </div>
-    <div class="srow">
-      <label>Descendre (Double) :</label>
-      <button class="kb" id="bindDown">↓</button>
-    </div>
     <button id="closeSettings">Fermer</button>
   </div>
 </div>
 
-<div id="rulesPanel">
-  <div id="rulesBox">
-    <h2>📜 RÈGLES</h2>
-    <h3>Score</h3>
-    <ul>
-      <li>Chaque seconde passée dans le niveau rapporte <b>30 − (nombre de morts)</b> points.</li>
-      <li>Au-delà de 30 morts, chaque seconde fait donc <b>perdre</b> des points.</li>
-      <li>Le total de la run peut devenir négatif.</li>
-      <li>Le record sauvegardé est le <b>score le plus haut</b> atteint pour chaque niveau et chaque mode — et séparément <b>avec ou sans l'option Cadence</b> (2 catégories distinctes).</li>
-      <li>Un record n'est compté que si le tunnel a démarré à <b>100% de sa taille prévue</b> et que l'option <b>"Traverser les murs" était désactivée</b>.</li>
-    </ul>
-    <h3>Modes de jeu (1 à 5, renommables en cliquant sur leur bouton actif)</h3>
-    <ul>
-      <li><b>1</b> — Wave : maintenir fait monter en ligne droite, relâcher fait descendre.</li>
-      <li><b>2</b> — Swing : chaque appui inverse le sens de la gravité.</li>
-      <li><b>3</b> — Vaisseau : maintenir pousse vers le haut avec inertie, relâcher laisse retomber.</li>
-      <li><b>4</b> — Double : sans rien faire on avance tout droit ; la touche "Monter" fait monter, la touche "Descendre" fait descendre (configurables dans les Paramètres).</li>
-      <li><b>5</b> — Araignée : aucun mouvement progressif, chaque clic fait basculer instantanément du plafond au sol du tunnel (ou l'inverse), comme dans Geometry Dash.</li>
-    </ul>
-    <h3>Vitesse et angle de déplacement</h3>
-    <ul>
-      <li>Vitesse perso (50%-200%) : règle la vitesse de défilement réelle du personnage. L'augmenter agrandit aussi l'angle de déplacement dans la même proportion.</li>
-      <li>Angle déplacement (50%-200%) : règle en plus, indépendamment de la vitesse, l'amplitude des mouvements verticaux.</li>
-    </ul>
-    <h3>Option Cadence (bouton dans le menu principal)</h3>
-    <ul>
-      <li>Le jeu enregistre d'abord une trajectoire en cliquant tout seul, aléatoirement (au plus 5 clics/s), avec la physique du mode actif.</li>
-      <li>Le tunnel du niveau trace ensuite EXACTEMENT cette trajectoire enregistrée.</li>
-      <li>Pour rester dedans, il faut reproduire les mêmes appuis, au même moment, à environ <b>20 millisecondes</b> près.</li>
-      <li>Chaque mode de jeu a sa propre physique, donc sa propre trajectoire enregistrée : le niveau Cadence est différent pour chaque mode.</li>
-    </ul>
-    <h3>Option Traverser les murs</h3>
-    <ul>
-      <li>Désactive toute collision avec les murs : tu ne meurs plus jamais en les touchant.</li>
-    </ul>
-    <h3>Épaisseur tunnel (départ)</h3>
-    <ul>
-      <li>Multiplie la largeur de base du tunnel de chaque niveau, de 1% à 1000% (pas multiplicatif via les boutons − / +).</li>
-      <li>S'applique aussi aux niveaux générés avec l'option Cadence.</li>
-    </ul>
-    <h3>Agrandissement via mort</h3>
-    <ul>
-      <li>Par défaut, chaque mort élargit légèrement le couloir pour le reste de la run (assistance progressive, plafonnée). Désactivable dans les Paramètres.</li>
-    </ul>
-    <h3>Niveaux aléatoires</h3>
-    <ul>
-      <li>Par défaut, le Défi Aléatoire utilise toujours la même map (déterministe). Active cette option pour qu'une disposition différente d'obstacles soit tirée à chaque partie.</li>
-      <li>N'affecte que le Défi Aléatoire (sans l'option Cadence) — les niveaux Cadence et les parties créées restent toujours identiques.</li>
-    </ul>
-    <h3>Option Personnalisable</h3>
-    <ul>
-      <li>Active-la puis lance une partie : le niveau est entièrement ouvert (aucun obstacle) pendant toute sa durée, et le jeu enregistre exactement tes déplacements/appuis.</li>
-      <li>À la fin de la partie enregistrée, un niveau est créé à partir de cette trajectoire et l'option se désactive automatiquement.</li>
-      <li>Le niveau créé apparaît dans "📁 PARTIES CRÉÉES" (menu principal) : tu peux le renommer en cliquant sur son nom, le jouer ou le supprimer.</li>
-      <li>En le jouant, le tunnel trace exactement la trajectoire enregistrée : il faut reproduire les mêmes appuis au même moment (comme l'option Cadence) pour rester dedans.</li>
-      <li>Chaque partie créée a sa PROPRE table de records, séparée des autres niveaux et modes.</li>
-      <li>Le bouton "✎ Modifier" permet de déplacer le tracé du tunnel et d'ajouter des piques (obstacles) le long du niveau. Toute modification réinitialise le record de ce niveau.</li>
-      <li>On peut aussi y ajouter des "portails modificateurs" : dès qu'on les franchit, ils changent la vitesse, l'angle de déplacement et l'épaisseur du tunnel pour le reste de la partie en cours (la prochaine partie repart toujours des Paramètres).</li>
-    </ul>
-    <button id="closeRules">Fermer</button>
-  </div>
-</div>
 
 <div id="customPanel">
   <div id="customBox">
@@ -288,6 +213,7 @@ body.ingame #hint { display:none; }
       <button class="editTool" data-tool="portal">🌀 Portail</button>
       <button class="editTool" data-tool="effect">✨ Effet</button>
       <button class="editTool" id="editUndo" style="border-color:#ffd16644;color:#ffd166aa;">↩ Annuler</button>
+      <button class="editTool" id="editDuplicateBtn" style="border-color:#88ff8844;color:#88ff88aa;">⧉ Dupliquer</button>
     </div>
     <!-- Canvas principal -->
     <canvas id="editCanvas" height="400" style="width:100%;flex:1;min-height:100px;background:#04040c;border:2px solid #1a2535;border-radius:8px;cursor:crosshair;touch-action:none;display:block;"></canvas>
@@ -340,8 +266,7 @@ let speedMul = 1; // vitesse de déplacement du personnage (50%-200%) — augmen
 let angleMul = 1; // pourcentage de taille d'angle des déplacements (50%-200%), indépendant de la vitesse
 let gapStartMul = 1; // épaisseur du tunnel au démarrage des parties (1%-1000%), aussi en mode Cadence
 let randomLevelsEnabled = false; // si activé, les niveaux du Défi Aléatoire changent à chaque partie au lieu d'être toujours la même map fixe
-let practiceMode = false;
-let checkpointInterval = 10; // secondes
+let trainingMode = false;
 // ─── PARTIES PERSONNALISABLES ───────────────────────────────────────────────
 // Quand activée, la prochaine partie est jouée sur un terrain entièrement
 // ouvert (aucun obstacle) pendant toute sa durée, et chaque déplacement/appui
@@ -362,7 +287,7 @@ let modeNames = {wave:'1',swing:'2',ship:'3',twokey:'4',spider:'5'}; // noms des
 function schedule(fn){ fn(); }
 
 // ─── KEYBINDINGS ──────────────────────────────────────────────────────────────
-let keyReset = 'KeyR', keyQuit = 'KeyQ', keyUp = 'ArrowUp', keyDown = 'ArrowDown', recordingKey = null;
+let keyReset = 'KeyR', keyQuit = 'KeyQ', recordingKey = null;
 function keyLabel(code) {
   if (code.startsWith('Key'))   return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
@@ -375,15 +300,13 @@ function keyLabel(code) {
 function syncKeyLabels() {
   document.getElementById('bindReset').textContent=keyLabel(keyReset);
   document.getElementById('bindQuit').textContent =keyLabel(keyQuit);
-  document.getElementById('bindUp').textContent   =keyLabel(keyUp);
-  document.getElementById('bindDown').textContent =keyLabel(keyDown);
 }
 
 // ─── SETTINGS PERSISTENCE ─────────────────────────────────────────────────────
 function saveSettings() {
   // le site doit rester jouable même si le stockage est indisponible (navigation
   // privée, quota plein, etc.) — on perd juste la sauvegarde, pas l'accès au jeu.
-  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,keyUp,keyDown,trailEnabled,cadenceEnabled,noclipEnabled,gapStartMul,randomLevelsEnabled,personnalisableEnabled,speedMul,angleMul,modeNames,practiceMode,checkpointInterval}));}catch(_){}
+  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,trailEnabled,cadenceEnabled,noclipEnabled,gapStartMul,randomLevelsEnabled,personnalisableEnabled,speedMul,angleMul,modeNames,trainingMode}));}catch(_){}
 }
 function loadSettings() {
   try {
@@ -393,8 +316,6 @@ function loadSettings() {
     if(typeof s.themeIdx==='number'&&s.themeIdx>=0&&s.themeIdx<5)themeIdx=s.themeIdx;
     if(typeof s.keyReset==='string')keyReset=s.keyReset;
     if(typeof s.keyQuit==='string') keyQuit =s.keyQuit;
-    if(typeof s.keyUp==='string')   keyUp  =s.keyUp;
-    if(typeof s.keyDown==='string') keyDown=s.keyDown;
     if(typeof s.trailEnabled==='boolean')trailEnabled=s.trailEnabled;
     if(typeof s.cadenceEnabled==='boolean')cadenceEnabled=s.cadenceEnabled;
     if(typeof s.noclipEnabled==='boolean')noclipEnabled=s.noclipEnabled;
@@ -406,8 +327,7 @@ function loadSettings() {
     if(s.modeNames&&typeof s.modeNames==='object'){
       MODES.forEach(m=>{if(typeof s.modeNames[m]==='string'&&s.modeNames[m].trim())modeNames[m]=s.modeNames[m].trim().slice(0,12);});
     }
-    if(typeof s.practiceMode==='boolean')practiceMode=s.practiceMode;
-    if(typeof s.checkpointInterval==='number'&&s.checkpointInterval>=3)checkpointInterval=s.checkpointInterval;
+    if(typeof s.trainingMode==='boolean')trainingMode=s.trainingMode;
   }catch(_){}
 }
 function applySettingsToUI() {
@@ -428,11 +348,10 @@ function applySettingsToUI() {
   const randomLevelsBtn=document.getElementById('randomLevelsToggle');
   randomLevelsBtn.classList.toggle('on',randomLevelsEnabled);
   randomLevelsBtn.textContent=randomLevelsEnabled?'Activé':'Désactivé';
-  const pmBtn=document.getElementById('practiceModeToggle');
-  pmBtn.classList.toggle('on',practiceMode);
-  pmBtn.textContent=practiceMode?'Activé':'Désactivé';
-  document.getElementById('practiceIntervalRow').style.display=practiceMode?'':'none';
-  document.getElementById('checkpointIntervalInput').value=checkpointInterval;
+  const tmBtn=document.getElementById('trainingModeToggle');
+  tmBtn.classList.toggle('on',trainingMode);
+  tmBtn.textContent=trainingMode?'Activé':'Désactivé';
+  document.getElementById('trainingModeHint').style.display=trainingMode?'':'none';
   document.querySelectorAll('.tb[data-t]').forEach(b=>{
     const on=parseInt(b.dataset.t)===themeIdx;
     b.classList.toggle('on',on);
@@ -511,29 +430,14 @@ function renderCustomList(){
     const editBtn=document.createElement('button');
     editBtn.className='kb';editBtn.textContent='✎ Modifier';
     editBtn.addEventListener('click',()=>openCustomEditor(lvl));
-    const shareBtn=document.createElement('button');
-    shareBtn.className='kb';shareBtn.textContent='📤 Partager';shareBtn.title='Générer un code court de partage';
-    shareBtn.addEventListener('click',async()=>{
-      shareBtn.textContent='⏳…';shareBtn.disabled=true;
-      try{
-        const code=await saveLevelOnline(lvl);
-        lvl.shareCode=code; saveCustomLevels();
-        await navigator.clipboard.writeText(code).catch(()=>{});
-        shareBtn.textContent='✓ Copié!';
-        setTimeout(()=>{shareBtn.textContent='📤 Partager';shareBtn.disabled=false;},2500);
-        alert(`Code de partage : ${code}\n\nIl a été copié dans le presse-papier.\nDonne ce code à tes amis — ils peuvent l'entrer dans "Importer un code".`);
-      }catch(e){
-        shareBtn.textContent='📤 Partager';shareBtn.disabled=false;
-        alert('Impossible de générer le code : '+e.message);
-      }
-    });
     const delBtn=document.createElement('button');
     delBtn.className='kb';delBtn.textContent='✕';
     delBtn.addEventListener('click',()=>{
+      if(!confirm(`Supprimer "${lvl.name}" ?`))return;
       customLevels=customLevels.filter(l=>l.id!==lvl.id);
       saveCustomLevels();renderCustomList();
     });
-    row.append(nameCol,playBtn,editBtn,shareBtn,delBtn);
+    row.append(nameCol,playBtn,editBtn,delBtn);
     list.appendChild(row);
   });
 
@@ -863,6 +767,43 @@ function editUndo(){
   editInvisSegs=(snap.invisSegs||[]).map(s=>({...s}));
   editNoKillSegs=(snap.noKillSegs||[]).map(s=>({...s}));
   editSelected=null;editSegSel=null;showEditProps();drawEditCanvas();
+}
+function editDuplicate(){
+  const OFFSET=0.02;
+  if(editMultiSelect.length>1){
+    editSnapshot();
+    const newSels=[];
+    for(const sel of editMultiSelect){
+      let newIdx;
+      if(sel.type==='pique'&&editPiqueDraft[sel.idx]){
+        const p={...editPiqueDraft[sel.idx]};p.wx=Math.min(1,p.wx+OFFSET);
+        newIdx=editPiqueDraft.push(p)-1;
+      } else if(sel.type==='portal'&&editPortalDraft[sel.idx]){
+        const p={...editPortalDraft[sel.idx]};p.wx=Math.min(1,p.wx+OFFSET);
+        newIdx=editPortalDraft.push(p)-1;
+      } else if(sel.type==='effect'&&editEffectDraft[sel.idx]){
+        const e={...editEffectDraft[sel.idx]};e.wx=Math.min(1,e.wx+OFFSET);
+        newIdx=editEffectDraft.push(e)-1;
+      }
+      if(newIdx!==undefined) newSels.push({type:sel.type,idx:newIdx});
+    }
+    editMultiSelect=newSels;editSelected=null;
+  } else if(editSelected){
+    editSnapshot();
+    let newIdx;
+    if(editSelected.type==='pique'&&editPiqueDraft[editSelected.idx]){
+      const p={...editPiqueDraft[editSelected.idx]};p.wx=Math.min(1,p.wx+OFFSET);
+      newIdx=editPiqueDraft.push(p)-1;
+    } else if(editSelected.type==='portal'&&editPortalDraft[editSelected.idx]){
+      const p={...editPortalDraft[editSelected.idx]};p.wx=Math.min(1,p.wx+OFFSET);
+      newIdx=editPortalDraft.push(p)-1;
+    } else if(editSelected.type==='effect'&&editEffectDraft[editSelected.idx]){
+      const e={...editEffectDraft[editSelected.idx]};e.wx=Math.min(1,e.wx+OFFSET);
+      newIdx=editEffectDraft.push(e)-1;
+    }
+    if(newIdx!==undefined) editSelected={type:editSelected.type,idx:newIdx};
+  } else return;
+  showEditProps();drawEditCanvas();
 }
 
 function edPointerDown(clientX, clientY){
@@ -1346,14 +1287,16 @@ function showEditProps(){
 
   // ── Champ position commun ─────────────────────────────────────────────────
   const addPos=(obj, pxVal)=>{
-    row.appendChild(mkLbl('Pos (%) :'));
-    const {el,inp}=mkNum(Math.round(pxVal*100), 0, 100, 1, v=>{
+    row.appendChild(mkLbl('x :'));
+    const {el,inp}=mkNum(+(pxVal*100).toFixed(1), 0, 100, 0.1, v=>{
       if(isFinite(v)) obj.wx=Math.max(0,Math.min(1,v/100));
       drawEditCanvas();
     });
-    row.appendChild(el);
+    const pctSpan=document.createElement('span');pctSpan.textContent='%';pctSpan.style.cssText='color:#aabbcc;font:.80em monospace;';
+    row.appendChild(el);row.appendChild(pctSpan);
     return inp;
   };
+  const mkDup=()=>{const b=document.createElement('button');b.textContent='⧉ Dupliquer';b.style.cssText='padding:3px 10px;background:#0a2a0a;border:1.5px solid #336633;color:#88ff88;border-radius:5px;cursor:pointer;font:.78em monospace;margin-left:4px;';b.addEventListener('click',editDuplicate);return b;};
 
   if(editSelected.type==='pique'){
     const p=editPiqueDraft[editSelected.idx]; if(!p){showEditProps();return;}
@@ -1361,6 +1304,7 @@ function showEditProps(){
     addPos(p, p.wx);
     row.appendChild(mkLbl('Bande :'));
     row.appendChild(mkSel([['top','Haut'],['mid','Milieu'],['bot','Bas']], p.band, v=>{p.band=v;drawEditCanvas();}));
+    row.appendChild(mkDup());
     row.appendChild(mkDel(()=>{editPiqueDraft.splice(editSelected.idx,1);editSelected=null;showEditProps();drawEditCanvas();}));
 
   } else if(editSelected.type==='portal'){
@@ -1385,6 +1329,7 @@ function showEditProps(){
     invChk.onchange=()=>{p.invisible=invChk.checked;drawEditCanvas();};
     invLbl.appendChild(invChk);invLbl.appendChild(document.createTextNode('Invisible'));
     row.appendChild(invLbl);
+    row.appendChild(mkDup());
     row.appendChild(mkDel(()=>{editPortalDraft.splice(editSelected.idx,1);editSelected=null;showEditProps();drawEditCanvas();}));
 
   } else if(editSelected.type==='effect'){
@@ -1433,6 +1378,7 @@ function showEditProps(){
       const {el}=mkNum(e.count||20, 1, 80, 1, v=>{if(isFinite(v)&&v>0)e.count=Math.round(v);});
       row.appendChild(el);
     }
+    row.appendChild(mkDup());
     row.appendChild(mkDel(()=>{editEffectDraft.splice(editSelected.idx,1);editSelected=null;showEditProps();drawEditCanvas();}));
   }
   wrap.appendChild(row);
@@ -1481,6 +1427,7 @@ document.querySelectorAll('.editTool[data-tool]').forEach(btn=>{
 
 // — Bouton Annuler —
 document.getElementById('editUndo').addEventListener('click',editUndo);
+document.getElementById('editDuplicateBtn').addEventListener('click',editDuplicate);
 
 // — Touche Del/Backspace dans l'éditeur pour supprimer l'objet sélectionné —
 document.getElementById('editPanel').addEventListener('keydown',e=>{
@@ -1512,6 +1459,8 @@ document.getElementById('editPanel').addEventListener('keydown',e=>{
     }
   } else if((e.ctrlKey||e.metaKey)&&e.key==='z'){
     editUndo();e.preventDefault();
+  } else if((e.ctrlKey||e.metaKey)&&e.key==='d'){
+    editDuplicate();e.preventDefault();
   }
 });
 
@@ -1690,7 +1639,7 @@ function recordLabel(d){
 // Éligible à un record dans la table GLOBALE (mode/lag/cadence) : jamais en
 // session d'enregistrement ni en relecture d'une partie créée (qui a sa
 // PROPRE table de records, gérée séparément — voir update()).
-function recordsEligible(){return gapStartMul===1&&!noclipEnabled&&!recordingCustom&&!activeCustomLevel&&!practiceMode;}
+function recordsEligible(){return gapStartMul===1&&!noclipEnabled&&!recordingCustom&&!activeCustomLevel;}
 // Éligible à un record sur la partie créée actuellement rejouée.
 function customRecordsEligible(){return gapStartMul===1&&!noclipEnabled;}
 
@@ -1743,6 +1692,7 @@ let corridor=null,waypoints=[],particles=[],trail=[],endWallWX=0;
 let cadenceTraj=[],cadenceEaseWX=0; // trajectoire enregistrée pour l'option Cadence
 let playerWX=0,playerY=H/2,cameraX=0,holding=false,hitFlash=0,deathPulse=0,shipVel=0,gravityDir=1,jumpQueued=false,upHeld=false,downHeld=false,spiderState='bot';
 let trainingDeaths=0,startMs=0,trainingTotalStartMs=0,elapsed=0,totalLen=0,lastDeathMs=-999,difficultyEase=0;
+let noclipDevSum=0,noclipDevCount=0,noclipDevMax=0,noclipDevMin=Infinity;
 let score=0,lastScoreSec=0;
 let raf,prevNow;
 // Réglages effectifs de la run en cours : démarrent à la valeur des
@@ -1754,8 +1704,6 @@ let screenShakeX=0, screenShakeY=0, screenShakeUntil=0, screenShakeIntensity=0, 
 let flashAlpha=0, flashColor='#ffffff', flashUntil=0, flashDur=1;
 let textEffectStr='', textEffectUntil=0, textEffectScale=1, textEffectColor='#ffd166';
 let bgPulseAlpha=0, bgPulseColor='#4488ff', bgPulseUntil=0, bgPulseDur=1;
-let practiceCheckpoints = []; // [{playerWX,playerY,elapsed,trainingDeaths,runtimeSpeedMul,runtimeAngleMul,runtimeGapMul,spiderState,gravityDir,shipVel,triggeredPortals,triggeredEffects}]
-let lastCpElapsed = 0;
 let respawnInvincibleUntil = 0;
 let editHistory = []; // undo stack
 let lastPortalCfg = {speedMul:1,angleMul:1,gapMul:1};
@@ -2159,7 +2107,8 @@ function resetRun(keepDeaths){
   triggeredEffects=new Set();
   screenShakeX=0;screenShakeY=0;screenShakeUntil=0;
   flashAlpha=0;textEffectStr='';bgPulseAlpha=0;
-  practiceCheckpoints=[]; lastCpElapsed=0; respawnInvincibleUntil=0;
+  respawnInvincibleUntil=0;
+  noclipDevSum=0;noclipDevCount=0;noclipDevMax=0;noclipDevMin=Infinity;
   prevNow=startMs=performance.now();
   if(!keepDeaths){trainingDeaths=0;trainingTotalStartMs=performance.now();}
 }
@@ -2171,21 +2120,6 @@ function explode(px,py,col){
     particles.push({x:px,y:py,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.2,
       life:1,decay:.015+Math.random()*.022,r:2+Math.random()*5,col});}
 }
-function makeCpSnapshot(){
-  return {playerWX,playerY,elapsed,trainingDeaths,
-    runtimeSpeedMul,runtimeAngleMul,runtimeGapMul,
-    spiderState,gravityDir,shipVel:shipVel||0,
-    triggeredPortals:new Set(triggeredPortals),
-    triggeredEffects:new Set(triggeredEffects)};
-}
-function placeCheckpoint(){
-  if(state!=='playing'||!practiceMode)return;
-  // Si déjà un checkpoint à moins de 2% du niveau → on le retire
-  const NEAR=endWallWX*0.02;
-  const idx=practiceCheckpoints.findIndex(c=>Math.abs(c.playerWX-playerWX)<NEAR);
-  if(idx>=0){ practiceCheckpoints.splice(idx,1); }
-  else { practiceCheckpoints.push(makeCpSnapshot()); practiceCheckpoints.sort((a,b)=>a.playerWX-b.playerWX); }
-}
 function die(){
   if(state!=='playing')return;
   if(elapsed<1.75){hitFlash=1;return;}
@@ -2194,20 +2128,7 @@ function die(){
   if(now-lastDeathMs<333)return;
   lastDeathMs=now;
   hitFlash=1;trainingDeaths++;deathPulse=1;
-  if(practiceMode&&practiceCheckpoints.length){
-    const cp=[...practiceCheckpoints].reverse().find(c=>c.playerWX<=playerWX)||practiceCheckpoints[0];
-    playerWX=cp.playerWX;playerY=cp.playerY;
-    elapsed=cp.elapsed;startMs=performance.now()-cp.elapsed*1000;prevNow=performance.now();
-    runtimeSpeedMul=cp.runtimeSpeedMul;runtimeAngleMul=cp.runtimeAngleMul;runtimeGapMul=cp.runtimeGapMul;
-    spiderState=cp.spiderState;gravityDir=cp.gravityDir;shipVel=cp.shipVel;
-    triggeredPortals=new Set(cp.triggeredPortals);
-    triggeredEffects=new Set(cp.triggeredEffects);
-    trail=[];jumpQueued=false;upHeld=false;downHeld=false;
-    respawnInvincibleUntil=performance.now()+1000;
-    fillCorridor(diff);
-    return;
-  }
-  {fillCorridor(diff);}
+  fillCorridor(diff);
 }
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
@@ -2232,7 +2153,7 @@ function update(now){
       }
     }
     if(recordingCustom)finalizeCustomRecording(cfg);
-    difficultyEase=0;buildLevel(diff);resetRun(true);return;
+    difficultyEase=0;buildLevel(diff);resetRun(false);return;
   }
   // La caméra est arrondie au pixel près : sans ça, les murs sont redessinés
   // à une position infinitésimalement différente à chaque frame et semblent
@@ -2313,7 +2234,12 @@ function update(now){
     return segs.some(s=>f>=s.wx0&&f<=s.wx1);
   })();
   if(noclipEnabled){
-    // Traverser les murs : aucune collision, aucune mort.
+    // Traverser les murs : suivi de l'écart au centre du tunnel.
+    const center=(top+bot)/2;
+    const dev=Math.abs(playerY-center);
+    noclipDevSum+=dev;noclipDevCount++;
+    if(dev>noclipDevMax)noclipDevMax=dev;
+    if(dev<noclipDevMin)noclipDevMin=dev;
   }else if(playerY-PLAYER_R<top){
     playerY=top+PLAYER_R;
     if(inertial)shipVel=Math.max(0,shipVel);
@@ -2482,14 +2408,6 @@ function drawPlayer(){
   cx.beginPath();cx.moveTo(0,-PLAYER_R-3);cx.lineTo(PLAYER_R+4,0);
   cx.lineTo(0,PLAYER_R+3);cx.lineTo(-PLAYER_R-4,0);cx.closePath();cx.fill();
   // Level color main body
-  // Halo d'invincibilité après respawn checkpoint
-  const invT = (respawnInvincibleUntil - performance.now()) / 1000;
-  if(invT > 0){
-    const pulse = 0.5 + 0.5*Math.sin(performance.now()/60);
-    cx.shadowBlur = 30 + pulse*20; cx.shadowColor = '#ffd166';
-    cx.strokeStyle = `rgba(255,209,102,${0.4+pulse*0.5})`; cx.lineWidth = 2.5;
-    cx.beginPath(); cx.arc(0,0,PLAYER_R+5+pulse*3,0,Math.PI*2); cx.stroke();
-  }
   cx.shadowBlur=18;cx.shadowColor=col;cx.fillStyle=col;
   cx.beginPath();cx.moveTo(0,-PLAYER_R-1);cx.lineTo(PLAYER_R+2,0);
   cx.lineTo(0,PLAYER_R+1);cx.lineTo(-PLAYER_R-2,0);cx.closePath();cx.fill();
@@ -2516,24 +2434,33 @@ function drawHUD(){
   cx.fillStyle=g;cx.fillRect(0,0,W*pct,BAR_H);
   cx.strokeStyle='rgba(255,255,255,.10)';cx.lineWidth=1;cx.strokeRect(0,0,W,BAR_H);
   cx.shadowBlur=10;cx.shadowColor=col;cx.fillStyle=col;cx.fillRect(W*pct-2,0,4,BAR_H);cx.shadowBlur=0;
-  // Morts — centre sous la barre
+  // Centre sous la barre : morts OU stats noclip
   cx.save();
-  const dscale=1+deathPulse*.6;
-  cx.textAlign='center';cx.font=`bold ${(13*dscale).toFixed(1)}px monospace`;
-  cx.fillStyle=deathPulse>0?`rgba(255,70,80,${.7+deathPulse*.3})`:'#ffffff66';
-  if(deathPulse>0){cx.shadowBlur=10*deathPulse;cx.shadowColor='#ff3366';}
-  cx.fillText(`morts : ${trainingDeaths}`,W/2,BAR_H+16);
-  cx.restore();
-  // Record affiché à droite
-  const recStr=recordLabel(diff);
-  if(recStr!=='--'){
-    cx.save();cx.textAlign='right';cx.font='bold 11px monospace';
-    cx.fillStyle='#ffffff44';cx.fillText(`record : ${recStr}`,W-8,BAR_H+16);cx.restore();
+  if(noclipEnabled){
+    const avg=noclipDevCount>0?(noclipDevSum/noclipDevCount).toFixed(1):'--';
+    const mx=noclipDevCount>0?noclipDevMax.toFixed(1):'--';
+    const mn=noclipDevCount>0?(noclipDevMin===Infinity?'--':noclipDevMin.toFixed(1)):'--';
+    cx.textAlign='center';cx.font='bold 11px monospace';cx.fillStyle='#7de8ffaa';
+    cx.fillText(`écart moy:${avg}  max:${mx}  min:${mn}`,W/2,BAR_H+16);
+  } else {
+    const dscale=1+deathPulse*.6;
+    cx.textAlign='center';cx.font=`bold ${(13*dscale).toFixed(1)}px monospace`;
+    cx.fillStyle=deathPulse>0?`rgba(255,70,80,${.7+deathPulse*.3})`:'#ffffff66';
+    if(deathPulse>0){cx.shadowBlur=10*deathPulse;cx.shadowColor='#ff3366';}
+    cx.fillText(`morts : ${trainingDeaths}`,W/2,BAR_H+16);
   }
-  if(practiceMode){
+  cx.restore();
+  // Record affiché à droite (seulement hors noclip)
+  if(!noclipEnabled){
+    const recStr=recordLabel(diff);
+    if(recStr!=='--'){
+      cx.save();cx.textAlign='right';cx.font='bold 11px monospace';
+      cx.fillStyle='#ffffff44';cx.fillText(`record : ${recStr}`,W-8,BAR_H+16);cx.restore();
+    }
+  }
+  if(trainingMode){
     cx.textAlign='right';cx.font='bold 11px monospace';cx.fillStyle='#ffd16688';
-    const lastCp=[...practiceCheckpoints].reverse().find(c=>c.playerWX<=playerWX);
-    cx.fillText(lastCp?`★ CP — [C] placer/supp.`:'★ PRACTICE — [C] pour checkpoint',W-10,BAR_H+16);
+    cx.fillText('✦ ENTRAÎNEMENT',W-10,BAR_H+16);
   }
   if(hitFlash>0){cx.fillStyle=`rgba(255,40,40,${hitFlash*.42})`;cx.fillRect(0,0,W,H);}
 }
@@ -2666,7 +2593,7 @@ function loop(now){
       cx.shadowBlur=24;cx.shadowColor=textEffectColor;cx.fillStyle=textEffectColor;
       cx.fillText(textEffectStr,W/2,H/2-55);cx.shadowBlur=0;cx.globalAlpha=1;
     }
-    if(state==='playing'){drawHUD();drawMiniMap();}
+    if(state==='playing'){drawHUD();}
     if(state==='dead'){drawHUD();      drawOverlay('✗ MORT',`${elapsed.toFixed(1)}s survécu`,`${keyLabel(keyReset)} pour réessayer`,'#ff3366');}
     if(state==='win'){drawHUD();      drawOverlay('✓ VICTOIRE !',`${DCFG[diff].name} — ${elapsed.toFixed(1)}s !`,
         `${keyLabel(keyReset)} pour rejouer`,DCFG[diff].col);}
@@ -2703,20 +2630,34 @@ function pressUpAt(){
     pressUp();
   }
 }
-cv.addEventListener('mousedown',e=>{e.preventDefault();pressDownAt(e.clientY);});
+cv.addEventListener('mousedown',e=>{
+  e.preventDefault();
+  if(trainingMode&&state==='playing'){
+    const r=cv.getBoundingClientRect();
+    const cy2=(e.clientY-r.top)*H/r.height;
+    if(cy2<BAR_H+10){
+      const cx2=(e.clientX-r.left)*W/r.width;
+      playerWX=Math.max(0,Math.min(endWallWX,(cx2/W)*endWallWX));
+      cameraX=Math.round(playerWX-PLAYER_SX);
+      const{top:t,bot:b}=getCorridor(playerWX);
+      playerY=(t+b)/2;
+      trail=[];shipVel=0;gravityDir=1;jumpQueued=false;
+      return;
+    }
+  }
+  pressDownAt(e.clientY);
+});
 cv.addEventListener('mouseup',()=>pressUpAt());
 cv.addEventListener('touchstart',e=>{e.preventDefault();pressDownAt(e.touches[0].clientY);},{passive:false});
 cv.addEventListener('touchend',e=>{e.preventDefault();pressUpAt();},{passive:false});
 const heldKeys=new Set();
-const BIND_IDS=['bindReset','bindQuit','bindUp','bindDown'];
+const BIND_IDS=['bindReset','bindQuit'];
 function clearRecordingUI(){BIND_IDS.forEach(id=>document.getElementById(id).classList.remove('recording'));}
 document.addEventListener('keydown',e=>{
   if(recordingKey){e.preventDefault();e.stopPropagation();
     if(e.code!=='Escape'){
       if(recordingKey==='reset')keyReset=e.code;
       else if(recordingKey==='quit')keyQuit=e.code;
-      else if(recordingKey==='up')keyUp=e.code;
-      else if(recordingKey==='down')keyDown=e.code;
       syncKeyLabels();
     }
     recordingKey=null;clearRecordingUI();return;}
@@ -2737,17 +2678,16 @@ document.addEventListener('keydown',e=>{
   if(e.code===keyReset){startGame();return;}
   if(state==='menu')return;
   if(e.code===keyQuit){goToMenu();return;}
-  if(e.code===keyUp)schedule(()=>{upHeld=true;});
-  if(e.code===keyDown)schedule(()=>{downHeld=true;});
-  if(e.code==='KeyC'){placeCheckpoint();return;}
+  if(e.code==='ArrowUp')schedule(()=>{upHeld=true;});
+  if(e.code==='ArrowDown')schedule(()=>{downHeld=true;});
   if(state!=='playing')return;
   if(/^F\d+$/.test(e.code))return;
   e.preventDefault();
   if(!heldKeys.has(e.code)){heldKeys.add(e.code);if(heldKeys.size===1)pressDown();}
 });
 document.addEventListener('keyup',e=>{
-  if(e.code===keyUp)schedule(()=>{upHeld=false;});
-  if(e.code===keyDown)schedule(()=>{downHeld=false;});
+  if(e.code==='ArrowUp')schedule(()=>{upHeld=false;});
+  if(e.code==='ArrowDown')schedule(()=>{downHeld=false;});
   heldKeys.delete(e.code);if(heldKeys.size===0)pressUp();
 });
 
@@ -2771,8 +2711,6 @@ document.querySelectorAll('.mb').forEach(btn=>btn.addEventListener('click',()=>{
   shipVel=0;gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;spiderState='bot';
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
 }));
-document.getElementById('rulesBtn').addEventListener('click',()=>document.getElementById('rulesPanel').classList.add('open'));
-document.getElementById('closeRules').addEventListener('click',()=>document.getElementById('rulesPanel').classList.remove('open'));
 document.getElementById('customLevelsBtn').addEventListener('click',()=>{renderCustomList();document.getElementById('customPanel').classList.add('open');});
 document.getElementById('closeCustom').addEventListener('click',()=>document.getElementById('customPanel').classList.remove('open'));
 document.getElementById('settingsBtn').addEventListener('click',()=>document.getElementById('settingsPanel').classList.add('open'));
@@ -2782,7 +2720,7 @@ document.getElementById('closeSettings').addEventListener('click',()=>{
   recordingKey=null;clearRecordingUI();syncKeyLabels();saveSettings();
 });
 document.getElementById('pseudoInput').addEventListener('keydown',e=>e.stopPropagation());
-[['bindReset','reset'],['bindQuit','quit'],['bindUp','up'],['bindDown','down']].forEach(([id,key])=>{
+[['bindReset','reset'],['bindQuit','quit']].forEach(([id,key])=>{
   document.getElementById(id).addEventListener('click',()=>{
     recordingKey=key;clearRecordingUI();
     const el=document.getElementById(id);el.classList.add('recording');el.textContent='Appuyez…';
@@ -2824,13 +2762,8 @@ document.getElementById('randomLevelsToggle').addEventListener('click',()=>{
   saveSettings();
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
 });
-document.getElementById('practiceModeToggle').addEventListener('click',()=>{
-  practiceMode=!practiceMode; applySettingsToUI(); saveSettings();
-});
-document.getElementById('checkpointIntervalInput').addEventListener('input',()=>{
-  const v=parseInt(document.getElementById('checkpointIntervalInput').value,10);
-  if(isFinite(v)&&v>=3) checkpointInterval=v;
-  saveSettings();
+document.getElementById('trainingModeToggle').addEventListener('click',()=>{
+  trainingMode=!trainingMode; applySettingsToUI(); saveSettings();
 });
 document.getElementById('play').style.background=DCFG[diff].col;
 document.getElementById('play').addEventListener('click',startGame);
