@@ -2233,7 +2233,7 @@ function update(now){
     const f=(playerWX-cadenceEaseWX)/(activeCustomLevel.mainLen||1);
     return segs.some(s=>f>=s.wx0&&f<=s.wx1);
   })();
-  if(noclipEnabled){
+  if(noclipEnabled||trainingMode){
     // Traverser les murs : suivi de l'écart au centre du tunnel.
     const center=(top+bot)/2;
     const dev=Math.abs(playerY-center);
@@ -2436,12 +2436,10 @@ function drawHUD(){
   cx.shadowBlur=10;cx.shadowColor=col;cx.fillStyle=col;cx.fillRect(W*pct-2,0,4,BAR_H);cx.shadowBlur=0;
   // Centre sous la barre : morts OU stats noclip
   cx.save();
-  if(noclipEnabled){
+  if(noclipEnabled||trainingMode){
     const avg=noclipDevCount>0?(noclipDevSum/noclipDevCount).toFixed(1):'--';
-    const mx=noclipDevCount>0?noclipDevMax.toFixed(1):'--';
-    const mn=noclipDevCount>0?(noclipDevMin===Infinity?'--':noclipDevMin.toFixed(1)):'--';
-    cx.textAlign='center';cx.font='bold 11px monospace';cx.fillStyle='#7de8ffaa';
-    cx.fillText(`écart moy:${avg}  max:${mx}  min:${mn}`,W/2,BAR_H+16);
+    cx.textAlign='center';cx.font='bold 13px monospace';cx.fillStyle='#7de8ffcc';
+    cx.fillText(`écart moy : ${avg} px`,W/2,BAR_H+16);
   } else {
     const dscale=1+deathPulse*.6;
     cx.textAlign='center';cx.font=`bold ${(13*dscale).toFixed(1)}px monospace`;
@@ -2450,17 +2448,13 @@ function drawHUD(){
     cx.fillText(`morts : ${trainingDeaths}`,W/2,BAR_H+16);
   }
   cx.restore();
-  // Record affiché à droite (seulement hors noclip)
-  if(!noclipEnabled){
+  // Record affiché à droite (seulement hors noclip/training)
+  if(!noclipEnabled&&!trainingMode){
     const recStr=recordLabel(diff);
     if(recStr!=='--'){
       cx.save();cx.textAlign='right';cx.font='bold 11px monospace';
       cx.fillStyle='#ffffff44';cx.fillText(`record : ${recStr}`,W-8,BAR_H+16);cx.restore();
     }
-  }
-  if(trainingMode){
-    cx.textAlign='right';cx.font='bold 11px monospace';cx.fillStyle='#ffd16688';
-    cx.fillText('✦ ENTRAÎNEMENT',W-10,BAR_H+16);
   }
   if(hitFlash>0){cx.fillStyle=`rgba(255,40,40,${hitFlash*.42})`;cx.fillRect(0,0,W,H);}
 }
