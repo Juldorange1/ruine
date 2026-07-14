@@ -363,7 +363,7 @@ const I18N = {
     heroDesc3:'Midas — Gagne un doubleur d\'argent toutes les 3 min. Peut s\'endetter jusqu\'a son pic d\'argent atteint.',
     heroDesc5:'Enzo — Choisit combien de chaque type d\'ennemi apparait (max 600/type).',
     heroDesc6:'Iris — Invoque un allie (10 PV) a couts independants.',
-    heroDesc8:'Gaston — Grossit de 1 case tous les 2 gardes achetes. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
+    heroDesc8:'Gaston — Grossit de 1 case tous les 3 gardes achetes. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
     summonAlly:'Invoquer un allie', allyPlaced:'Allie invoque !', allyDown:'Un allie est tombe !',
     chooseTileForAlly:'Clique une case libre pour l\'allie', ally:'Allie',
     enzoNextWave:'Prochaine vague',
@@ -421,7 +421,7 @@ const I18N = {
     heroDesc3:'Midas — Gains a money doubler every 3 min. Can go into debt up to his peak money reached.',
     heroDesc5:'Enzo — Chooses how many of each enemy type spawn (max 600/type).',
     heroDesc6:'Iris — Summons an ally (10 HP) with its own costs.',
-    heroDesc8:'Gaston — Grows by 1 tile every 2 guards bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
+    heroDesc8:'Gaston — Grows by 1 tile every 3 guards bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
     summonAlly:'Summon an ally', allyPlaced:'Ally summoned!', allyDown:'An ally has fallen!',
     chooseTileForAlly:'Click a free tile for the ally', ally:'Ally',
     enzoNextWave:'Next wave',
@@ -857,15 +857,23 @@ function spawnMonster(){
     speedMult,rangeBonus,type,pathKeys:null,attackAcc:0});
 }
 
-// Cible la plus proche (a vol d'hex) parmi le heros, son corps agrandi et les allies
+// Cible la plus proche (a vol d'hex) parmi le heros, son corps agrandi et les allies.
+// Egalite = choix aleatoire. Hysteresis : on ne change de cible en cours de route que si
+// une nouvelle cible est nettement plus proche, pour eviter les allers-retours infinis
+// quand le monstre se trouve a mi-chemin entre deux cibles presque equidistantes.
 function nearestTargetTile(m){
-  const cands=[{q:hero.q,r:hero.r},...heroExtraTiles,...allies.map(a=>({q:a.q,r:a.r}))];
-  let best=null,bestD=Infinity;
-  for(const c of cands){
-    const d=hexDist(m.q,m.r,c.q,c.r);
-    if(d<bestD){bestD=d;best=c;}
+  const cands=[{q:hero.q,r:hero.r,key:axKey(hero.q,hero.r)},
+    ...heroExtraTiles.map(t=>({q:t.q,r:t.r,key:axKey(t.q,t.r)})),
+    ...allies.map(a=>({q:a.q,r:a.r,key:axKey(a.q,a.r)}))];
+  if(!cands.length) return null;
+  let bestD=Infinity;
+  for(const c of cands){ const d=hexDist(m.q,m.r,c.q,c.r); if(d<bestD) bestD=d; }
+  if(m.pathTargetKey){
+    const cur=cands.find(c=>c.key===m.pathTargetKey);
+    if(cur && hexDist(m.q,m.r,cur.q,cur.r)<=bestD+1) return cur;
   }
-  return best;
+  const nearest=cands.filter(c=>hexDist(m.q,m.r,c.q,c.r)===bestD);
+  return nearest[Math.floor(Math.random()*nearest.length)];
 }
 function recomputePath(m){
   const blocked=new Set();
@@ -1598,6 +1606,15 @@ function render(){
       ctx.arc(px,py,SIZE*0.78,0,Math.PI*2);ctx.stroke();
       ctx.restore();
     }
+    if(g.boosted){
+      ctx.save();ctx.strokeStyle='rgba(255,204,51,0.9)';ctx.lineWidth=2.5;
+      ctx.setLineDash([3,3]);ctx.beginPath();
+      ctx.arc(px,py,SIZE*0.82,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle='rgba(20,15,0,0.6)';ctx.beginPath();ctx.arc(px,py-SIZE*0.55,9,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#ffcc33';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+      ctx.fillText('⚡',px,py-SIZE*0.55+5);
+    }
     ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
     ctx.fillText('d'+g.dmg+' p'+g.range+' +'+g.bounty+'€',px,py+(d.emoji?SIZE*0.65:14));
   }
@@ -1756,7 +1773,7 @@ function renderPanel(){
     if(canAlly)   h+=`<button id="buyAlly" ${disA}>${t('summonAlly')} (<span class="price">${pA}&euro;</span>)</button>`;
     if(canMidas)  h+=`<button id="useDoubler" ${disMidas}>Utiliser un doubleur (x2 argent) : ${midasDoublers} en stock</button>`;
     if(canMidas)  h+=`<p class="hint">Dette maximale autorisee : -${Math.floor(midasMaxMoney)}&euro;</p>`;
-    if(sessionMode==='gameplay8') h+=`<p class="hint">Taille : ${1+heroExtraTiles.length} case(s) — prochaine dans ${2-gastonGuardsSinceGrowth} garde(s)</p>`;
+    if(sessionMode==='gameplay8') h+=`<p class="hint">Taille : ${1+heroExtraTiles.length} case(s) — prochaine dans ${3-gastonGuardsSinceGrowth} garde(s)</p>`;
     panel.innerHTML=h;
     document.getElementById('buyGuard').onclick=()=>{
       if(!canAfford(priceFor('guardPlace',costs.guardPlace))) return;
@@ -1807,10 +1824,11 @@ function renderPanel(){
     const g=selected.g;
     const pUd=priceFor('dmgAll',g.costDmgUp);
     const pUb=priceFor('bountyAll',g.costBountyUp);
-    let h=`<h3>${t('guard')}</h3>
+    let h=`<h3>${t('guard')}${g.boosted?' ⚡':''}</h3>
       <div class="row"><span>${t('dmg')}</span><span>${g.dmg}</span></div>
       <div class="row"><span>${t('range')}</span><span>${g.range}</span></div>
       <div class="row"><span>${t('bountyPerKill')}</span><span>+${g.bounty}&euro;</span></div>`;
+    if(g.boosted) h+=`<p class="hint">⚡ Case boostante : +1 degat de depart gratuit.</p>`;
     const disUd=!canAfford(g.costDmgUp)?'disabled':'';
     const disUb=!canAfford(g.costBountyUp)?'disabled':'';
     h+=`<button id="upDmg" ${disUd}>${t('upDmg')} (<span class="price">${pUd}&euro;</span>)</button>`;
@@ -1854,7 +1872,7 @@ cv.addEventListener('click',e=>{
     if(occupiedSet().has(k)) return;
     if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
     const g=newGuard();g.q=tt.q;g.r=tt.r;
-    if(boostTiles.has(k)) g.dmg=2;
+    if(boostTiles.has(k)){g.dmg=2;g.boosted=true;}
     guards.push(g);
     if(guards.length>=GUARD_INIT) initialPlacement=false;
     return;
@@ -1867,12 +1885,12 @@ cv.addEventListener('click',e=>{
     const costObj=pendingAllySource?pendingAllySource.costs:costs;
     const price=priceFor('guardPlace',costObj.guardPlace);
     const g=newGuard();g.q=tt.q;g.r=tt.r;
-    if(boostTiles.has(axKey(tt.q,tt.r))) g.dmg=2;
+    if(boostTiles.has(axKey(tt.q,tt.r))){g.dmg=2;g.boosted=true;}
     guards.push(g);
     spend(price);costObj.guardPlace=Math.ceil(costObj.guardPlace*1.25);
     if(sessionMode==='gameplay8'&&!pendingAllySource){
       gastonGuardsSinceGrowth++;
-      if(gastonGuardsSinceGrowth>=2){gastonGuardsSinceGrowth=0;growHero();}
+      if(gastonGuardsSinceGrowth>=3){gastonGuardsSinceGrowth=0;growHero();}
     }
     pendingAction=null;pendingAllySource=null;playSfx('buy');
     log(t('newGuardPlaced'));updateHUD();renderPanel();return;
