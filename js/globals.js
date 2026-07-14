@@ -53,11 +53,14 @@ var _isDaily=false;
 /* ── DÉFI DU JOUR — seed de carte fixe par jour ; l'option ULTIME reste aléatoire ── */
 var _dailySeed=null;     // seed numérique du jour, fixe
 var _dailyDate='';       // 'YYYY-MM-DD' du jour courant
+var _dailyMode='solo';   // mode tiré chaque jour : 'solo'|'500d'|'1000d'|'2000d'|'survivor'|'boss'
+var _DAILY_MODES=['solo','500d','1000d','2000d','survivor','boss'];
 function _todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function _strHash(s){var h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h;}
 function _setupDaily(){
   _dailyDate=_todayStr();
   _dailySeed=_strHash(_dailyDate)||1;
+  _dailyMode=_DAILY_MODES[_dailySeed%_DAILY_MODES.length];
 }
 
 /* ── BOSS ── */

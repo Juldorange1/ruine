@@ -186,17 +186,28 @@ function _loadDailyStats(date){
   try{var s=JSON.parse(localStorage.getItem(_dailyKey(date)));return s||{best:null};}
   catch(e){return{best:null};}
 }
-function _saveDailyStats(date,elapsed){
+function _saveDailyStats(date,score,mode){
+  // score : temps (secondes, lower=better) pour ruée/solo ; dégâts ou kills (higher=better) pour boss/survivor
+  var higherBetter=(mode==='boss'||mode==='survivor');
   var s=_loadDailyStats(date);
-  if(s.best===null||s.best===undefined||elapsed<s.best)s.best=elapsed;
+  s.mode=mode;
+  if(s.best===null||s.best===undefined||(higherBetter?score>s.best:score<s.best))s.best=score;
   try{localStorage.setItem(_dailyKey(date),JSON.stringify(s));}catch(e){}
+}
+function _fmtDailyBest(s){
+  if(s.best===null||s.best===undefined)return'—';
+  var m=s.mode||'solo';
+  if(m==='boss')return Math.round(s.best)+' dmg';
+  if(m==='survivor')return Math.round(s.best)+' kills';
+  if(m==='solo')return Math.round(s.best)+' ♦';
+  return _fmtTime(s.best); // temps pour ruée 500/1000/2000
 }
 function updateDailyMenuStats(){
   _setupDaily();
   var s=_loadDailyStats(_dailyDate);
   var bEl=document.getElementById('stat-daily-best');
   var dEl=document.getElementById('stat-daily-date');
-  if(bEl)bEl.textContent=s.best!==null&&s.best!==undefined?_fmtTime(s.best):'—';
+  if(bEl)bEl.textContent=_fmtDailyBest(s);
   if(dEl)dEl.textContent=_dailyDate.slice(5);
 }
 
@@ -251,8 +262,13 @@ function showEnd(){
       updateMenuStats();
     }
     if(_isDaily&&G.winner==='DIAMOND'){
-      var _elapsedD=Math.round(G.time);
-      _saveDailyStats(_dailyDate,_elapsedD);
+      _saveDailyStats(_dailyDate,Math.round(G.time),_dailyMode);
+      updateDailyMenuStats();
+    }
+    // Défi solo chronométré (pas de ruée) : score = diamants récoltés
+    if(_isDaily&&_dailyMode==='solo'&&!diamondRace){
+      var _totalD=(G.p1.diamond||0);
+      _saveDailyStats(_dailyDate,_totalD,'solo');
       updateDailyMenuStats();
     }
   } else if(GAMEMODE==='boss'){
@@ -264,6 +280,10 @@ function showEnd(){
     _sgb.total=(_sgb.total||0)+Math.round(bossDmgDealt);
     _saveBossStats(_sgb.best,_sgb.total);
     updateBossMenuStats();
+    if(_isDaily){
+      _saveDailyStats(_dailyDate,Math.round(bossDmgDealt),'boss');
+      updateDailyMenuStats();
+    }
   } else if(GAMEMODE==='survivor'){
     document.getElementById('endtitle').textContent=t('end_survivor');
     document.getElementById('endtitle').style.color='#e05030';
@@ -274,6 +294,10 @@ function showEnd(){
     _sgv.kills=(_sgv.kills||0)+_survivorKillsThisGame;
     _saveSurvivorStats(_sgv.bestKills,_sgv.kills);
     updateSurvivorMenuStats();
+    if(_isDaily){
+      _saveDailyStats(_dailyDate,_survivorKillsThisGame,'survivor');
+      updateDailyMenuStats();
+    }
   }
   if(GAMEMODE==='survivor'){
     var modeEl2=document.getElementById('endmode');
@@ -443,6 +467,10 @@ function _resetActivity(){if(gameRunning&&G&&G.phase==='combat')_lastActivityTim
 document.addEventListener('keydown',_resetActivity);
 document.addEventListener('mousedown',_resetActivity);
 document.addEventListener('touchstart',_resetActivity,{passive:true});
+
+/* Clic molette (bouton du milieu) : ne doit rien faire (pas d'autoscroll, pas d'action jeu) */
+document.addEventListener('mousedown',function(e){if(e.button===1)e.preventDefault();});
+document.addEventListener('auxclick',function(e){if(e.button===1)e.preventDefault();});
 
 function getGrid(e){var r=document.getElementById('cw').getBoundingClientRect();return{gx:Math.floor((e.clientX-r.left)/(r.width/CW)/TILE),gy:Math.floor((e.clientY-r.top)/(r.height/CH)/TILE)};}
 
@@ -1079,10 +1107,16 @@ document.getElementById('btn-record-play').addEventListener('click',function(){
   }
   if(recDur==='daily'){
     _setupDaily();
-    _isDaily=true;diamondRace=true;diamondGoal=1000;soloDur=999;coopDur=999;
+    _isDaily=true;
     _initSeedOverride=_dailySeed;
     _preloadedBlocks=null;_lastMapCode=null;
-    startGame('solo');
+    diamondRace=false;
+    if(_dailyMode==='boss'){startGame('boss');}
+    else if(_dailyMode==='survivor'){startGame('survivor');}
+    else if(_dailyMode==='500d'){diamondRace=true;diamondGoal=500;soloDur=999;coopDur=999;startGame('solo');}
+    else if(_dailyMode==='1000d'){diamondRace=true;diamondGoal=1000;soloDur=999;coopDur=999;startGame('solo');}
+    else if(_dailyMode==='2000d'){diamondRace=true;diamondGoal=2000;soloDur=999;coopDur=999;startGame('solo');}
+    else{startGame('solo');} // 'solo' — chrono normal
     return;
   }
   if(recDur==='500d'){diamondRace=true;diamondGoal=500;soloDur=999;coopDur=999;}

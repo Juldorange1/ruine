@@ -6,7 +6,7 @@ function mkPlayer(name,ci,x,y,team,isHuman){
   var hp=isHuman?100:220;
   return{name:name,ci:ci,color:PCOLORS[ci],skin:SKINC[ci],
     x:x,y:y,vx:0,vy:0,team:team,isHuman:isHuman,dead:false,
-    hp:hp,maxHp:hp,dmg:isHuman?10:16,speed:isHuman?1.68:2.2,regen:isHuman?4:8,
+    hp:hp,maxHp:hp,dmg:isHuman?10:16,speed:isHuman?2.02:2.2,regen:isHuman?4:8,
     coal:0,gold:0,diamond:0,spdUpg:0,blocksBought:0,
     atkCharge:1,
     inCombat:false,combatTimer:0,spearTimer:0,spearAng:0,spearSwing:0,spearDir:0,
@@ -110,7 +110,7 @@ function initGame(){
   var p2=null;
   if(GAMEMODE==='coop'){
     p2=mkPlayer('Joueur 2',ci2,s2.x,s2.y,1,true);
-    p2.isHuman=true;p2.hp=100;p2.maxHp=100;p2.dmg=10;p2.speed=1.68;p2.regen=4;
+    p2.isHuman=true;p2.hp=100;p2.maxHp=100;p2.dmg=10;p2.speed=2.02;p2.regen=4;
   }
   var buildings=[mkBd('factory',_fGx,_fGy,0)];
 
