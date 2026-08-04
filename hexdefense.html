@@ -8,6 +8,16 @@
 /* ── RESET & BASE ─────────────────────────────── */
 *{user-select:none;-webkit-user-select:none;}
 html,body{margin:0;background:#1b1b1b;color:#eee;font-family:sans-serif;height:100%;overflow:hidden;}
+/* Lueur d'ambiance discrete, teintee par l'accent du theme actif, doucement respirante */
+body{position:relative;}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% -10%, color-mix(in srgb, var(--accent,#ffd23f) 14%, transparent), transparent 60%);
+  animation:ambientBreathe 6s ease-in-out infinite;
+}
+@keyframes ambientBreathe{0%,100%{opacity:.55;} 50%{opacity:1;}}
+#side,#leftPanel,#canvasWrap{position:relative;z-index:1;}
+#settingsBtn,#rulesBtn{z-index:2;}
 :root{
   --side-bg:#262626;--side-border:#444;--box-bg:#333;--accent:#ffd23f;
   --menu-bg:#1b1b1b;--btn-bg:#3a3a3a;--btn-border:#555;--btn-hover:#4a4a4a;
@@ -144,6 +154,22 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
   body.mobile-layout .statbox .lbl{font-size:9px;}
   body.mobile-layout #panel button{font-size:11px;padding:6px 5px;}
 }
+/* Mode Infini : chip degrade + petit flash au changement de heros */
+#boxDiff.infinite-chip{
+  display:inline-block;margin:4px auto;padding:4px 12px;border-radius:14px;
+  background:linear-gradient(90deg,#5533aa,#9944cc,#5533aa);background-size:200% 100%;
+  color:#fff;font-weight:600;letter-spacing:.3px;
+  animation:infiniteGlow 4s linear infinite;
+}
+@keyframes infiniteGlow{
+  0%{background-position:0% 50%;} 100%{background-position:200% 50%;}
+}
+@keyframes heroFlash{
+  0%{transform:scale(1.35);filter:brightness(1.8);}
+  100%{transform:scale(1);filter:brightness(1);}
+}
+#boxDiff.hero-flash{animation:heroFlash .5s ease-out;}
+.chaos-btn{background:linear-gradient(90deg,#5533aa,#9944cc);border-color:#cc99ff !important;}
 </style>
 </head>
 <body>
@@ -158,6 +184,21 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
     <div id="toast"></div>
     <div id="lastStats"></div>
 
+    <!-- Mode Infini : Chose active (popup descriptif, fermeture au clic) -->
+    <div id="traitPopup" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.78);
+      z-index:20;align-items:center;justify-content:center;cursor:pointer;text-align:center;padding:24px;box-sizing:border-box;">
+      <div style="max-width:480px;">
+        <div id="traitPopupBody"></div>
+        <p style="opacity:.65;font-size:12px;margin-top:14px;">(cliquez pour fermer)</p>
+      </div>
+    </div>
+
+    <!-- Mode Infini : Garnison Annexe (carte 3x2 auxiliaire) -->
+    <div id="sideGarrison" style="display:none;position:absolute;left:8px;top:8px;z-index:5;
+      background:rgba(0,0,0,0.55);border:1px solid #555;border-radius:8px;padding:6px;">
+      <div id="sideGarrisonGrid" style="display:grid;grid-template-columns:repeat(3,28px);gap:3px;"></div>
+    </div>
+
     <!-- Menu principal -->
     <div id="overlay">
       <div id="overlayZoom" style="display:flex;flex-direction:column;align-items:center;">
@@ -171,6 +212,7 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
     <div id="heroSelectOverlay" style="position:absolute;inset:0;background:var(--menu-bg);
       display:none;align-items:center;justify-content:flex-start;flex-direction:column;gap:10px;z-index:6;overflow-y:auto;box-sizing:border-box;padding:24px 0;">
       <h2 style="margin:10px 0 4px;">Choisir le Héros</h2>
+      <div id="heroTotalPts" style="font-size:14px;color:var(--accent,#ffd23f);margin-bottom:6px;"></div>
       <div id="heroCards" style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;max-width:900px;padding:10px;"></div>
       <button id="closeHeroSelect" style="width:200px;max-width:88vw;margin-top:4px;"></button>
     </div>
@@ -195,10 +237,15 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
         </select>
       </div>
       <div class="settingsRow"><span id="decorLbl"></span> : <select id="decorSelect"></select></div>
+      <div class="settingsRow"><span id="musicTrackLbl"></span> : <select id="musicTrackSelect"></select></div>
       <div class="settingsRow" style="display:none;"><span id="modeLbl"></span> : <select id="modeSelect"></select></div>
       <div class="settingsRow">
         <span id="volLbl"></span> :
         <input type="range" id="volSlider" min="0" max="100" value="50">
+      </div>
+      <div class="settingsRow">
+        <span id="musicVolLbl"></span> :
+        <input type="range" id="musicVolSlider" min="0" max="100" value="35">
       </div>
       <div class="settingsRow">
         <span id="pauseKeyLbl"></span> :
@@ -248,6 +295,8 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
       <span class="lbl" id="lblPoint"></span><span class="val" id="point">0</span>
     </div>
     <div id="boxDiff" style="font-size:13px;color:#bbb;text-align:center;margin:2px 0 2px;letter-spacing:.5px;"></div>
+    <div id="boxTrait" style="display:none;cursor:pointer;font-size:12px;text-align:center;margin:2px 0 6px;
+      padding:4px 8px;border-radius:8px;background:rgba(255,210,63,0.12);border:1px solid rgba(255,210,63,0.4);color:#ffd23f;"></div>
     <div class="statbox" id="boxSpecial" style="display:none;flex-direction:column;gap:4px;">
       <div style="display:flex;justify-content:space-between;width:100%;">
         <span class="lbl" id="lblSpecial">⏱</span><span class="val" id="specialVal" style="font-size:20px;">-</span>
@@ -294,6 +343,7 @@ body.mobile-layout #settingsBtn,body.mobile-layout #rulesBtn{padding:8px 10px;fo
     <div id="offerBox"></div>
     </div>
     <button id="pauseBtnSide" style="display:none;"></button>
+    <button id="prestigeBtn" style="display:none;"></button>
     <button id="abandonBtn"></button>
     <div id="panel"></div>
     <div id="log"></div>
@@ -340,6 +390,7 @@ const I18N = {
     settings:'Parametres', language:'Langue', decor:'Decor', close:'Fermer', speed:'Vitesse',
     buyGuard:'Placer un nouveau garde', buyMove:'Deplacer 2 gardes',
     buyPoint:'Acheter Points (+1/s)', pointCurrent:'Points/s actuel',
+    buyCrystal:'Acheter un Cristal', crystalHint:'Cristaux : {n} (consommes au prestige, +0.1% degats chacun)', crystalBought:'Cristal achete !',
     guard:'Garde', dmg:'Degats', range:'Portee', bountyPerKill:'Bonus/kill',
     upDmg:'+1 degats', upBounty:'+1e/kill', upRange:'+1 portee',
     offerLabel:'Offre : -50% sur',
@@ -357,37 +408,55 @@ const I18N = {
     waveStart:'Vague {n} !', guardKill:'Garde tue un monstre (+{x}e)',
     hintPlaceGuard:'Clique une case libre pour le garde',
     desert:'Desert', forest:'Foret', characters:'Personnages', epure:'Epure',
-    gameMode:'Mode de jeu', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston',
+    gameMode:'Mode de jeu', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston', modeNeutral:'Voyageur',
     heroSelectBtn:'Choisir le heros', heroSelectClose:'Retour',
     heroDesc1:'Axel — Echange 2 entites de place.',
     heroDesc3:'Midas — Gagne un doubleur d\'argent toutes les 3 min. Peut s\'endetter jusqu\'a son pic d\'argent atteint.',
     heroDesc5:'Enzo — Choisit combien de chaque type d\'ennemi apparait (max 600/type).',
     heroDesc6:'Iris — Invoque un allie (10 PV) a couts independants.',
     heroDesc8:'Gaston — Grossit de 1 case tous les 3 gardes achetes. La moitie des cases sont boostantes : garde +1 dmg gratuit dessus, ennemis 50% plus rapides dessus.',
+    heroTotalRecord:'Record total', heroGrandTotal:'Record total tous heros confondus',
+    chaosMode:'Mode Infini', chaosDesc:'Infini — Partie sans fin, difficulte 2. Ton heros n\'a rien de particulier au depart, mais tu commences avec une Chose aleatoire ; a chaque +10% de bonus de degats (prestige), ta Chose change. Si tu meurs, tu repars a la vague 1 (tes cristaux non depenses sont perdus). Tu peux quitter et revenir plus tard, tu reprendras exactement ou tu en etais. Achete des cristaux et utilise le Prestige (maintenir 0.5s) pour un bonus de degats permanent. But : atteindre la vague la plus haute possible.',
+    chaosDeath:'PV a zero — retour a la vague 1 !', chaosWaveReached:'Vague actuelle',
+    chaosDmgBonusLabel:'Bonus degats gardes (prestige)', chaosDmgBonusShort:'degats', prestigeBtn:'Prestige',
+    freeMoveReady:'Deplacement du heros disponible !', massTeleportReady:'Convergence prete : cliquez une case !',
+    guardsShuffled:'Les gardes ont echange de place !', buyCrystalPlace:'Acheter un Cristal (a placer)',
+    buySpeedUpgrade:'Ameliorer la vitesse des gardes', moveHeroHint:'Cliquez une case libre pour deplacer le heros',
+    massTeleportHint:'Cliquez une case pour y teleporter tous les ennemis', placeCrystalHint:'Cliquez une case libre pour placer le cristal',
+    prestigeDone:'Prestige ! Bonus de degats des gardes : +{v}%',
+    quitInfinite:'Quitter',
     summonAlly:'Invoquer un allie', allyPlaced:'Allie invoque !', allyDown:'Un allie est tombe !',
     chooseTileForAlly:'Clique une case libre pour l\'allie', ally:'Allie',
     enzoNextWave:'Prochaine vague',
     buyChrono:'+1 min de chrono', chronoBought:'Chrono +1 minute !',
-    volume:'Volume', dmgBounty:'1e/10 degats infliges', upDmgBounty:'+1e/10 degats',
+    volume:'Volume', musicVolume:'Musique', musicTrackLbl:'Piste musicale',
+    musicTrack0:'Ambiance (theme)', musicTrack1:'Arpege', musicTrack2:'Clochettes',
+    dmgBounty:'1e/10 degats infliges', upDmgBounty:'+1e/10 degats',
     restartKeyLbl:'Touche redemarrage (maintenir 1s)', pauseKeyLbl:'Touche pause',
     abandonKeyLbl:'Touche abandonner (maintenir)', topBuyKeyLbl:'Touche achat du haut',
     bottomBuyKeyLbl:'Touche achat du bas', specialKeyLbl:'Touche specialite',
     speed2Lbl:'Vitesse rapide personnalisee (x...)',
     pauseBtn:'Pause',
     rulesBtn:'Regles', rules:'Regles',
-    dailyChallenge:'Defi du Jour', dailyRecord:'Record du jour',
+    dailyChallenge:'Defi du Jour', dailyRecord:'Record du jour', dailyTotalPts:'Total cumule',
     dailyMapInfo:'Carte du jour — {n} cases',
     lastGame:'Derniere partie',
-    rulesText:'<b>But</b> : proteger le heros contre les monstres en placant des gardes. Score = points accumules en 15 minutes.<br><br>'+
+    rulesText:'<b>But</b> : proteger le heros contre les monstres en placant des gardes. Score = points accumules en 15 minutes (Mode Infini : atteindre la vague la plus haute possible, sans limite de temps).<br><br>'+
       '<b>Vagues</b> : une nouvelle vague toutes les 20 secondes. La 1ere vague fait apparaitre 10 ennemis, puis +1 ennemi a chaque nouvelle vague, repartis regulierement sur les 20 secondes (pas tous d\'un coup).<br><br>'+
       '<b>Types d\'ennemis</b> (menace equivalente, juste une specialite differente) : Rapide (+50% vitesse, bleu) · PV (+40% vie, jaune) · Degats (+50% degats, rouge).<br><br>'+
-      '<b>Ciblage</b> : les ennemis visent toujours la cible la plus proche qu\'ils peuvent attaquer (heros, allie invoque...) et reevaluent leur trajet des qu\'une cible plus proche apparait.<br><br>'+
+      '<b>Ciblage</b> : les ennemis visent toujours la cible la plus proche qu\'ils peuvent attaquer (heros, allie invoque, cristal vivant...) et reevaluent leur trajet des qu\'une cible plus proche apparait, sans jamais faire d\'aller-retour infini.<br><br>'+
       '<b>Heros</b> : regenere 0,2 PV/s. 3 gardes gratuits a placer au debut de chaque partie.<br><br>'+
       '<b>Gardes</b> : placement a 4&euro; (prix +25% a chaque achat). Amelioration +1 degat et +1&euro;/kill avec des couts qui evoluent separement (+25% chacun).<br><br>'+
-      '<b>Points</b> : achetable a 10&euro; pour +1 pt/s (prix +25% a chaque achat).<br><br>'+
-      '<b>Difficulte</b> : Difficulte 1 = ennemis plus faibles, Difficulte 2 = ennemis plus forts.<br><br>'+
-      '<b>Defi du Jour</b> : carte unique chaque jour (80-120 cases connexes), en Difficulte 2. Le heros du jour est tire au sort automatiquement (le meme pour tout le monde ce jour-la), quel que soit le heros choisi dans le menu.<br><br>'+
-      '<b>Touches</b> (configurables dans les parametres) : pause (1 fois par partie), abandon (maintenir), achat du haut et du bas selon la selection (heros ou garde), et activation directe de la specialite du heros quand elle existe.'
+      '<b>Points</b> : achetable a 10&euro; pour +1 pt/s (prix +25% a chaque achat) — indisponible en Mode Infini (remplace par les Cristaux, voir plus bas).<br><br>'+
+      '<b>Les 5 Heros</b> (choisis dans le menu, hors Mode Infini) : <b>Axel</b> — echange 2 entites de place. <b>Midas</b> — gagne un doubleur d\'argent toutes les 3 min, peut s\'endetter jusqu\'a son pic d\'argent. <b>Enzo</b> — choisit combien de chaque type d\'ennemi apparait (max 600/type). <b>Iris</b> — invoque des allies (10 PV) a couts independants. <b>Gaston</b> — grossit de 1 case tous les 3 gardes achetes ; la moitie des cases sont boostantes (+1 dmg gratuit pour un garde dessus, ennemis 50% plus rapides dessus).<br><br>'+
+      '<b>Defi du Jour</b> : carte unique chaque jour (80-120 cases connexes). Le heros du jour est tire au sort automatiquement (le meme pour tout le monde ce jour-la), quel que soit le heros choisi dans le menu.<br><br>'+
+      '<b>Mode Infini</b> — partie unique et persistante, sans fin ni limite de temps : tu peux quitter a tout moment (bouton "Quitter", instantane) et revenir plus tard exactement ou tu en etais. Le heros de base n\'a aucune capacite particuliere. Si tu meurs, tu repars a la vague 1 avec une nouvelle carte (gardes et argent remis a zero) — tes Cristaux non depenses sont perdus. La pause est illimitee dans ce mode (touche/bouton pause).<br><br>'+
+      '&nbsp;&nbsp;• <b>Cristaux</b> : seul achat disponible en Mode Infini (100&euro;, +20% a chaque achat). Consommes lors d\'un Prestige pour augmenter en permanence les degats de tous les gardes (+0,2% par cristal, doublé a +0,4% pour chaque cristal place sur la carte si la Chose "Cristal Vivant" est active).<br>'+
+      '&nbsp;&nbsp;• <b>Prestige</b> : maintenir le bouton 0,5 seconde (pas de confirmation) pour repartir a la vague 1 contre le bonus de degats permanent ci-dessus. Disponible a tout moment.<br>'+
+      '&nbsp;&nbsp;• <b>Les Choses</b> : tu commences avec une Chose aleatoire ; elle change des que ton bonus de degats permanent franchit une nouvelle dizaine (+10%, +20%, +30%...). Un ecran affiche sa description a chaque changement (clique pour fermer) ; passe le curseur sur son nom (a cote de "Mode Infini") pour la revoir a tout moment. Choses possibles : <b>Ame d\'Axel/Midas/Enzo/Iris/Gaston</b> — emprunte temporairement la capacite du heros correspondant. <b>Cristal Vivant</b> — les cristaux valent le double au prestige mais doivent etre places sur la carte comme une entite de 20 PV destructible par les ennemis. <b>Dedoublement</b> — 2 Choses actives en meme temps au lieu d\'une. <b>Heros Nomade</b> — le heros se teleporte sur une case aleatoire tous les 2 vagues, mais poser un garde ne coute que 1&euro; + le nombre de gardes deja achetes. <b>Chaises Musicales</b> — tous les 5 gardes poses, ils echangent tous aleatoirement de place, mais tu peux deplacer librement ton heros toutes les 30 secondes. <b>Garnison Annexe</b> — une carte annexe de 3x2 place automatiquement un garde chaque seconde de jeu ; ces gardes gagnent +0,2% de vitesse d\'attaque. <b>Convergence</b> — toutes les 40 secondes, clique une case pour y teleporter tous les ennemis de la carte. <b>Gardes Baladeurs</b> — les gardes se deplacent vers l\'ennemi le plus proche a 0,25 case/s, avec une amelioration de vitesse achetable (+0,2 case/s, 8&euro; au depart). <b>Ombres</b> — tous les ennemis sont totalement invisibles.<br><br>'+
+      '<b>Themes de decor</b> (Desert / Foret / Personnages / Epure, choix dans les parametres) : changent les couleurs de la carte et des entites, ainsi que l\'ambiance sonore. <b>Musique</b> : 3 pistes au choix dans les parametres (Ambiance, Arpege, Clochettes), qui alternent d\'elles-memes toutes les 4 vagues ; elle se coupe automatiquement des que tu changes de fenetre ou d\'onglet.<br><br>'+
+      '<b>Pause automatique</b> : le jeu se met en pause tout seul apres 1min30 sans la moindre activite (souris, clavier, molette), meme si tu as deja utilise ta pause manuelle cette partie. Il reprend des que tu bouges a nouveau.<br><br>'+
+      '<b>Touches</b> (configurables dans les parametres, clavier ou bouton/molette de souris) : pause (1 fois par partie, illimitee en Mode Infini), abandon (maintenir — instantane en Mode Infini via "Quitter"), achat du haut et du bas selon la selection (heros ou garde), et activation directe de la specialite du heros quand elle existe.'
   },
   en:{
     chooseDifficulty:'Choose difficulty',
@@ -398,6 +467,7 @@ const I18N = {
     settings:'Settings', language:'Language', decor:'Decor', close:'Close', speed:'Speed',
     buyGuard:'Place new guard', buyMove:'Move 2 guards',
     buyPoint:'Buy Points (+1/s)', pointCurrent:'Current pts/s',
+    buyCrystal:'Buy a Crystal', crystalHint:'Crystals: {n} (consumed on prestige, +0.1% damage each)', crystalBought:'Crystal bought!',
     guard:'Guard', dmg:'Damage', range:'Range', bountyPerKill:'Bounty/kill',
     upDmg:'+1 damage', upBounty:'+1e/kill', upRange:'+1 range',
     offerLabel:'Offer: -50% on',
@@ -415,37 +485,55 @@ const I18N = {
     waveStart:'Wave {n}!', guardKill:'Guard killed monster (+{x}e)',
     hintPlaceGuard:'Click a free tile to place the guard',
     desert:'Desert', forest:'Forest', characters:'Characters',
-    gameMode:'Game mode', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston',
+    gameMode:'Game mode', modeNormal:'Axel', modeMidas:'Midas', modeEnzo:'Enzo', modeIris:'Iris', modeGaston:'Gaston', modeNeutral:'Traveler',
     heroSelectBtn:'Choose hero', heroSelectClose:'Back',
     heroDesc1:'Axel — Swaps 2 entities.',
     heroDesc3:'Midas — Gains a money doubler every 3 min. Can go into debt up to his peak money reached.',
     heroDesc5:'Enzo — Chooses how many of each enemy type spawn (max 600/type).',
     heroDesc6:'Iris — Summons an ally (10 HP) with its own costs.',
     heroDesc8:'Gaston — Grows by 1 tile every 3 guards bought. Half the map tiles are boosted: free +1 dmg for guards there, enemies 50% faster there.',
+    heroTotalRecord:'Total record', heroGrandTotal:'Total record across all heroes',
+    chaosMode:'Infinite Mode', chaosDesc:'Infinite — Endless game, difficulty 2. Your hero starts with nothing special, but you begin with a random Thing; every +10% damage bonus (prestige) your Thing changes. If you die, you go back to wave 1 (unspent crystals are lost). You can quit and come back later, you\'ll resume exactly where you left off. Buy crystals and use Prestige (hold 0.5s) for a permanent damage bonus. Goal: reach the highest wave possible.',
+    chaosDeath:'HP down to zero — back to wave 1!', chaosWaveReached:'Current wave',
+    chaosDmgBonusLabel:'Guard damage bonus (prestige)', chaosDmgBonusShort:'damage', prestigeBtn:'Prestige',
+    freeMoveReady:'Hero move available!', massTeleportReady:'Convergence ready: click a tile!',
+    guardsShuffled:'Guards swapped places!', buyCrystalPlace:'Buy a Crystal (to place)',
+    buySpeedUpgrade:'Upgrade guard speed', moveHeroHint:'Click a free tile to move the hero',
+    massTeleportHint:'Click a tile to teleport all enemies there', placeCrystalHint:'Click a free tile to place the crystal',
+    prestigeDone:'Prestige! Guard damage bonus: +{v}%',
+    quitInfinite:'Quit',
     summonAlly:'Summon an ally', allyPlaced:'Ally summoned!', allyDown:'An ally has fallen!',
     chooseTileForAlly:'Click a free tile for the ally', ally:'Ally',
     enzoNextWave:'Next wave',
     buyChrono:'+1 min timer', chronoBought:'Timer +1 minute!',
-    volume:'Volume', dmgBounty:'1e/10 damage dealt', upDmgBounty:'+1e/10 damage',
+    volume:'Volume', musicVolume:'Music', musicTrackLbl:'Music track',
+    musicTrack0:'Ambiance (theme)', musicTrack1:'Arpeggio', musicTrack2:'Chimes',
+    dmgBounty:'1e/10 damage dealt', upDmgBounty:'+1e/10 damage',
     restartKeyLbl:'Restart key (hold 1s)', pauseKeyLbl:'Pause key',
     abandonKeyLbl:'Abandon key (hold)', topBuyKeyLbl:'Top purchase key',
     bottomBuyKeyLbl:'Bottom purchase key', specialKeyLbl:'Specialty key',
     speed2Lbl:'Custom fast speed (x...)',
     pauseBtn:'Pause',
     rulesBtn:'Rules', rules:'Rules',
-    dailyChallenge:'Daily Challenge', dailyRecord:"Today's record",
+    dailyChallenge:'Daily Challenge', dailyRecord:"Today's record", dailyTotalPts:'Lifetime total',
     dailyMapInfo:'Daily map — {n} tiles',
     lastGame:'Last game',
-    rulesText:'<b>Goal</b>: protect your hero from monsters by placing guards. Score = points earned in 15 minutes.<br><br>'+
+    rulesText:'<b>Goal</b>: protect your hero from monsters by placing guards. Score = points earned in 15 minutes (Infinite Mode: reach the highest wave possible, no time limit).<br><br>'+
       '<b>Waves</b>: a new wave every 20 seconds. The 1st wave spawns 10 enemies, then +1 enemy each new wave, spread evenly across the 20 seconds (not all at once).<br><br>'+
       '<b>Enemy types</b> (equal threat level, just a different specialty): Fast (+50% speed, blue) · HP (+40% health, yellow) · Damage (+50% damage, red).<br><br>'+
-      '<b>Targeting</b>: enemies always aim for the closest thing they can attack (hero, summoned ally...) and re-evaluate their path as soon as a closer target appears.<br><br>'+
+      '<b>Targeting</b>: enemies always aim for the closest thing they can attack (hero, summoned ally, living crystal...) and re-evaluate their path as soon as a closer target appears, never oscillating back and forth.<br><br>'+
       '<b>Hero</b>: regens 0.2 HP/s. 3 free guards to place at the start of each game.<br><br>'+
       '<b>Guards</b>: placement costs 4&euro; (price +25% per purchase). +1 damage and +1&euro;/kill upgrades have separately scaling costs (+25% each).<br><br>'+
-      '<b>Points</b>: buyable for 10&euro; for +1 pt/s (price +25% per purchase).<br><br>'+
-      '<b>Difficulty</b>: Difficulty 1 = weaker enemies, Difficulty 2 = stronger enemies.<br><br>'+
-      '<b>Daily Challenge</b>: unique map each day (80-120 connected tiles), Difficulty 2. The day\'s hero is picked automatically (same for everyone that day), regardless of the hero chosen in the menu.<br><br>'+
-      '<b>Keys</b> (configurable in settings): pause (once per game), abandon (hold), top and bottom purchase depending on selection (hero or guard), and direct activation of the hero\'s specialty when it has one.'
+      '<b>Points</b>: buyable for 10&euro; for +1 pt/s (price +25% per purchase) — unavailable in Infinite Mode (replaced by Crystals, see below).<br><br>'+
+      '<b>The 5 Heroes</b> (chosen in the menu, outside Infinite Mode): <b>Axel</b> — swaps 2 entities. <b>Midas</b> — gains a money doubler every 3 min, can go into debt up to his peak money. <b>Enzo</b> — chooses how many of each enemy type spawn (max 600/type). <b>Iris</b> — summons allies (10 HP) with independent costs. <b>Gaston</b> — grows by 1 tile every 3 guards bought; half the tiles are boosted (+1 free dmg for a guard there, enemies 50% faster there).<br><br>'+
+      '<b>Daily Challenge</b>: unique map each day (80-120 connected tiles). The day\'s hero is picked automatically (same for everyone that day), regardless of the hero chosen in the menu.<br><br>'+
+      '<b>Infinite Mode</b> — a single, persistent, endless run with no time limit: you can quit anytime ("Quit" button, instant) and resume later exactly where you left off. The base hero has no special ability. If you die, you go back to wave 1 with a new map (guards and money reset) — unspent Crystals are lost. Pause is unlimited in this mode.<br><br>'+
+      '&nbsp;&nbsp;• <b>Crystals</b>: the only purchase in Infinite Mode (100&euro;, +20% per purchase). Spent on Prestige to permanently boost all guards\' damage (+0.2% per crystal, doubled to +0.4% for each crystal placed on the map if the "Living Crystal" Thing is active).<br>'+
+      '&nbsp;&nbsp;• <b>Prestige</b>: hold the button for 0.5s (no confirmation) to go back to wave 1 in exchange for the permanent damage bonus above. Available anytime.<br>'+
+      '&nbsp;&nbsp;• <b>Things</b>: you start with a random Thing; it changes whenever your permanent damage bonus crosses a new ten (+10%, +20%, +30%...). A screen shows its description each time it changes (click to close); hover its name (next to "Infinite Mode") to see it again anytime. Possible Things: <b>Axel/Midas/Enzo/Iris/Gaston\'s Soul</b> — temporarily borrow that hero\'s ability. <b>Living Crystal</b> — crystals are worth double at prestige but must be placed on the map as a destructible 20 HP entity. <b>Duplication</b> — 2 Things active at once instead of one. <b>Wandering Hero</b> — the hero teleports to a random tile every 2 waves, but placing a guard only costs 1&euro; + the number of guards already bought. <b>Musical Chairs</b> — every 5 guards placed, they all swap places randomly, but you can freely move your hero every 30 seconds. <b>Side Garrison</b> — an auxiliary 3x2 map automatically places a guard every game-second; those guards gain +0.2% attack speed. <b>Convergence</b> — every 40 seconds, click a tile to teleport all enemies there. <b>Wandering Guards</b> — guards move toward the nearest enemy at 0.25 tile/s, with a purchasable speed upgrade (+0.2 tile/s, 8&euro; to start). <b>Shadows</b> — all enemies are completely invisible.<br><br>'+
+      '<b>Decor themes</b> (Desert / Forest / Characters / Clean, chosen in settings): change map/entity colors and the ambient sound. <b>Music</b>: 3 tracks to choose from in settings (Ambiance, Arpeggio, Chimes), which alternate on their own every 4 waves; it stops automatically when you switch window or tab.<br><br>'+
+      '<b>Auto-pause</b>: the game pauses itself after 1min30 with zero activity (mouse, keyboard, wheel), even if you already used your manual pause this game. It resumes as soon as you move again.<br><br>'+
+      '<b>Keys</b> (configurable in settings, keyboard or mouse button/wheel): pause (once per game, unlimited in Infinite Mode), abandon (hold — instant in Infinite Mode via "Quit"), top and bottom purchase depending on selection (hero or guard), and direct activation of the hero\'s specialty when it has one.'
   }
 };
 let lang = 'fr';
@@ -598,6 +686,13 @@ let state='difficulty'; // 'difficulty' | 'playing' | 'gameover'
 let initialPlacement=false;
 let difficulty=1, gameMode='gameplay1', sessionMode='gameplay1';
 let dailyMode=false;
+let chaosMode=false;
+let chaosSaveTimer=0;
+let infiniteDmgBonusPct=0;   // bonus permanent de degats des gardes (%), acquis via prestige
+let infiniteCrystals=0, infiniteCrystalCost=100; // "Cristaux" : seul achat du mode Infini (remplace les points/s)
+// Le heros de base du mode Infini n'a aucune capacite particuliere ('gameplay9' = neutre) ;
+// les Choses (traits) tirees aleatoirement peuvent temporairement lui preter celle d'Axel,
+// Midas, Enzo, Iris ou Gaston (cf. TRAIT_HERO_MAP et applyTraitsToSessionMode).
 let midasTimer=0, midasDoublers=0, midasMaxMoney=0;
 let waveSpawnTotal=9999, waveSpawnCount=0;
 const ENZO_TYPE_CAP=600;
@@ -632,6 +727,8 @@ let attackFx=[];         // attaques gardes (jaune)
 let monsterAttackFx=[];  // attaques monstres (rouge)
 let heroHitFlash=0;      // secondes restantes du flash sur le heros
 let hoverMonster=null;
+let deathFx=[];          // eclats de particules a la mort d'un monstre
+let waveBannerT=0;       // secondes restantes d'affichage du bandeau "Vague N"
 
 // Boucle
 let lastT=performance.now(), realDt=0;
@@ -644,25 +741,216 @@ let pauseKey='p', abandonKey='', topBuyKey='', bottomBuyKey='', specialKey='', l
 // AUDIO — synthese WebAudio
 // ══════════════════════════════════════════════════════
 let audioCtx=null, sfxVolume=0.5;
+// Chaque evenement peut etre soit une note simple (freq/dur/wave/glide/noise),
+// soit un petit arpege (notes en demi-tons relatifs a base, joue avec un decalage stagger)
 const SFX={
-  attack:{freq:880,dur:0.05,wave:'square'}, kill:{freq:220,dur:0.12,wave:'sawtooth'},
-  hit:{freq:140,dur:0.15,wave:'triangle'}, buy:{freq:660,dur:0.06,wave:'sine'},
-  wave:{freq:523,dur:0.2,wave:'sine'},     boss:{freq:110,dur:0.45,wave:'sawtooth'},
-  win:{freq:784,dur:0.3,wave:'sine'},      lose:{freq:98,dur:0.5,wave:'sawtooth'}
+  buy:{freq:520,dur:0.09,wave:'sine',glide:1.6},
+  wave:{notes:[0,4,7],base:392,dur:0.15,wave:'triangle',stagger:0.07},
+  boss:{freq:110,dur:0.45,wave:'sawtooth'},
+  win:{notes:[0,4,7,12],base:523,dur:0.17,wave:'sine',stagger:0.09},
+  lose:{notes:[0,-3,-7],base:220,dur:0.24,wave:'sawtooth',stagger:0.13},
+  unlock:{notes:[0,7],base:660,dur:0.13,wave:'sine',stagger:0.09},
+  heroSwap:{notes:[0,4,7,4],base:440,dur:0.09,wave:'triangle',stagger:0.05}
+};
+// Coloration sonore propre a chaque theme de decor : filtre passe-bas (chaleur du son)
+// + leger detune (justesse) pour que chaque decor ait sa propre "signature" sonore
+const SFX_THEME={
+  desert:     {cutoff:2200, detune:0},
+  forest:     {cutoff:1400, detune:-5},
+  characters: {cutoff:6500, detune:0},
+  epure:      {cutoff:9000, detune:6}
 };
 function ensureAudio(){
   if(!audioCtx) try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
   if(audioCtx&&audioCtx.state==='suspended') audioCtx.resume();
 }
+function noteFreq(base,semis){ return base*Math.pow(2,semis/12); }
+// Joue une seule note (avec filtre theme + option glide/bruit) a un instant donne
+function playTone(freq,dur,wave,when,glideTo,noiseAmt,gainMul){
+  const theme=SFX_THEME[DECORS[decorIndex].key]||SFX_THEME.desert;
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain(), f=audioCtx.createBiquadFilter();
+  o.type=wave; o.frequency.value=freq; o.detune.value=theme.detune;
+  f.type='lowpass'; f.frequency.value=theme.cutoff;
+  o.connect(f); f.connect(g); g.connect(audioCtx.destination);
+  if(glideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20,freq*glideTo),when+dur);
+  g.gain.value=0.0001;
+  g.gain.exponentialRampToValueAtTime(sfxVolume*0.3*(gainMul||1),when+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+  o.start(when); o.stop(when+dur+0.02);
+  if(noiseAmt){
+    const len=Math.floor(audioCtx.sampleRate*Math.min(dur,0.08));
+    const buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<len;i++) data[i]=(Math.random()*2-1)*(1-i/len);
+    const src=audioCtx.createBufferSource(); src.buffer=buf;
+    const ng=audioCtx.createGain(); ng.gain.value=sfxVolume*noiseAmt;
+    src.connect(f); ng.connect(audioCtx.destination); src.connect(ng);
+    src.start(when);
+  }
+}
 function playSfx(type){
   if(sfxVolume<=0) return; ensureAudio(); if(!audioCtx) return;
   const p=SFX[type]; if(!p) return;
-  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-  o.type=p.wave; o.frequency.value=p.freq; o.connect(g); g.connect(audioCtx.destination);
   const now=audioCtx.currentTime;
-  g.gain.value=sfxVolume*0.3; g.gain.exponentialRampToValueAtTime(0.0001,now+p.dur);
-  o.start(now); o.stop(now+p.dur+0.02);
+  if(p.notes){
+    p.notes.forEach((semis,i)=>{
+      playTone(noteFreq(p.base,semis),p.dur,p.wave,now+i*p.stagger,null,0,1-i*0.08);
+    });
+  } else {
+    playTone(p.freq,p.dur,p.wave,now,p.glide,p.noise||0,1);
+  }
 }
+
+// ══════════════════════════════════════════════════════
+// MUSIQUE D'AMBIANCE — pads generatifs, propres a chaque theme de decor,
+// qui alternent entre plusieurs morceaux a des moments precis (toutes les 4 vagues)
+// ══════════════════════════════════════════════════════
+let musicVolume=0.35;
+let musicTrackIndex=0; // 0=Ambiance (pad), 1=Arpege, 2=Clochettes — choisi dans les reglages
+let musicCtx=null, musicMasterGain=null;
+let musicNodes=[], musicTimer=null, musicPlaying=false, musicDucked=false;
+let musicPieceIndex=0, musicChordIndex=0;
+// Chaque theme propose 2 ambiances (A calme/nue, B legerement plus riche) qui alternent
+const MUSIC_THEMES={
+  desert:{root:196,pieces:[
+    {chords:[[0,4,7],[0,3,7],[5,9,12],[0,4,7]],chordDur:10,wave:'sine'},
+    {chords:[[0,4,7,11],[5,9,12],[7,11,14],[0,4,7]],chordDur:8,wave:'triangle'}]},
+  forest:{root:174,pieces:[
+    {chords:[[0,3,7],[5,8,12],[0,3,7],[3,7,10]],chordDur:11,wave:'sine'},
+    {chords:[[0,3,7,10],[5,8,12],[7,10,14],[0,3,7]],chordDur:9,wave:'triangle'}]},
+  characters:{root:220,pieces:[
+    {chords:[[0,4,7],[9,12,16],[7,11,14],[0,4,7]],chordDur:8,wave:'triangle'},
+    {chords:[[0,4,7,11],[5,9,12],[2,7,11],[0,4,7]],chordDur:7,wave:'sine'}]},
+  epure:{root:262,pieces:[
+    {chords:[[0,4,7],[0,5,9],[0,3,7],[0,4,7]],chordDur:10,wave:'sine'},
+    {chords:[[0,4,7,11],[0,5,9,14],[0,3,7,10],[0,4,7]],chordDur:8,wave:'triangle'}]}
+};
+function ensureMusicAudio(){
+  if(!musicCtx) try{
+    musicCtx=new(window.AudioContext||window.webkitAudioContext)();
+    musicMasterGain=musicCtx.createGain();
+    musicMasterGain.gain.value=musicDucked?musicVolume*0.35:musicVolume;
+    musicMasterGain.connect(musicCtx.destination);
+  }catch(e){}
+  if(musicCtx&&musicCtx.state==='suspended') musicCtx.resume();
+}
+function currentMusicTheme(){ return MUSIC_THEMES[DECORS[decorIndex].key]||MUSIC_THEMES.desert; }
+function playMusicChord(chordSemis,root,dur,waveType){
+  if(!musicCtx) return;
+  const now=musicCtx.currentTime;
+  const nodes=[];
+  chordSemis.forEach(semis=>{
+    const freq=root*Math.pow(2,semis/12);
+    const osc=musicCtx.createOscillator(); osc.type=waveType; osc.frequency.value=freq;
+    const filt=musicCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=1100;
+    const g=musicCtx.createGain(); g.gain.value=0;
+    osc.connect(filt); filt.connect(g); g.connect(musicMasterGain);
+    osc.start(now);
+    const peak=0.16/chordSemis.length;
+    g.gain.linearRampToValueAtTime(peak,now+1.4);
+    g.gain.setValueAtTime(peak,now+dur-1.6);
+    g.gain.linearRampToValueAtTime(0,now+dur);
+    osc.stop(now+dur+0.1);
+    nodes.push({osc,g});
+  });
+  musicNodes=nodes;
+}
+// Note simple tenue (utilisee par l'arpege)
+function playMusicNote(freq,dur,waveType,when){
+  if(!musicCtx) return;
+  const osc=musicCtx.createOscillator(); osc.type=waveType; osc.frequency.value=freq;
+  const filt=musicCtx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=1400;
+  const g=musicCtx.createGain(); g.gain.value=0;
+  osc.connect(filt); filt.connect(g); g.connect(musicMasterGain);
+  osc.start(when);
+  g.gain.linearRampToValueAtTime(0.15,when+0.12);
+  g.gain.exponentialRampToValueAtTime(0.0001,when+dur);
+  osc.stop(when+dur+0.05);
+}
+// Note "cloche" : attaque rapide, longue decroissance douce
+function playMusicBell(freq,when){
+  if(!musicCtx) return;
+  const osc=musicCtx.createOscillator(); osc.type='sine'; osc.frequency.value=freq;
+  const g=musicCtx.createGain(); g.gain.value=0;
+  osc.connect(g); g.connect(musicMasterGain);
+  osc.start(when);
+  g.gain.linearRampToValueAtTime(0.13,when+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,when+2.4);
+  osc.stop(when+2.5);
+}
+function scheduleNextMusicChord(){
+  if(!musicPlaying||!musicCtx) return;
+  if(musicTrackIndex===1) scheduleMusicArpeggio();
+  else if(musicTrackIndex===2) scheduleMusicChimes();
+  else scheduleMusicAmbiance();
+}
+// Piste 1 (par defaut) : pad d'accords tenus, propre au theme de decor actif
+function scheduleMusicAmbiance(){
+  const theme=currentMusicTheme();
+  const piece=theme.pieces[musicPieceIndex%theme.pieces.length];
+  const chord=piece.chords[musicChordIndex%piece.chords.length];
+  playMusicChord(chord,theme.root,piece.chordDur,piece.wave);
+  musicChordIndex++;
+  musicTimer=setTimeout(scheduleNextMusicChord,piece.chordDur*1000*0.9);
+}
+// Piste 2 : les memes accords, mais joues en arpege (notes en cascade) pour un rendu plus vivant
+function scheduleMusicArpeggio(){
+  const theme=currentMusicTheme();
+  const piece=theme.pieces[musicPieceIndex%theme.pieces.length];
+  const chord=piece.chords[musicChordIndex%piece.chords.length];
+  const now=musicCtx.currentTime;
+  chord.forEach((semis,i)=>{ playMusicNote(theme.root*Math.pow(2,semis/12),0.9,'triangle',now+i*0.35); });
+  musicChordIndex++;
+  musicTimer=setTimeout(scheduleNextMusicChord,chord.length*350+900);
+}
+// Piste 3 : notes eparses au timbre de cloche, tres calme et aere
+function scheduleMusicChimes(){
+  const theme=currentMusicTheme();
+  const piece=theme.pieces[musicPieceIndex%theme.pieces.length];
+  const chord=piece.chords[musicChordIndex%piece.chords.length];
+  const now=musicCtx.currentTime;
+  chord.forEach((semis,i)=>{ playMusicBell(theme.root*2*Math.pow(2,semis/12),now+i*1.1); });
+  musicChordIndex++;
+  musicTimer=setTimeout(scheduleNextMusicChord,chord.length*1100+2500);
+}
+// Change d'ambiance musicale (appele a des moments precis du jeu, ex. toutes les 4 vagues)
+function advanceMusicPiece(){ musicPieceIndex++; musicChordIndex=0; }
+// Change immediatement de piste (reglages) sans attendre la fin du morceau en cours
+function switchMusicTrack(idx){
+  musicTrackIndex=idx;
+  if(musicPlaying){ clearTimeout(musicTimer); musicChordIndex=0; scheduleNextMusicChord(); }
+}
+function startMusic(){
+  if(musicPlaying) return;
+  ensureMusicAudio(); if(!musicCtx) return;
+  musicPlaying=true; musicChordIndex=0;
+  scheduleNextMusicChord();
+}
+function stopMusic(){
+  if(!musicPlaying) return;
+  musicPlaying=false;
+  clearTimeout(musicTimer);
+  const now=musicCtx?musicCtx.currentTime:0;
+  musicNodes.forEach(n=>{
+    try{ n.g.gain.cancelScheduledValues(now); n.g.gain.setValueAtTime(n.g.gain.value,now);
+      n.g.gain.linearRampToValueAtTime(0,now+1); n.osc.stop(now+1.05); }catch(e){}
+  });
+  musicNodes=[];
+}
+function setMusicDucked(ducked){
+  musicDucked=ducked;
+  if(!musicMasterGain||!musicCtx) return;
+  const now=musicCtx.currentTime;
+  musicMasterGain.gain.cancelScheduledValues(now);
+  musicMasterGain.gain.setValueAtTime(musicMasterGain.gain.value,now);
+  musicMasterGain.gain.linearRampToValueAtTime(ducked?musicVolume*0.35:musicVolume,now+0.6);
+}
+function setMusicVolume(v){
+  musicVolume=v;
+  if(musicMasterGain) musicMasterGain.gain.value=musicDucked?v*0.35:v;
+  if(v<=0) stopMusic(); else if(!musicPlaying&&state==='playing') startMusic();
+}
+
 let toastTimer=null;
 function showToast(msg){
   const el=document.getElementById('toast');
@@ -683,7 +971,20 @@ function occupiedSet(){
   heroExtraTiles.forEach(t=>s.add(axKey(t.q,t.r)));
   guards.forEach(g=>s.add(axKey(g.q,g.r)));
   allies.forEach(a=>s.add(axKey(a.q,a.r)));
+  crystalEntities.forEach(c=>s.add(axKey(c.q,c.r)));
   return s;
+}
+// Cristal Vivant / Chaises Musicales : melange les positions des gardes entre eux (toujours valide)
+function shuffleAllGuards(){
+  if(guards.length<2) return;
+  const positions=guards.map(g=>({q:g.q,r:g.r}));
+  for(let i=positions.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [positions[i],positions[j]]=[positions[j],positions[i]];
+  }
+  guards.forEach((g,i)=>{ g.q=positions[i].q; g.r=positions[i].r; delete g.mpx; delete g.mpy; });
+  monsters.forEach(m=>recomputePath(m));
+  showToast(t('guardsShuffled'));
 }
 
 // Obese : le corps du heros grossit d'une case a chaque garde achete
@@ -781,6 +1082,7 @@ function pxToHex(mx,my){
   }
   return bestD<=SIZE*SIZE?best:null;
 }
+
 function canvasScale(){
   const rect=cv.getBoundingClientRect();
   return {sx:cv.width/rect.width,sy:cv.height/rect.height,rect};
@@ -810,11 +1112,24 @@ function pickRandomSpawnPoints(){
   }
 }
 function priceFor(cat,baseCost){
+  // Heros Nomade : poser un garde ne coute que 1e + le nombre de gardes deja achetes
+  if(cat==='guardPlace'&&hasTrait('wanderingHero')) return 1+guards.length;
   return baseCost;
 }
 
 function startWave(){
   waveNum++; waveTimer=WAVE_INTERVAL;
+  if(waveNum%4===1) advanceMusicPiece(); // alterne d'ambiance musicale a des moments precis
+  if(chaosMode){
+    updateInfiniteBoxDiff(false);
+    // Heros Nomade : le heros se teleporte sur une case libre aleatoire tous les 2 vagues
+    if(hasTrait('wanderingHero')&&waveNum%2===0){
+      const occ=occupiedSet();
+      const free=Object.keys(tiles).filter(k=>!occ.has(k));
+      if(free.length){ const tt=tiles[free[Math.floor(Math.random()*free.length)]]; hero.q=tt.q; hero.r=tt.r; }
+    }
+  }
+  waveBannerT=1.6;
   currentMonsterType=MONSTER_TYPES[Math.floor(Math.random()*MONSTER_TYPES.length)];
   waveSpawnCount=0; spawnAcc=0;
   if(sessionMode==='gameplay5'){
@@ -832,6 +1147,7 @@ function startWave(){
   document.getElementById('wave').textContent=waveNum;
   log(t('waveStart',{n:waveNum})); showToast(t('waveStart',{n:waveNum})); playSfx('wave');
   updateHUD();
+  if(chaosMode) saveChaosState();
 }
 
 function spawnMonster(){
@@ -864,7 +1180,8 @@ function spawnMonster(){
 function nearestTargetTile(m){
   const cands=[{q:hero.q,r:hero.r,key:axKey(hero.q,hero.r)},
     ...heroExtraTiles.map(t=>({q:t.q,r:t.r,key:axKey(t.q,t.r)})),
-    ...allies.map(a=>({q:a.q,r:a.r,key:axKey(a.q,a.r)}))];
+    ...allies.map(a=>({q:a.q,r:a.r,key:axKey(a.q,a.r)})),
+    ...crystalEntities.map(c=>({q:c.q,r:c.r,key:axKey(c.q,c.r)}))];
   if(!cands.length) return null;
   let bestD=Infinity;
   for(const c of cands){ const d=hexDist(m.q,m.r,c.q,c.r); if(d<bestD) bestD=d; }
@@ -885,7 +1202,17 @@ function recomputePath(m){
 }
 
 function newGuard(){
-  return {dmg:1,range:1,bounty:1,cooldown:1,costDmgUp:4,costBountyUp:4};
+  return {dmg:1,range:1,bounty:1,cooldown:1,costDmgUp:4,costBountyUp:4,bornAt:performance.now()};
+}
+// Petit eclat de particules colorees (theme courant) a la mort d'un monstre
+function spawnDeathFx(x,y){
+  const d=DECORS[decorIndex];
+  const n=6;
+  for(let i=0;i<n;i++){
+    const a=(Math.PI*2*i/n)+Math.random()*0.4;
+    const sp=60+Math.random()*60;
+    deathFx.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.45,color:d.monsterStroke||'#ff9a6a'});
+  }
 }
 
 
@@ -896,10 +1223,20 @@ function update(dt){
   if(state!=='playing') return;
   elapsedSeconds+=realDt;
 
-  // Chrono de partie
-  matchTimer-=dt;
-  document.getElementById('chrono').textContent=formatTime(Math.max(0,matchTimer));
-  if(matchTimer<=0){ matchTimer=0; endGame('timeup'); return; }
+  // Sauvegarde automatique du mode Chaos (partie persistante, jamais reinitialisee)
+  if(chaosMode){
+    chaosSaveTimer+=realDt;
+    if(chaosSaveTimer>=2){chaosSaveTimer=0;saveChaosState();}
+    checkTraitReroll();
+    updateTraitMechanics(dt);
+  }
+
+  // Chrono de partie (desactive en mode Chaos : partie sans fin)
+  if(!chaosMode){
+    matchTimer-=dt;
+    document.getElementById('chrono').textContent=formatTime(Math.max(0,matchTimer));
+    if(matchTimer<=0){ matchTimer=0; endGame('timeup'); return; }
+  }
 
   // Regeneration heros
   if(hero.hp<hero.maxhp) hero.hp=Math.min(hero.maxhp,hero.hp+HERO_REGEN*dt);
@@ -963,6 +1300,11 @@ function update(dt){
       const dA=Math.hypot(apx-m.px,apy-m.py);
       if(dA<=atkRange&&dA<atkDist&&!guardBlocksLOS(m,[apx,apy])){atkTarget=al;atkPx=[apx,apy];atkDist=dA;}
     }
+    for(const cr of crystalEntities){
+      const [cpx,cpy]=axToPx(cr.q,cr.r);
+      const dC=Math.hypot(cpx-m.px,cpy-m.py);
+      if(dC<=atkRange&&dC<atkDist&&!guardBlocksLOS(m,[cpx,cpy])){atkTarget=cr;atkPx=[cpx,cpy];atkDist=dC;}
+    }
 
     if(atkTarget){
       m.attackAcc+=dt;
@@ -970,7 +1312,9 @@ function update(dt){
         m.attackAcc-=1; atkTarget.hp-=m.dmg;
         if(atkTarget===hero) heroHitFlash=0.35;
         monsterAttackFx.push({x1:m.px,y1:m.py,x2:atkPx[0],y2:atkPx[1],life:0.3});
-        playSfx('hit');
+      }
+      if(atkTarget.hp<=0&&crystalEntities.includes(atkTarget)){
+        crystalEntities=crystalEntities.filter(c=>c!==atkTarget);
       }
       continue;
     }
@@ -1000,7 +1344,7 @@ function update(dt){
   // ── Gardes : attaque des monstres ──
   for(const g of guards){
     g.cooldown-=dt; if(g.cooldown>0) continue; g.cooldown+=1;
-    const [gx,gy]=axToPx(g.q,g.r);
+    const [gx,gy]=guardPos(g);
     const maxR=g.range*SIZE*Math.sqrt(3)+SIZE*0.5;
     let target=null;
     for(const m of monsters){
@@ -1009,30 +1353,55 @@ function update(dt){
     }
     if(!target) continue;
     attackFx.push({x1:gx,y1:gy,x2:target.px,y2:target.py,life:0.25});
-    target.hp-=g.dmg;
-    playSfx('attack');
+    target.hp-=g.dmg*(1+infiniteDmgBonusPct/100);
     if(target.hp<=0){
       money+=g.bounty;
       if(sessionMode==='gameplay3'&&money>midasMaxMoney) midasMaxMoney=money;
       monsters=monsters.filter(m=>m!==target);
-      playSfx('kill');log(t('guardKill',{x:g.bounty}));
+      spawnDeathFx(target.px,target.py);
+      log(t('guardKill',{x:g.bounty}));
     }
   }
 
   // Decrementation effets
   for(const fx of attackFx) fx.life-=dt;
   for(const fx of monsterAttackFx) fx.life-=dt;
+  for(const fx of deathFx){ fx.life-=dt; fx.x+=fx.vx*dt; fx.y+=fx.vy*dt; fx.vx*=0.9; fx.vy*=0.9; }
   attackFx=attackFx.filter(fx=>fx.life>0);
   monsterAttackFx=monsterAttackFx.filter(fx=>fx.life>0);
+  deathFx=deathFx.filter(fx=>fx.life>0);
   if(heroHitFlash>0) heroHitFlash-=realDt;
+  if(waveBannerT>0) waveBannerT-=realDt;
 
   if(allies.some(a=>a.hp<=0)){
     allies.filter(a=>a.hp<=0).forEach(a=>{pointRate-=(a.pointContribution||0);log(t('allyDown'));});
     allies=allies.filter(a=>a.hp>0);
     if(selected&&selected.type==='ally'&&!allies.includes(selected.a)){selected=null;renderPanel();}
   }
-  if(hero.hp<=0){hero.hp=0;playSfx('lose');endGame();return;}
+  if(hero.hp<=0){
+    hero.hp=0;playSfx('lose');
+    if(chaosMode){ dieBackToWave1(); return; }
+    endGame();return;
+  }
   updateHUD();
+}
+
+// Mode Infini : mourir ne termine pas la partie, on repart a la vague 1 (nouvelle carte,
+// gardes/argent remis a zero). Le bonus de prestige est conserve, mais tous les cristaux
+// non depenses sont perdus (sans donner de bonus de degats).
+function dieBackToWave1(){
+  applyTileData(generateRandomMap());
+  resetGameState();money=0;
+  matchTimer=Infinity;
+  infiniteCrystals=0; infiniteCrystalCost=100; crystalEntities=[];
+  applyTraitsToSessionMode();
+  startGameSession();
+  prepareGameUI(false,true,false);
+  updateInfiniteBoxDiff(false);
+  updatePrestigeBtn();
+  saveChaosState();
+  log(t('chaosDeath'));showToast(t('chaosDeath'));
+  updateHUD();renderPanel();
 }
 
 function formatTime(s){
@@ -1062,6 +1431,12 @@ function loadDailyStats(){
 function recordDailyResult(pts){
   const s=loadDailyStats(); if(pts>s.best) s.best=pts;
   localStorage.setItem('hexdefense_daily_'+dailyDateStr(),JSON.stringify(s));
+  const total=loadDailyTotalPts()+Math.floor(pts);
+  localStorage.setItem('hexdefense_daily_totalPts',String(total));
+}
+function loadDailyTotalPts(){
+  try{ return parseInt(localStorage.getItem('hexdefense_daily_totalPts')||'0',10)||0; }
+  catch(e){ return 0; }
 }
 function loadSettings(){
   try{
@@ -1074,17 +1449,19 @@ function loadSettings(){
       else gameMode=s.gameMode;
     }
     if(s.sfxVolume!==undefined) sfxVolume=s.sfxVolume;
+    if(s.musicVolume!==undefined) musicVolume=s.musicVolume;
     if(s.pauseKey) pauseKey=s.pauseKey;
     if(s.abandonKey!==undefined) abandonKey=s.abandonKey;
     if(s.topBuyKey!==undefined) topBuyKey=s.topBuyKey;
     if(s.bottomBuyKey!==undefined) bottomBuyKey=s.bottomBuyKey;
     if(s.specialKey!==undefined) specialKey=s.specialKey;
+    if(s.musicTrackIndex!==undefined) musicTrackIndex=s.musicTrackIndex;
     if(s.speed2&&s.speed2>=1) SPEEDS[1]=s.speed2;
   }catch(e){}
 }
 function saveSettings(){
   localStorage.setItem('hexdefense_settings',
-    JSON.stringify({lang,decorIndex,gameMode,sfxVolume,pauseKey,abandonKey,topBuyKey,bottomBuyKey,specialKey,speed2:SPEEDS[1]}));
+    JSON.stringify({lang,decorIndex,gameMode,sfxVolume,musicVolume,musicTrackIndex,pauseKey,abandonKey,topBuyKey,bottomBuyKey,specialKey,speed2:SPEEDS[1]}));
 }
 
 
@@ -1109,7 +1486,7 @@ function resetGameState(){
   heroExtraTiles=[];boostTiles=new Set();nextGrowthTile=null;gastonGuardsSinceGrowth=0;
   guards=[];monsters=[];spawnPoints=[];allies=[];
   waveNum=0;waveTimer=0;spawnAcc=0;matchTimer=MATCH_DURATION;
-  attackFx=[];monsterAttackFx=[];heroHitFlash=0;
+  attackFx=[];monsterAttackFx=[];deathFx=[];heroHitFlash=0;
   selected=null;pendingAction=null;pendingAllySource=null;moveSelected=[];hoverMonster=null;
   costs={...BASE_COSTS};
   paused=false;pauseUsed=false;
@@ -1152,21 +1529,29 @@ function applyPanelLayout(){
   applyMenuZoom();
 }
 
-// Sur ordinateur, le menu principal est agrandi et zoomable a la molette (jusqu'a x150%)
-let menuZoom=1.2;
+// Sur ordinateur, le menu principal est agrandi (taille fixe) — pas de zoom molette ici.
+const menuZoom=1.2;
 function applyMenuZoom(){
   const z=document.getElementById('overlayZoom');
   z.style.zoom=isMobileLayout()?'':menuZoom;
 }
-document.getElementById('overlay').addEventListener('wheel',e=>{
-  if(isMobileLayout()) return;
-  e.preventDefault();
-  menuZoom=Math.min(1.5,Math.max(1,menuZoom+(e.deltaY<0?0.05:-0.05)));
-  applyMenuZoom();
-},{passive:false});
 window.matchMedia('(hover: none) and (pointer: coarse)').addEventListener?.('change',applyPanelLayout);
 window.addEventListener('resize',applyPanelLayout);
 window.addEventListener('orientationchange',applyPanelLayout);
+window.addEventListener('beforeunload',()=>{ if(chaosMode) saveChaosState(); stopMusic(); });
+window.addEventListener('pagehide',()=>{ if(chaosMode) saveChaosState(); stopMusic(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden&&chaosMode) saveChaosState(); });
+// La musique doit s'arreter completement (pas juste etre mise en sourdine) des que l'on quitte
+// l'onglet/la fenetre, meme sans fermer le jeu : on ARRETE et on annule la programmation des
+// prochains accords (clearTimeout), on ne se contente pas de suspendre l'AudioContext. Ainsi,
+// meme si un evenement inattendu (focus, resume automatique du navigateur, etc.) survient
+// pendant que l'onglet est cache, il n'y a plus rien de programme qui puisse produire du son.
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ stopMusic(); }
+  else if(state==='playing'&&!paused) startMusic();
+});
+window.addEventListener('blur',()=>{ stopMusic(); });
+window.addEventListener('focus',()=>{ if(state==='playing'&&!paused&&!document.hidden) startMusic(); });
 
 function prepareGameUI(showPoint,showTimer,showChrono){
   document.getElementById('boxPoint').style.display   =showPoint  ?'':'none';
@@ -1184,7 +1569,221 @@ function prepareGameUI(showPoint,showTimer,showChrono){
   document.getElementById('rulesBtn').style.display   ='none';
   document.getElementById('overlay').style.display    ='none';
   document.getElementById('lastStats').style.display  ='none';
+  updateAbandonBtnLabel();
+  updatePrestigeBtn();
+  updateTraitBox();
+  updateSideGarrisonUI();
   applyPanelLayout();
+  startMusic();
+}
+
+function updatePrestigeBtn(){
+  const btn=document.getElementById('prestigeBtn');
+  if(!chaosMode){ btn.style.display='none'; return; }
+  btn.style.display='';
+  btn.disabled=false;
+  btn.style.background='';
+  btn.textContent=t('prestigeBtn');
+}
+function doPrestige(){
+  if(!chaosMode) return;
+  // Cristal Vivant : chaque cristal place sur la carte vaut le double d'un cristal en stock
+  const crystalValue=infiniteCrystals+crystalEntities.length*2;
+  const newBonus=infiniteDmgBonusPct+0.2*crystalValue; // 2x plus rapide qu'avant (0.1% -> 0.2% par cristal)
+  infiniteDmgBonusPct=newBonus;
+  infiniteCrystals=0; infiniteCrystalCost=100; crystalEntities=[];
+  applyTileData(generateRandomMap());
+  resetGameState();money=0;
+  matchTimer=Infinity;
+  applyTraitsToSessionMode();
+  startGameSession();
+  prepareGameUI(false,true,false);
+  updateInfiniteBoxDiff(false);
+  updatePrestigeBtn();
+  saveChaosState();
+  showToast(t('prestigeDone',{v:newBonus.toFixed(2)}));
+  updateHUD();renderPanel();
+}
+// Prestige : pas de fenetre de confirmation, il faut maintenir le bouton 0.5s
+const PRESTIGE_HOLD_DUR=0.5;
+let prestigeHoldT=0, prestigeHoldActive=false;
+const prestigeBtnEl=document.getElementById('prestigeBtn');
+function prestigeTick(dt){
+  if(!prestigeHoldActive) return;
+  prestigeHoldT+=dt;
+  const pct=Math.min(1,prestigeHoldT/PRESTIGE_HOLD_DUR);
+  prestigeBtnEl.style.background=`linear-gradient(to right,#3a3 ${pct*100}%,#333 ${pct*100}%)`;
+  if(prestigeHoldT>=PRESTIGE_HOLD_DUR){ prestigeHoldActive=false; prestigeBtnEl.style.background=''; doPrestige(); }
+}
+prestigeBtnEl.addEventListener('pointerdown',e=>{
+  if(state!=='playing'||!chaosMode) return;
+  e.preventDefault();prestigeHoldActive=true;prestigeHoldT=0;
+});
+function stopPrestigeHold(){ prestigeHoldActive=false;prestigeHoldT=0; prestigeBtnEl.style.background=''; }
+prestigeBtnEl.addEventListener('pointerup',stopPrestigeHold);
+prestigeBtnEl.addEventListener('pointerleave',stopPrestigeHold);
+
+// ══════════════════════════════════════════════════════
+// MODE INFINI — CHOSES (traits aleatoires, changent tous les +10% de bonus de prestige)
+// Pour ajouter une nouvelle Chose plus tard : ajouter une entree a TRAITS avec un id unique,
+// un titre et une description, puis brancher son effet via hasTrait('monId') aux endroits
+// pertinents du code (voir les autres traits pour des exemples).
+// ══════════════════════════════════════════════════════
+const TRAIT_HERO_MAP={incarnateAxel:'gameplay1',incarnateMidas:'gameplay3',incarnateEnzo:'gameplay5',incarnateIris:'gameplay6',incarnateGaston:'gameplay8'};
+const TRAITS=[
+  {id:'incarnateAxel',title:'Ame d\'Axel',desc:'Vous incarnez Axel : vous pouvez echanger la position de 2 entites sur la carte.'},
+  {id:'incarnateMidas',title:'Ame de Midas',desc:'Vous incarnez Midas : vous gagnez un doubleur d\'argent toutes les 3 minutes et pouvez vous endetter jusqu\'a votre pic d\'argent atteint.'},
+  {id:'incarnateEnzo',title:'Ame d\'Enzo',desc:'Vous incarnez Enzo : vous choisissez la composition des ennemis de chaque vague.'},
+  {id:'incarnateGaston',title:'Ame de Gaston',desc:'Vous incarnez Gaston : votre corps grossit tous les 3 gardes achetes, et la moitie des cases sont boostantes.'},
+  {id:'incarnateIris',title:'Ame d\'Iris',desc:'Vous incarnez Iris : vous pouvez invoquer des allies (10 PV) a couts independants.'},
+  {id:'livingCrystal',title:'Cristal Vivant',desc:'Chaque cristal achete vaut le double au prestige, mais doit etre place sur la carte comme une entite de 20 PV que les ennemis peuvent detruire.'},
+  {id:'doubleTrait',title:'Dedoublement',desc:'Vous possedez 2 Choses actives a la fois au lieu d\'une seule.'},
+  {id:'wanderingHero',title:'Heros Nomade',desc:'Tous les 2 vagues, votre heros se teleporte sur une case aleatoire. En echange, poser un garde ne coute que 1&euro; + le nombre de gardes deja achetes.'},
+  {id:'shufflingGuards',title:'Chaises Musicales',desc:'Tous les 5 gardes poses, tous les gardes echangent aleatoirement de place. En contrepartie, vous pouvez deplacer librement votre heros toutes les 30 secondes.'},
+  {id:'sideGarrison',title:'Garnison Annexe',desc:'Une carte annexe de 3x2, entierement visible, place automatiquement un garde chaque seconde de jeu (a la vitesse du jeu). Les gardes qui s\'y trouvent gagnent +0.2% de vitesse d\'attaque.'},
+  {id:'massTeleport',title:'Convergence',desc:'Toutes les 40 secondes, cliquez sur une case pour y teleporter tous les ennemis de la carte.'},
+  {id:'mobileGuards',title:'Gardes Baladeurs',desc:'Vos gardes se deplacent vers l\'ennemi le plus proche a 0.25 case/seconde. Vous pouvez acheter des ameliorations de vitesse (+0.2 case/s, 8&euro; au depart).'},
+  {id:'invisibleEnemies',title:'Ombres',desc:'Tous les ennemis sont totalement invisibles.'}
+];
+function traitById(id){ return TRAITS.find(tr=>tr.id===id); }
+function hasTrait(id){ return chaosMode&&activeTraitIds.includes(id); }
+
+let activeTraitIds=[];
+let traitBonusTier=0;
+let guardsSinceShuffle=0;
+let freeMoveTimer=0, freeMoveAvailable=false;
+let massTeleportTimer=0, massTeleportReady=false;
+let sideGarrisonTimer=0;
+let sideGarrisonGuards=[null,null,null,null,null,null];
+let mobileGuardSpeedLevel=0, mobileGuardSpeedCost=8;
+let crystalEntities=[];
+
+function applyTraitsToSessionMode(){
+  if(!chaosMode) return;
+  const incarnate=activeTraitIds.map(id=>TRAIT_HERO_MAP[id]).find(Boolean);
+  sessionMode=incarnate||'gameplay9';
+}
+function openTraitPopup(ids){
+  const list=ids.map(id=>traitById(id)).filter(Boolean);
+  if(!list.length) return;
+  document.getElementById('traitPopupBody').innerHTML=list.map(tr=>
+    `<h2 style="color:#ffd23f;margin:6px 0;">${tr.title}</h2><p style="font-size:15px;line-height:1.6;">${tr.desc}</p>`
+  ).join('<hr style="border-color:#555;margin:14px 0;">');
+  document.getElementById('traitPopup').style.display='flex';
+}
+document.getElementById('traitPopup').addEventListener('click',()=>{
+  document.getElementById('traitPopup').style.display='none';
+});
+document.getElementById('boxTrait').addEventListener('click',()=>{
+  if(activeTraitIds.length) openTraitPopup(activeTraitIds);
+});
+function updateTraitBox(){
+  const box=document.getElementById('boxTrait');
+  if(!chaosMode||!activeTraitIds.length){ box.style.display='none'; return; }
+  box.style.display='';
+  box.textContent='✨ '+activeTraitIds.map(id=>traitById(id).title).join(' + ');
+}
+// Reinitialise l'etat ephemere lie aux Choses (appele a chaque tirage)
+function resetTraitEphemeralState(){
+  guardsSinceShuffle=0; freeMoveTimer=0; freeMoveAvailable=false;
+  massTeleportTimer=0; massTeleportReady=false;
+  sideGarrisonTimer=0;
+}
+function rerollTraits(){
+  const count=activeTraitIds.includes('doubleTrait')?2:1;
+  const pool=TRAITS.map(tr=>tr.id);
+  const picked=[];
+  while(picked.length<count&&pool.length){
+    picked.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  activeTraitIds=picked;
+  applyTraitsToSessionMode();
+  resetTraitEphemeralState();
+  updateInfiniteBoxDiff(true);
+  updateTraitBox();
+  updateSideGarrisonUI();
+  updatePrestigeBtn();
+  openTraitPopup(picked);
+  saveChaosState();
+}
+// Verifie si un nouveau palier de +10% de bonus de prestige est atteint (tire de nouvelles Choses)
+function checkTraitReroll(){
+  if(!chaosMode) return;
+  const tier=Math.floor(infiniteDmgBonusPct/10);
+  if(tier>traitBonusTier){ traitBonusTier=tier; rerollTraits(); }
+}
+
+// Toutes les mecaniques periodiques des Choses actives (dt suit la vitesse du jeu)
+function updateTraitMechanics(dt){
+  if(hasTrait('shufflingGuards')&&!freeMoveAvailable){
+    freeMoveTimer+=dt;
+    if(freeMoveTimer>=30){ freeMoveAvailable=true; showToast(t('freeMoveReady')); }
+  }
+  if(hasTrait('massTeleport')&&!massTeleportReady){
+    massTeleportTimer+=dt;
+    if(massTeleportTimer>=40){ massTeleportReady=true; showToast(t('massTeleportReady')); }
+  }
+  if(hasTrait('sideGarrison')){
+    sideGarrisonTimer+=dt;
+    while(sideGarrisonTimer>=1){
+      sideGarrisonTimer-=1;
+      const empty=sideGarrisonGuards.findIndex(g=>!g);
+      if(empty>=0){ sideGarrisonGuards[empty]=newGuard(); updateSideGarrisonUI(); }
+    }
+    sideGarrisonGuards.forEach(g=>{
+      if(!g) return;
+      g.attackAcc=(g.attackAcc||0)+dt;
+      const atkInterval=1-0.002; // +0.2% de vitesse d'attaque
+      while(g.attackAcc>=atkInterval&&monsters.length){
+        g.attackAcc-=atkInterval;
+        const target=monsters[Math.floor(Math.random()*monsters.length)];
+        target.hp-=g.dmg*(1+infiniteDmgBonusPct/100);
+        if(target.hp<=0){ money+=g.bounty; spawnDeathFx(target.px,target.py); monsters=monsters.filter(m=>m!==target); }
+      }
+    });
+  }
+  if(hasTrait('mobileGuards')){
+    const speed=(0.25+0.2*mobileGuardSpeedLevel)*SPEED_PX;
+    guards.forEach(g=>{
+      if(g.mpx===undefined){ const[px,py]=axToPx(g.q,g.r); g.mpx=px; g.mpy=py; }
+      let nearest=null,bestD=Infinity;
+      for(const m of monsters){ const d=Math.hypot(m.px-g.mpx,m.py-g.mpy); if(d<bestD){bestD=d;nearest=m;} }
+      if(nearest){
+        const dx=nearest.px-g.mpx, dy=nearest.py-g.mpy, d=Math.hypot(dx,dy);
+        const step=Math.min(d,speed*dt);
+        if(d>0){ g.mpx+=dx/d*step; g.mpy+=dy/d*step; }
+      }
+    });
+  }
+}
+// Position effective d'un garde (tient compte de Gardes Baladeurs)
+function guardPos(g){
+  if(hasTrait('mobileGuards')&&g.mpx!==undefined) return [g.mpx,g.mpy];
+  return axToPx(g.q,g.r);
+}
+function updateSideGarrisonUI(){
+  const box=document.getElementById('sideGarrison');
+  if(!hasTrait('sideGarrison')){ box.style.display='none'; return; }
+  box.style.display='';
+  const grid=document.getElementById('sideGarrisonGrid');
+  grid.innerHTML='';
+  sideGarrisonGuards.forEach(g=>{
+    const cell=document.createElement('div');
+    cell.style.cssText='width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;'+
+      (g?'background:#3c8c3c;border:1px solid #bfe6a0;':'background:#222;border:1px dashed #555;');
+    cell.textContent=g?('d'+g.dmg):'';
+    grid.appendChild(cell);
+  });
+}
+
+// En mode Infini, le bouton "Abandonner" devient "Quitter" : quitte instantanement
+// sans penalite (la partie est sauvegardee et reprise plus tard), pas de maintien requis.
+function updateAbandonBtnLabel(){
+  document.getElementById('abandonBtn').textContent = chaosMode ? t('quitInfinite') : t('abandon');
+}
+function quitInfinite(){
+  saveChaosState();
+  showMenu();
 }
 
 function heroName(mode){
@@ -1193,6 +1792,7 @@ function heroName(mode){
   if(mode==='gameplay5') return t('modeEnzo');
   if(mode==='gameplay6') return t('modeIris');
   if(mode==='gameplay8') return t('modeGaston');
+  if(mode==='gameplay9') return t('modeNeutral');
   return mode;
 }
 
@@ -1215,7 +1815,7 @@ function generateRandomMap(){
 }
 
 function startNormalGame(d){
-  difficulty=d;sessionMode=gameMode;dailyMode=false;
+  difficulty=d;sessionMode=gameMode;dailyMode=false;chaosMode=false;
   applyTileData(generateRandomMap());
   resetGameState();money=0;
   prepareGameUI(true,true,true);
@@ -1228,7 +1828,7 @@ function startDailyGame(){
   const dailyTileData=generateDailyMap();
   const count=Object.keys(dailyTileData).length;
   applyTileData(dailyTileData);
-  dailyMode=true;difficulty=2;sessionMode=dailyHero;
+  dailyMode=true;chaosMode=false;difficulty=2;sessionMode=dailyHero;
   resetGameState();money=0;
   prepareGameUI(true,true,true);
   document.getElementById('boxDiff').textContent=heroName(sessionMode)+' — Difficulté '+difficulty+' — Défi du Jour';
@@ -1236,29 +1836,141 @@ function startDailyGame(){
   startGameSession();updateHUD();renderPanel();
 }
 
+// Mode Chaos — sauvegarde persistante (une seule partie sans fin, jamais reinitialisee)
+const CHAOS_SAVE_KEY='hexdefense_chaos_save';
+function saveChaosState(){
+  if(!chaosMode) return;
+  const s={
+    waveNum, sessionMode, difficulty,
+    mapKeys:Object.keys(tiles),
+    hero, guards, monsters, spawnPoints, allies,
+    money, point, pointRate, totalSpent, elapsedSeconds,
+    costs, currentMonsterType, waveTimer, spawnAcc, waveSpawnTotal, waveSpawnCount,
+    heroExtraTiles, boostTiles:[...boostTiles], nextGrowthTile, gastonGuardsSinceGrowth,
+    enzoCounts, enzoTotalSpawned, enzoRemainingThisWave, enzoStarvedTimer, enzoAutoSpeedBoost,
+    midasTimer, midasDoublers, midasMaxMoney, infiniteDmgBonusPct,
+    infiniteCrystals, infiniteCrystalCost, crystalEntities,
+    activeTraitIds, traitBonusTier, guardsSinceShuffle,
+    mobileGuardSpeedLevel, mobileGuardSpeedCost, sideGarrisonGuards
+  };
+  try{ localStorage.setItem(CHAOS_SAVE_KEY,JSON.stringify(s)); }catch(e){}
+}
+function loadChaosState(){
+  try{ return JSON.parse(localStorage.getItem(CHAOS_SAVE_KEY)); }catch(e){ return null; }
+}
+// Vague courante de la partie Chaos en cours (ou sauvegardee) — ne peut jamais redescendre
+function chaosCurrentWave(){
+  const s=loadChaosState();
+  return s ? (s.waveNum||0) : null;
+}
+// Bonus de degats permanent (%) acquis via prestige, affiche dans le menu
+function chaosDmgBonus(){
+  const s=loadChaosState();
+  return s&&s.infiniteDmgBonusPct||0;
+}
+function restoreChaosState(s){
+  const tdata={}; s.mapKeys.forEach(k=>{ if(largeTileData[k]) tdata[k]=largeTileData[k]; });
+  applyTileData(tdata);
+  waveNum=s.waveNum; sessionMode=s.sessionMode; difficulty=s.difficulty||2;
+  hero=s.hero; guards=s.guards||[]; monsters=s.monsters||[]; spawnPoints=s.spawnPoints||[]; allies=s.allies||[];
+  // bornAt vient de performance.now() de la session precedente (donc invalide apres reprise) :
+  // sans ce nettoyage l'animation d'apparition du garde calcule un temps ecoule negatif enorme
+  // et l'echelle de rendu s'effondre a ~0 -> le garde devient invisible (seules ses stats restent affichees)
+  guards.forEach(g=>{ delete g.bornAt; });
+  heroExtraTiles=s.heroExtraTiles||[]; // legitime si la Chose "Ame de Gaston" est active
+  money=s.money||0; point=s.point||0; pointRate=s.pointRate||0; totalSpent=s.totalSpent||0; elapsedSeconds=s.elapsedSeconds||0;
+  costs=s.costs||{...BASE_COSTS}; currentMonsterType=s.currentMonsterType||'hp';
+  waveTimer=s.waveTimer||WAVE_INTERVAL; spawnAcc=s.spawnAcc||0;
+  waveSpawnTotal=s.waveSpawnTotal||9999; waveSpawnCount=s.waveSpawnCount||0;
+  boostTiles=new Set(s.boostTiles||[]); nextGrowthTile=s.nextGrowthTile||null;
+  gastonGuardsSinceGrowth=s.gastonGuardsSinceGrowth||0;
+  enzoCounts=s.enzoCounts||{fast:7,hp:7,dmg:6}; enzoTotalSpawned=s.enzoTotalSpawned||{fast:0,hp:0,dmg:0};
+  enzoRemainingThisWave=s.enzoRemainingThisWave||{fast:0,hp:0,dmg:0};
+  enzoStarvedTimer=s.enzoStarvedTimer||0; enzoAutoSpeedBoost=s.enzoAutoSpeedBoost||false;
+  midasTimer=s.midasTimer||0; midasDoublers=s.midasDoublers||0; midasMaxMoney=s.midasMaxMoney||0;
+  infiniteDmgBonusPct=s.infiniteDmgBonusPct||0;
+  infiniteCrystals=s.infiniteCrystals||0; infiniteCrystalCost=s.infiniteCrystalCost||100;
+  crystalEntities=s.crystalEntities||[];
+  activeTraitIds=s.activeTraitIds||[]; traitBonusTier=s.traitBonusTier||0;
+  guardsSinceShuffle=s.guardsSinceShuffle||0;
+  mobileGuardSpeedLevel=s.mobileGuardSpeedLevel||0; mobileGuardSpeedCost=s.mobileGuardSpeedCost||8;
+  sideGarrisonGuards=s.sideGarrisonGuards||[null,null,null,null,null,null];
+  freeMoveTimer=0; freeMoveAvailable=false; massTeleportTimer=0; massTeleportReady=false; sideGarrisonTimer=0;
+  matchTimer=Infinity;
+  state='playing'; gameRunning=true; initialPlacement=false;
+  selected=null; pendingAction=null; pendingAllySource=null; moveSelected=[]; hoverMonster=null;
+  attackFx=[]; monsterAttackFx=[]; deathFx=[]; heroHitFlash=0;
+  paused=false; pauseUsed=false;
+  speedIndex=0; document.getElementById('speedBtn').textContent=t('speed')+' x'+effectiveSpeed(speedIndex);
+  document.getElementById('pauseBtnSide').style.display='';
+  document.getElementById('wave').textContent=waveNum;
+}
+
+function startChaosGame(){
+  chaosMode=true;dailyMode=false;difficulty=2;
+  const saved=loadChaosState();
+  if(saved){
+    restoreChaosState(saved);
+  } else {
+    sessionMode='gameplay9';
+    applyTileData(generateRandomMap());
+    resetGameState();money=0;
+    matchTimer=Infinity;
+    infiniteDmgBonusPct=0;
+    infiniteCrystals=0; infiniteCrystalCost=100; crystalEntities=[];
+    traitBonusTier=0; activeTraitIds=[];
+    startGameSession();
+    rerollTraits(); // "on commence avec une Chose aleatoire"
+  }
+  prepareGameUI(false,true,false);
+  updateInfiniteBoxDiff(false);
+  updateTraitBox();
+  updateSideGarrisonUI();
+  updateHUD();renderPanel();
+}
+
+// Rafraichit le chip du mode Infini (degrade anime), avec un petit flash si le heros vient de changer
+function updateInfiniteBoxDiff(flash){
+  const el=document.getElementById('boxDiff');
+  el.classList.add('infinite-chip');
+  const traits=activeTraitIds.map(id=>traitById(id)).filter(Boolean);
+  const traitLabel=traits.length?traits.map(tr=>tr.title).join(' + '):heroName(sessionMode);
+  const traitDesc=traits.map(tr=>tr.desc).join(' | ').replace(/"/g,'&quot;');
+  el.innerHTML=t('chaosMode')+' — <span title="'+traitDesc+'" style="text-decoration:underline dotted;cursor:help;">'+traitLabel+'</span> — '+t('wave')+' '+waveNum+' — +'+infiniteDmgBonusPct.toFixed(2)+'% '+t('chaosDmgBonusShort');
+  if(flash){
+    el.classList.remove('hero-flash'); void el.offsetWidth; el.classList.add('hero-flash');
+  }
+}
+
 function showMenu(){
   state='difficulty';gameRunning=false;initialPlacement=false;
   document.getElementById('boxEnzo').style.display='none';
-  dailyMode=false;applyTileData(normalTileData);
+  document.getElementById('boxDiff').classList.remove('infinite-chip','hero-flash');
+  dailyMode=false;chaosMode=false;applyTileData(normalTileData);
+  document.getElementById('boxTrait').style.display='none';
+  document.getElementById('sideGarrison').style.display='none';
   document.getElementById('side').style.display       ='none';
   document.getElementById('settingsBtn').style.display='';
   document.getElementById('rulesBtn').style.display   ='';
   document.getElementById('overlay').style.display    ='flex';
   renderDifficultyList();
   applyPanelLayout();
+  stopMusic();
 }
 
 // Termine la partie — retour direct au menu + stats en bas a gauche
 function endGame(reason){
   state='gameover';gameRunning=false;
 
-  if(dailyMode) recordDailyResult(Math.floor(point));
+  if(chaosMode) saveChaosState();
+  else if(dailyMode) recordDailyResult(Math.floor(point));
   else recordNormalResult(difficulty,sessionMode,Math.floor(point));
 
   const label=reason==='abandon'?t('abandoned'):reason==='timeup'?t('timeUp'):t('gameOver');
 
   // Construction HTML des stats
   let html='<b>'+t('lastGame')+' &mdash; '+label+'</b><br>';
+  if(chaosMode) html+=t('chaosWaveReached')+' : '+waveNum+'<br>';
   html+=t('finalPoint')+' : '+Math.floor(point)+'<br>';
   html+=t('totalSpent')+' : '+Math.floor(totalSpent)+'&euro;<br>';
   html+=t('time')+' : '+formatTime(elapsedSeconds);
@@ -1464,12 +2176,24 @@ function monsterEmoji(m){
   return {fast:'💨',hp:'🐉',dmg:'🔥',fly:'🦋'}[m.type]||'👹';
 }
 
+// PV compacts : au-dela de 100 000, on affiche les 2 premiers chiffres suivis en exposant
+// du nombre de chiffres restants (ex : 1 234 567 -> "12" + exposant "5")
+const SUP_DIGITS=['⁰','¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+function formatHP(hp){
+  hp=Math.max(0,Math.round(hp));
+  if(hp<100000) return String(hp);
+  const s=String(hp);
+  const rest=s.length-2;
+  const supRest=String(rest).split('').map(d=>SUP_DIGITS[+d]).join('');
+  return s.slice(0,2)+supRest;
+}
+
 // Tooltip au survol d un ennemi
 function drawTooltip(m){
   const names=lang==='en'
     ?{fast:'Fast',hp:'HP',dmg:'Damage',range:'Range'}
     :{fast:'Rapide',hp:'PV',dmg:'Degats',range:'Portee'};
-  const lines=['❤ '+Math.round(m.hp)+' / '+m.maxhp, '⚔ '+m.dmg+' dmg/s',
+  const lines=['❤ '+formatHP(m.hp)+' / '+formatHP(m.maxhp), '⚔ '+m.dmg+' dmg/s',
     (lang==='en'?'Type: ':'Type : ')+(m.isBoss?'BOSS':(names[m.type]||'?'))];
   if(m.speedMult>1) lines.push('x'+m.speedMult.toFixed(1)+' vitesse');
   if(m.rangeBonus>0) lines.push('+'+m.rangeBonus+' portee');
@@ -1571,6 +2295,14 @@ function render(){
     }
   }
 
+  // Cristaux Vivants (mode Infini)
+  for(const cr of crystalEntities){
+    const [crx,cry]=axToPx(cr.q,cr.r);
+    drawHex(crx,cry,'#66ddee','#bff6ff');
+    ctx.fillStyle='#023';ctx.font='bold 11px sans-serif';ctx.textAlign='center';
+    ctx.fillText('❤ '+Math.round(Math.max(0,cr.hp))+'/'+cr.maxhp,crx,cry+4);
+  }
+
   // Flash rouge sur le heros uniquement
   if(heroHitFlash>0){
     const a=Math.min(1,heroHitFlash/0.35)*0.88;
@@ -1583,16 +2315,21 @@ function render(){
 
   // Gardes
   for(const g of guards){
-    const [px,py]=axToPx(g.q,g.r);
+    const [px,py]=guardPos(g);
     const isSel=selected&&selected.g===g;
     const isMoving=pendingAction==='moveSelect'&&moveSelected.includes(g);
     const onGastonBody=heroExtraTiles.some(bt=>bt.q===g.q&&bt.r===g.r);
     if(!onGastonBody){
+      // Pop-in : le garde apparait en grossissant depuis 0 pendant ses 220 premieres ms
+      const growS=g.bornAt?Math.min(1,(performance.now()-g.bornAt)/220):1;
+      const s=1-Math.pow(1-growS,3); // ease-out cubique
+      if(s<1){ ctx.save();ctx.translate(px,py);ctx.scale(Math.max(0.01,s),Math.max(0.01,s));ctx.translate(-px,-py); }
       if(d.characters){
         drawCharacterGuard(px,py,isSel,isMoving);
       } else {
         drawHex(px,py,isSel?d.guardSelColor:d.guardColor,isSel?d.guardSelStroke:d.guardStroke);
       }
+      if(s<1) ctx.restore();
     }
     if(isSel){
       ctx.save();ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;
@@ -1651,18 +2388,29 @@ function render(){
     ctx.strokeStyle='rgba(255,80,80,'+a*0.6+')';ctx.lineWidth=2;ctx.stroke();
   }
 
+  // Eclats de particules a la mort d'un monstre (colores selon le theme)
+  for(const fx of deathFx){
+    const a=Math.max(0,fx.life/0.45);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=fx.color;
+    ctx.beginPath();ctx.arc(fx.x,fx.y,3.5*a+1,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=1;
+  }
+
   // Monstres
   for(const m of monsters){
     const sc=m.isBoss?1.7:1;
-    if(d.emoji){
-      ctx.font=(SIZE*0.85*sc)+'px sans-serif';ctx.textAlign='center';
-      ctx.fillText(monsterEmoji(m),m.px,m.py+SIZE*0.28*sc);
-    } else {
-      drawMonsterShape(m);
+    if(!hasTrait('invisibleEnemies')){
+      if(d.emoji){
+        ctx.font=(SIZE*0.85*sc)+'px sans-serif';ctx.textAlign='center';
+        ctx.fillText(monsterEmoji(m),m.px,m.py+SIZE*0.28*sc);
+      } else {
+        drawMonsterShape(m);
+      }
+      ctx.fillStyle='#fff';ctx.textAlign='center';
+      ctx.font=(m.isBoss?'bold 13px':'bold 11px')+' sans-serif';
+      ctx.fillText(formatHP(m.hp),m.px,m.py+(d.emoji?SIZE*0.6*sc:3));
     }
-    ctx.fillStyle='#fff';ctx.textAlign='center';
-    ctx.font=(m.isBoss?'bold 13px':'bold 11px')+' sans-serif';
-    ctx.fillText(Math.round(m.hp),m.px,m.py+(d.emoji?SIZE*0.6*sc:3));
     if(swapTargets.some(t=>t.obj===m)){
       ctx.save();ctx.strokeStyle='rgba(255,180,0,0.9)';ctx.lineWidth=3;
       ctx.setLineDash([]);ctx.beginPath();
@@ -1673,6 +2421,24 @@ function render(){
 
   // Tooltip hover ennemi
   if(hoverMonster&&monsters.includes(hoverMonster)) drawTooltip(hoverMonster);
+
+  // Bandeau "Vague N" — glisse depuis le haut puis s'estompe
+  if(waveBannerT>0&&waveNum>0){
+    const dur=1.6, tRatio=1-waveBannerT/dur;
+    const slideIn=Math.min(1,tRatio/0.25), fadeOut=waveBannerT<0.4?waveBannerT/0.4:1;
+    const yPos=-30+Math.min(1,slideIn)*54;
+    const alpha=Math.min(slideIn,fadeOut);
+    const txt=t('waveStart',{n:waveNum});
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.font='bold 20px sans-serif';ctx.textAlign='center';
+    const tw=ctx.measureText(txt).width+40;
+    // Couleur d'accent du theme courant (CSS custom property), avec repli si absente
+    ctx.fillStyle=(getComputedStyle(document.body).getPropertyValue('--accent')||'#ffd23f').trim()||'#ffd23f';
+    ctx.fillRect(cv.width/2-tw/2,yPos,tw,36);
+    ctx.fillStyle='#111';ctx.fillText(txt,cv.width/2,yPos+24);
+    ctx.restore();
+  }
 
   // Bandeau placement initial (supprimé)
   if(false&&initialPlacement&&state==='playing'){
@@ -1691,6 +2457,18 @@ function render(){
     ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='14px sans-serif';ctx.textAlign='center';
     ctx.fillText(t('chooseTileForAlly'),cv.width/2,24);
   }
+  if(pendingAction==='moveHeroFree'){
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(t('moveHeroHint'),cv.width/2,24);
+  }
+  if(pendingAction==='massTeleportTarget'){
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(t('massTeleportHint'),cv.width/2,24);
+  }
+  if(pendingAction==='placeCrystal'){
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.font='14px sans-serif';ctx.textAlign='center';
+    ctx.fillText(t('placeCrystalHint'),cv.width/2,24);
+  }
   if(paused){
     ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,cv.width,cv.height);
     ctx.fillStyle='#fff';ctx.font='bold 32px sans-serif';ctx.textAlign='center';
@@ -1703,7 +2481,9 @@ function loop(ts){
   const dtRaw=(ts-lastT)/1000;lastT=ts;
   realDt=Math.min(dtRaw,0.25);
   abandonTick(realDt);
-  const curSpeedMult=(sessionMode==='gameplay5'&&enzoAutoSpeedBoost)?20:SPEEDS[speedIndex];
+  prestigeTick(realDt);
+  checkIdlePause();
+  const curSpeedMult=(sessionMode==='gameplay5'&&enzoAutoSpeedBoost)?20:effectiveSpeed(speedIndex);
   if(!paused&&gameRunning) update(Math.min(dtRaw,0.2)*curSpeedMult);
   if(gameRunning) updateHUD();
   refreshAffordability();
@@ -1734,6 +2514,8 @@ function refreshAffordability(){
     if(q('buyGuard'))  q('buyGuard').disabled =!canAfford(priceFor('guardPlace',costs.guardPlace));
     if(q('buySwap'))   q('buySwap').disabled =!canAfford(costs.swap);
     if(q('buyPoint'))  q('buyPoint').disabled =!canAfford(costs.point);
+    if(q('buyCrystal')) q('buyCrystal').disabled =!canAfford(infiniteCrystalCost);
+    if(q('buySpeedUpgrade')) q('buySpeedUpgrade').disabled =!canAfford(mobileGuardSpeedCost);
     if(q('buyAlly'))   q('buyAlly').disabled =!canAfford(priceFor('summonAlly',costs.summonAlly));
     if(q('useDoubler')) q('useDoubler').disabled=midasDoublers<=0;
   } else if(selected.type==='ally'){
@@ -1750,7 +2532,8 @@ function refreshAffordability(){
 function renderPanel(){
   const panel=document.getElementById('panel');
   if(!selected){panel.innerHTML='';return;}
-  const canPoint   =true;
+  const canPoint   =!chaosMode;
+  const canCrystal =chaosMode;
   const canSwap    =sessionMode==='gameplay1';
 
   if(selected.type==='hero'){
@@ -1758,9 +2541,10 @@ function renderPanel(){
     const disG=!canAfford(pG)?'disabled':'';
     const disS=!canAfford(costs.swap)?'disabled':'';
     const disP=!canAfford(costs.point)?'disabled':'';
+    const disC=!canAfford(infiniteCrystalCost)?'disabled':'';
     const ptLabel=sessionMode==='gameplay6'?'+0.3 pt/s':'+1 pt/s';
     const ptHint=`Points : +${pointRate.toFixed(1)}/s`;
-    const canAlly=canPoint&&sessionMode==='gameplay6';
+    const canAlly=sessionMode==='gameplay6';
     const pA=priceFor('summonAlly',costs.summonAlly);
     const disA=!canAfford(pA)?'disabled':'';
     const canMidas=sessionMode==='gameplay3';
@@ -1770,10 +2554,19 @@ function renderPanel(){
     if(canSwap)   h+=`<button id="buySwap" ${disS}>Echanger 2 entites (<span class="price">${costs.swap}&euro;</span>)</button>`;
     if(canPoint)  h+=`<button id="buyPoint" ${disP}>${ptLabel} (<span class="price">${costs.point}&euro;</span>)</button>`;
     if(canPoint)  h+=`<p class="hint">${ptHint}</p>`;
+    if(canCrystal) h+=`<button id="buyCrystal" ${disC}>${hasTrait('livingCrystal')?t('buyCrystalPlace'):t('buyCrystal')} (<span class="price">${infiniteCrystalCost}&euro;</span>)</button>`;
+    if(canCrystal&&hasTrait('livingCrystal')) h+=`<p class="hint">${t('crystalHint',{n:infiniteCrystals})} — ${crystalEntities.length} place(s) (x2 chacun)</p>`;
+    else if(canCrystal) h+=`<p class="hint">${t('crystalHint',{n:infiniteCrystals})}</p>`;
     if(canAlly)   h+=`<button id="buyAlly" ${disA}>${t('summonAlly')} (<span class="price">${pA}&euro;</span>)</button>`;
     if(canMidas)  h+=`<button id="useDoubler" ${disMidas}>Utiliser un doubleur (x2 argent) : ${midasDoublers} en stock</button>`;
     if(canMidas)  h+=`<p class="hint">Dette maximale autorisee : -${Math.floor(midasMaxMoney)}&euro;</p>`;
     if(sessionMode==='gameplay8') h+=`<p class="hint">Taille : ${1+heroExtraTiles.length} case(s) — prochaine dans ${3-gastonGuardsSinceGrowth} garde(s)</p>`;
+    if(hasTrait('mobileGuards')){
+      const disMg=!canAfford(mobileGuardSpeedCost)?'disabled':'';
+      h+=`<button id="buySpeedUpgrade" ${disMg}>${t('buySpeedUpgrade')} (<span class="price">${mobileGuardSpeedCost}&euro;</span>)</button>`;
+    }
+    if(freeMoveAvailable) h+=`<button id="useFreeMove">${t('moveHeroHint')}</button>`;
+    if(massTeleportReady) h+=`<button id="useMassTeleport">${t('massTeleportHint')}</button>`;
     panel.innerHTML=h;
     document.getElementById('buyGuard').onclick=()=>{
       if(!canAfford(priceFor('guardPlace',costs.guardPlace))) return;
@@ -1790,6 +2583,26 @@ function renderPanel(){
       pointRate+=sessionMode==='gameplay6'?0.3:1;
       playSfx('buy');updateHUD();renderPanel();log(t('pointBought'));
     };
+    if(canCrystal) document.getElementById('buyCrystal').onclick=()=>{
+      if(!canAfford(infiniteCrystalCost)) return;
+      spend(infiniteCrystalCost);infiniteCrystalCost=Math.ceil(infiniteCrystalCost*1.2);
+      if(hasTrait('livingCrystal')){ pendingAction='placeCrystal'; log(t('placeCrystalHint')); }
+      else infiniteCrystals++;
+      playSfx('buy');updateHUD();renderPanel();saveChaosState();
+      if(!hasTrait('livingCrystal')) log(t('crystalBought'));
+    };
+    if(hasTrait('mobileGuards')) document.getElementById('buySpeedUpgrade').onclick=()=>{
+      if(!canAfford(mobileGuardSpeedCost)) return;
+      spend(mobileGuardSpeedCost);mobileGuardSpeedCost=Math.ceil(mobileGuardSpeedCost*1.25);
+      mobileGuardSpeedLevel++;
+      playSfx('buy');updateHUD();renderPanel();saveChaosState();
+    };
+    if(freeMoveAvailable) document.getElementById('useFreeMove').onclick=()=>{
+      pendingAction='moveHeroFree';log(t('moveHeroHint'));
+    };
+    if(massTeleportReady) document.getElementById('useMassTeleport').onclick=()=>{
+      pendingAction='massTeleportTarget';log(t('massTeleportHint'));
+    };
     if(canAlly) document.getElementById('buyAlly').onclick=()=>{
       if(!canAfford(priceFor('summonAlly',costs.summonAlly))) return;
       pendingAction='placeAlly';log(t('chooseTileForAlly'));
@@ -1805,15 +2618,15 @@ function renderPanel(){
     const disG=!canAfford(pG)?'disabled':'';
     const disP=!canAfford(al.costs.point)?'disabled':'';
     let h=`<h3>&#10084; ${t('ally')} (${Math.round(Math.max(0,al.hp))}/${al.maxhp} PV)</h3>
-      <button id="allyBuyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>
-      <button id="allyBuyPoint" ${disP}>+0.3 pt/s (<span class="price">${al.costs.point}&euro;</span>)</button>
+      <button id="allyBuyGuard" ${disG}>${t('buyGuard')} (<span class="price">${pG}&euro;</span>)</button>`;
+    if(canPoint) h+=`<button id="allyBuyPoint" ${disP}>+0.3 pt/s (<span class="price">${al.costs.point}&euro;</span>)</button>
       <p class="hint">Points : +${pointRate.toFixed(1)}/s (dont ${(al.pointContribution||0).toFixed(1)}/s de cet allie)</p>`;
     panel.innerHTML=h;
     document.getElementById('allyBuyGuard').onclick=()=>{
       if(!canAfford(priceFor('guardPlace',al.costs.guardPlace))) return;
       pendingAction='placeGuard';pendingAllySource=al;log(t('chooseTileForGuard'));
     };
-    document.getElementById('allyBuyPoint').onclick=()=>{
+    if(canPoint) document.getElementById('allyBuyPoint').onclick=()=>{
       if(!canAfford(al.costs.point)) return;
       spend(al.costs.point);al.costs.point=Math.ceil(al.costs.point*1.25);
       pointRate+=0.3;al.pointContribution=(al.pointContribution||0)+0.3;
@@ -1864,7 +2677,8 @@ cv.addEventListener('mouseleave',()=>{hoverMonster=null;});
 cv.addEventListener('click',e=>{
   const {sx,sy,rect}=canvasScale();
   const mx=(e.clientX-rect.left)*sx,my=(e.clientY-rect.top)*sy;
-  const tt=pxToHex(mx,my); if(!tt) return;
+  const tt=pxToHex(mx,my);
+  if(!tt) return;
 
   // Placement initial des gardes
   if(initialPlacement){
@@ -1892,6 +2706,10 @@ cv.addEventListener('click',e=>{
       gastonGuardsSinceGrowth++;
       if(gastonGuardsSinceGrowth>=3){gastonGuardsSinceGrowth=0;growHero();}
     }
+    if(hasTrait('shufflingGuards')){
+      guardsSinceShuffle++;
+      if(guardsSinceShuffle>=5){ guardsSinceShuffle=0; shuffleAllGuards(); }
+    }
     pendingAction=null;pendingAllySource=null;playSfx('buy');
     log(t('newGuardPlaced'));updateHUD();renderPanel();return;
   }
@@ -1904,6 +2722,29 @@ cv.addEventListener('click',e=>{
     spend(price);costs.summonAlly=Math.ceil(costs.summonAlly*1.25);
     pendingAction=null;playSfx('buy');
     log(t('allyPlaced'));updateHUD();renderPanel();return;
+  }
+
+  if(pendingAction==='moveHeroFree'){
+    if(occupiedSet().has(axKey(tt.q,tt.r))) return;
+    hero.q=tt.q;hero.r=tt.r;
+    freeMoveAvailable=false;freeMoveTimer=0;
+    pendingAction=null;playSfx('buy');
+    updateHUD();renderPanel();saveChaosState();return;
+  }
+
+  if(pendingAction==='massTeleportTarget'){
+    monsters.forEach(m=>{ m.q=tt.q;m.r=tt.r; const[px,py]=axToPx(tt.q,tt.r); m.px=px;m.py=py; m.pathKeys=null; });
+    massTeleportReady=false;massTeleportTimer=0;
+    pendingAction=null;playSfx('buy');
+    log(t('massTeleportReady'));updateHUD();return;
+  }
+
+  if(pendingAction==='placeCrystal'){
+    if(occupiedSet().has(axKey(tt.q,tt.r))) return;
+    if(!canPlaceGuard(tt.q,tt.r)){log(t('invalidPlacement'));return;}
+    crystalEntities.push({q:tt.q,r:tt.r,hp:20,maxhp:20});
+    pendingAction=null;playSfx('buy');
+    log(t('crystalBought'));updateHUD();renderPanel();saveChaosState();return;
   }
 
   if(pendingAction==='swapSelect'){
@@ -1972,10 +2813,27 @@ cv.addEventListener('click',e=>{
 function togglePause(){
   if(state!=='playing') return;
   if(!paused){
-    if(pauseUsed) return;
-    paused=true;pauseUsed=true;
-    document.getElementById('pauseBtnSide').style.display='none';
-  } else paused=false;
+    if(pauseUsed&&!chaosMode) return; // en mode Infini, pause illimitee
+    paused=true;
+    if(!chaosMode){ pauseUsed=true; document.getElementById('pauseBtnSide').style.display='none'; }
+  } else { paused=false; idlePaused=false; }
+  setMusicDucked(paused);
+}
+
+// Mise en pause automatique apres 1min30 sans la moindre activite (souris, clavier, molette),
+// meme si le joueur a deja utilise sa pause manuelle cette partie. Reprend au premier geste.
+const IDLE_PAUSE_DELAY=90;
+let lastActivityAt=performance.now(), idlePaused=false;
+function markActivity(){
+  lastActivityAt=performance.now();
+  if(idlePaused&&state==='playing'){ paused=false; idlePaused=false; setMusicDucked(false); }
+}
+['mousemove','mousedown','wheel','keydown','pointerdown','pointermove'].forEach(ev=>{
+  window.addEventListener(ev,markActivity,{passive:true});
+});
+function checkIdlePause(){
+  if(state!=='playing'||paused) return;
+  if((performance.now()-lastActivityAt)/1000>=IDLE_PAUSE_DELAY){ paused=true; idlePaused=true; setMusicDucked(true); }
 }
 function doTopBuy(){
   if(!selected) return;
@@ -2007,35 +2865,90 @@ function doSpecial(){
     midasDoublers--;money*=2;playSfx('buy');log('Argent double !');showToast('x2 Argent !');updateHUD();renderPanel();
   }
 }
-let abandonKeyHeld=false;
-document.addEventListener('keydown',e=>{
-  if(listeningFor){
-    const key=e.key.toLowerCase();
-    if(listeningFor==='pause'){pauseKey=key;document.getElementById('pauseKeyBtn').textContent=key.toUpperCase();}
-    if(listeningFor==='abandon'){abandonKey=key;document.getElementById('abandonKeyBtn').textContent=key.toUpperCase();}
-    if(listeningFor==='topBuy'){topBuyKey=key;document.getElementById('topBuyKeyBtn').textContent=key.toUpperCase();}
-    if(listeningFor==='bottomBuy'){bottomBuyKey=key;document.getElementById('bottomBuyKeyBtn').textContent=key.toUpperCase();}
-    if(listeningFor==='special'){specialKey=key;document.getElementById('specialKeyBtn').textContent=key.toUpperCase();}
-    listeningFor=null;saveSettings();return;
+// Un raccourci peut etre une touche clavier ('p', 'f'...) ou un bouton de souris
+// ('mouse1'=milieu, 'mouse2'=droit, 'mouse3'=retour, 'mouse4'=suivant — le clic
+// gauche 'mouse0' reste reserve aux interactions de jeu et n'est jamais assignable).
+function shortcutLabel(k){
+  if(!k) return '-';
+  if(k==='wheelup') return 'MOLETTE HAUT';
+  if(k==='wheeldown') return 'MOLETTE BAS';
+  if(k.startsWith('mouse')){
+    const names={mouse1:'SOURIS MILIEU',mouse2:'SOURIS DROIT',mouse3:'SOURIS RETOUR',mouse4:'SOURIS SUIVANT'};
+    return names[k]||('SOURIS '+k.slice(5));
   }
-  const k=e.key.toLowerCase();
+  return k.toUpperCase();
+}
+const SHORTCUT_BTN_IDS={pause:'pauseKeyBtn',abandon:'abandonKeyBtn',topBuy:'topBuyKeyBtn',
+  bottomBuy:'bottomBuyKeyBtn',special:'specialKeyBtn'};
+function captureShortcut(key){
+  if(!listeningFor) return;
+  if(listeningFor==='pause'){pauseKey=key;}
+  if(listeningFor==='abandon'){abandonKey=key;}
+  if(listeningFor==='topBuy'){topBuyKey=key;}
+  if(listeningFor==='bottomBuy'){bottomBuyKey=key;}
+  if(listeningFor==='special'){specialKey=key;}
+  document.getElementById(SHORTCUT_BTN_IDS[listeningFor]).textContent=shortcutLabel(key);
+  listeningFor=null;saveSettings();
+}
+// Pendant la capture d'un raccourci, un clic de souris (hors clic gauche) compte comme touche
+document.addEventListener('mousedown',e=>{
+  if(!listeningFor||e.button===0) return;
+  e.preventDefault();
+  captureShortcut('mouse'+e.button);
+});
+// ...ou un cran de molette (haut/bas assignables separement)
+document.addEventListener('wheel',e=>{
+  if(!listeningFor) return;
+  e.preventDefault();
+  captureShortcut(e.deltaY<0?'wheelup':'wheeldown');
+},{passive:false});
+document.addEventListener('contextmenu',e=>{
+  if(listeningFor){ e.preventDefault(); return; }
+  // Empeche le menu contextuel du navigateur si le clic droit sert de raccourci en jeu
+  if(state==='playing'&&[pauseKey,abandonKey,topBuyKey,bottomBuyKey,specialKey].includes('mouse2')) e.preventDefault();
+});
+let abandonKeyHeld=false;
+function triggerShortcut(k){
+  if(listeningFor) return;
   if(k===pauseKey&&state==='playing'){togglePause();return;}
   if(abandonKey&&k===abandonKey&&state==='playing'){
+    if(chaosMode){ if(!abandonKeyHeld){abandonKeyHeld=true;quitInfinite();} return; }
     if(!abandonKeyHeld){abandonKeyHeld=true;abandonHoldActive=true;abandonHoldT=0;}
     return;
   }
   if(topBuyKey&&k===topBuyKey&&state==='playing'){doTopBuy();return;}
   if(bottomBuyKey&&k===bottomBuyKey&&state==='playing'){doBottomBuy();return;}
   if(specialKey&&k===specialKey&&state==='playing'){doSpecial();return;}
-});
-document.addEventListener('keyup',e=>{
-  const k=e.key.toLowerCase();
+}
+function releaseShortcut(k){
   if(abandonKey&&k===abandonKey){abandonKeyHeld=false;stopAbandonHold();}
+}
+document.addEventListener('keydown',e=>{
+  if(listeningFor){ captureShortcut(e.key.toLowerCase()); return; }
+  triggerShortcut(e.key.toLowerCase());
 });
+document.addEventListener('keyup',e=>{ releaseShortcut(e.key.toLowerCase()); });
+document.addEventListener('mousedown',e=>{
+  if(listeningFor||e.button===0) return;
+  triggerShortcut('mouse'+e.button);
+});
+document.addEventListener('mouseup',e=>{
+  if(e.button===0) return;
+  releaseShortcut('mouse'+e.button);
+});
+document.addEventListener('wheel',e=>{
+  if(listeningFor) return;
+  const k=e.deltaY<0?'wheelup':'wheeldown';
+  // La molette n'a pas d'evenement de "relachement" : on declenche puis on relache aussitot
+  triggerShortcut(k); releaseShortcut(k);
+});
+
+// En mode Infini, la 2eme vitesse est toujours x3 (ignore le reglage personnalise)
+function effectiveSpeed(idx){ return (chaosMode&&idx===1) ? 3 : SPEEDS[idx]; }
 
 document.getElementById('speedBtn').addEventListener('click',()=>{
   speedIndex=(speedIndex+1)%SPEEDS.length;
-  document.getElementById('speedBtn').textContent=t('speed')+' x'+SPEEDS[speedIndex];
+  document.getElementById('speedBtn').textContent=t('speed')+' x'+effectiveSpeed(speedIndex);
 });
 function enzoAddOne(type){
   if(!gameRunning||sessionMode!=='gameplay5') return;
@@ -2068,6 +2981,7 @@ document.getElementById('closeSettings').addEventListener('click',()=>{
 });
 document.getElementById('heroSelectBtn').addEventListener('click',()=>{
   if(state!=='difficulty') return;
+  renderHeroCards();
   document.getElementById('heroSelectOverlay').style.display='flex';
 });
 document.getElementById('closeHeroSelect').addEventListener('click',()=>{
@@ -2075,13 +2989,15 @@ document.getElementById('closeHeroSelect').addEventListener('click',()=>{
 });
 document.getElementById('langSelect').addEventListener('change',e=>{lang=e.target.value;applyStaticTexts();saveSettings();});
 document.getElementById('decorSelect').addEventListener('change',e=>{decorIndex=parseInt(e.target.value,10);applyTheme();saveSettings();});
+document.getElementById('musicTrackSelect').addEventListener('change',e=>{switchMusicTrack(parseInt(e.target.value,10));saveSettings();});
 document.getElementById('modeSelect').addEventListener('change',e=>{gameMode=e.target.value;renderDifficultyList();saveSettings();});
 document.getElementById('volSlider').addEventListener('input',e=>{sfxVolume=parseInt(e.target.value,10)/100;ensureAudio();saveSettings();});
+document.getElementById('musicVolSlider').addEventListener('input',e=>{setMusicVolume(parseInt(e.target.value,10)/100);saveSettings();});
 document.getElementById('speed2Input').addEventListener('change',e=>{
   const v=parseFloat(e.target.value);
   if(!v||v<1) return;
   SPEEDS[1]=v;
-  if(speedIndex===1) document.getElementById('speedBtn').textContent=t('speed')+' x'+SPEEDS[1];
+  if(speedIndex===1) document.getElementById('speedBtn').textContent=t('speed')+' x'+effectiveSpeed(1);
   saveSettings();
 });
 document.getElementById('pauseKeyBtn').addEventListener('click',()=>{listeningFor='pause';document.getElementById('pauseKeyBtn').textContent='...';});
@@ -2090,17 +3006,19 @@ document.getElementById('topBuyKeyBtn').addEventListener('click',()=>{listeningF
 document.getElementById('bottomBuyKeyBtn').addEventListener('click',()=>{listeningFor='bottomBuy';document.getElementById('bottomBuyKeyBtn').textContent='...';});
 document.getElementById('specialKeyBtn').addEventListener('click',()=>{listeningFor='special';document.getElementById('specialKeyBtn').textContent='...';});
 document.getElementById('pauseBtnSide').addEventListener('click',togglePause);
+const ABANDON_HOLD_DUR=1.2*0.7; // reduit de 30%
 let abandonHoldT=0,abandonHoldActive=false;
 const abandonBtn=document.getElementById('abandonBtn');
 function abandonTick(dt){
   if(!abandonHoldActive) return;
   abandonHoldT+=dt;
-  const pct=Math.min(1,abandonHoldT/1.2);
+  const pct=Math.min(1,abandonHoldT/ABANDON_HOLD_DUR);
   abandonBtn.style.background=`linear-gradient(to right,#a33 ${pct*100}%,#333 ${pct*100}%)`;
-  if(abandonHoldT>=1.2){abandonHoldActive=false;abandonBtn.style.background='';endGame('abandon');}
+  if(abandonHoldT>=ABANDON_HOLD_DUR){abandonHoldActive=false;abandonBtn.style.background='';endGame('abandon');}
 }
 abandonBtn.addEventListener('pointerdown',e=>{
   if(state!=='playing') return;
+  if(chaosMode){ e.preventDefault(); quitInfinite(); return; }
   e.preventDefault();abandonHoldActive=true;abandonHoldT=0;
 });
 function stopAbandonHold(){abandonHoldActive=false;abandonHoldT=0;abandonBtn.style.background='';}
@@ -2122,6 +3040,10 @@ document.getElementById('closeRules').addEventListener('click',()=>{
 // ══════════════════════════════════════════════════════
 // MENU — rendu des listes
 // ══════════════════════════════════════════════════════
+// Somme des records (difficulte 1 + difficulte 2) pour un heros donne
+function heroTotalRecord(mode){
+  return loadStats(1,mode).best + loadStats(2,mode).best;
+}
 function renderHeroCards(){
   const container=document.getElementById('heroCards');
   if(!container) return;
@@ -2133,9 +3055,12 @@ function renderHeroCards(){
     {mode:'gameplay8',color:'#d97a3a',border:'#ffcc99',descKey:'heroDesc8'},
   ];
   container.innerHTML='';
+  let grandTotal=0;
   heroes.forEach(h=>{
     const name=heroName(h.mode);
     const isSelected=gameMode===h.mode;
+    const total=heroTotalRecord(h.mode);
+    grandTotal+=total;
     const card=document.createElement('div');
     card.style.cssText=`background:#2a2a2a;border:2px solid ${isSelected?h.border:'#555'};border-radius:12px;
       padding:18px 20px;width:190px;cursor:pointer;text-align:center;transition:border .2s;
@@ -2144,6 +3069,7 @@ function renderHeroCards(){
         border:3px solid ${h.border};margin:0 auto 10px;"></div>
       <div style="font-size:20px;font-weight:700;color:${h.border};margin-bottom:8px;">${name}</div>
       <div style="font-size:12px;color:#ccc;line-height:1.5;">${t(h.descKey)}</div>
+      <div style="font-size:13px;color:${h.border};margin-top:8px;font-weight:600;">${t('heroTotalRecord')} : ${total}</div>
       <button style="margin-top:12px;background:${isSelected?h.color:'#333'};border-color:${h.border};
         font-weight:${isSelected?'700':'400'};">${isSelected?'✓ Sélectionné':'Choisir'}</button>`;
     card.querySelector('button').addEventListener('click',()=>{
@@ -2155,6 +3081,8 @@ function renderHeroCards(){
     });
     container.appendChild(card);
   });
+  const totalEl=document.getElementById('heroTotalPts');
+  if(totalEl) totalEl.textContent=t('heroGrandTotal')+' : '+grandTotal;
 }
 
 function updateEnzoDisplay(){
@@ -2177,7 +3105,7 @@ function renderDifficultyList(){
   list.innerHTML='';
   const lbl=lang==='en'?'Difficulty':'Difficulte';
 
-  for(let d=1;d<=2;d++){
+  for(let d=1;d<=1;d++){
     const stats=loadStats(d,gameMode);
     const row=document.createElement('div');row.className='diffrow';
     row.innerHTML=`<button class="diffbtn" data-d="${d}">${lbl} ${d}</button>
@@ -2192,9 +3120,19 @@ function renderDifficultyList(){
   const dSt=loadDailyStats();
   const dRow=document.createElement('div');dRow.className='diffrow';
   dRow.innerHTML=`<button class="diffbtn daily-btn" id="dailyBtn">&#128197; ${t('dailyChallenge')}</button>
-    <div class="diffstats">${t('record')} : ${dSt.best>0?dSt.best:'&mdash;'}<br>${dailyDateStr()}</div>`;
+    <div class="diffstats">${t('record')} : ${dSt.best>0?dSt.best:'&mdash;'}<br>${t('dailyTotalPts')} : ${loadDailyTotalPts()}<br>${dailyDateStr()}</div>`;
   list.appendChild(dRow);
   document.getElementById('dailyBtn').addEventListener('click',startDailyGame);
+
+  // Mode Infini — partie unique et persistante : affiche la vague actuelle, jamais un record qui reinitialise
+  const cBonus=chaosDmgBonus();
+  const cRow=document.createElement('div');cRow.className='diffrow';
+  cRow.innerHTML=`<button class="diffbtn chaos-btn" id="chaosBtn">&#8734; ${t('chaosMode')}</button>
+    <div class="diffstats">${t('chaosDmgBonusLabel')} : +${cBonus.toFixed(2)}%</div>`;
+  cRow.title=t('chaosDesc');
+  list.appendChild(cRow);
+  document.getElementById('chaosBtn').addEventListener('click',startChaosGame);
+  document.getElementById('chaosBtn').title=t('chaosDesc');
 
 }
 
@@ -2212,17 +3150,24 @@ function buildModeOptions(){
   });
   sel.value=gameMode;
 }
+function buildMusicTrackOptions(){
+  const sel=document.getElementById('musicTrackSelect');sel.innerHTML='';
+  ['musicTrack0','musicTrack1','musicTrack2'].forEach((k,i)=>{
+    const opt=document.createElement('option');opt.value=i;opt.textContent=t(k);sel.appendChild(opt);
+  });
+  sel.value=musicTrackIndex;
+}
 
 function applyStaticTexts(){
   const E=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
   E('setTitle',t('settings'));
-  E('langLbl',t('language')); E('decorLbl',t('decor')); E('modeLbl',t('gameMode'));
+  E('langLbl',t('language')); E('decorLbl',t('decor')); E('modeLbl',t('gameMode')); E('musicTrackLbl',t('musicTrackLbl'));
   E('closeSettings',t('close')); E('lblHp',t('hero')); E('lblMoney',t('money'));
   E('lblPoint',t('point')); E('lblWave',t('wave'));
   E('lblTimer',t('nextWave')); E('lblChrono',t('chrono'));
-  E('abandonBtn',t('abandon'));
-  E('speedBtn',t('speed')+' x'+SPEEDS[speedIndex]);
-  E('volLbl',t('volume')); E('pauseKeyLbl',t('pauseKeyLbl'));
+  updateAbandonBtnLabel();
+  E('speedBtn',t('speed')+' x'+effectiveSpeed(speedIndex));
+  E('volLbl',t('volume')); E('musicVolLbl',t('musicVolume')); E('pauseKeyLbl',t('pauseKeyLbl'));
   E('abandonKeyLbl',t('abandonKeyLbl')); E('topBuyKeyLbl',t('topBuyKeyLbl'));
   E('bottomBuyKeyLbl',t('bottomBuyKeyLbl')); E('specialKeyLbl',t('specialKeyLbl'));
   E('speed2Lbl',t('speed2Lbl'));
@@ -2233,7 +3178,7 @@ function applyStaticTexts(){
   const hsb=document.getElementById('heroSelectBtn');
   if(hsb) hsb.textContent='⚔ '+t('heroSelectBtn')+' : '+heroName(gameMode);
   document.getElementById('closeHeroSelect').textContent=t('heroSelectClose');
-  buildDecorOptions();buildModeOptions();renderHeroCards();renderDifficultyList();
+  buildDecorOptions();buildModeOptions();buildMusicTrackOptions();renderHeroCards();renderDifficultyList();
 }
 
 
@@ -2243,11 +3188,12 @@ function applyStaticTexts(){
 loadSettings();
 document.getElementById('langSelect').value=lang;
 document.getElementById('volSlider').value=Math.round(sfxVolume*100);
-document.getElementById('pauseKeyBtn').textContent=pauseKey.toUpperCase();
-document.getElementById('abandonKeyBtn').textContent=abandonKey?abandonKey.toUpperCase():'-';
-document.getElementById('topBuyKeyBtn').textContent=topBuyKey?topBuyKey.toUpperCase():'-';
-document.getElementById('bottomBuyKeyBtn').textContent=bottomBuyKey?bottomBuyKey.toUpperCase():'-';
-document.getElementById('specialKeyBtn').textContent=specialKey?specialKey.toUpperCase():'-';
+document.getElementById('musicVolSlider').value=Math.round(musicVolume*100);
+document.getElementById('pauseKeyBtn').textContent=shortcutLabel(pauseKey);
+document.getElementById('abandonKeyBtn').textContent=shortcutLabel(abandonKey);
+document.getElementById('topBuyKeyBtn').textContent=shortcutLabel(topBuyKey);
+document.getElementById('bottomBuyKeyBtn').textContent=shortcutLabel(bottomBuyKey);
+document.getElementById('specialKeyBtn').textContent=shortcutLabel(specialKey);
 document.getElementById('speed2Input').value=SPEEDS[1];
 applyStaticTexts();
 applyTheme();
