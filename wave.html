@@ -1625,6 +1625,12 @@ function loadRecords(){
 }
 function saveRecords(){try{localStorage.setItem('wave_records_v13',JSON.stringify(records));}catch(_){}}
 let records=loadRecords();
+// ─── RECORDS ÉCART NOCLIP ────────────────────────────────────────────────────
+let noclipRecords={};
+try{noclipRecords=JSON.parse(localStorage.getItem('wave_noclip_rec'))||{};}catch(_){}
+function saveNoclipRecords(){try{localStorage.setItem('wave_noclip_rec',JSON.stringify(noclipRecords));}catch(_){}}
+function noclipRecKey(){return activeCustomLevel?'c_'+activeCustomLevel.id:mode+'_'+diff;}
+function noclipRecordLabel(){const r=noclipRecords[noclipRecKey()];return r===undefined?null:r.toFixed(1)+' px';}
 function cadKey(){return cadenceEnabled?'1':'0';}
 function curRecords(){return records[mode][cadKey()];}
 function recordLabel(d){
@@ -2152,6 +2158,11 @@ function update(now){
         activeCustomLevel.bestDeaths=trainingDeaths;saveCustomLevels();
       }
     }
+    if((noclipEnabled||trainingMode)&&noclipDevCount>0){
+      const avg=noclipDevSum/noclipDevCount;
+      const key=noclipRecKey();
+      if(noclipRecords[key]===undefined||avg<noclipRecords[key]){noclipRecords[key]=avg;saveNoclipRecords();}
+    }
     if(recordingCustom)finalizeCustomRecording(cfg);
     difficultyEase=0;buildLevel(diff);resetRun(false);return;
   }
@@ -2213,7 +2224,7 @@ function update(now){
   }
   playerY=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,playerY));
   if(recordingCustom)recBuf.push({wx:playerWX,y:playerY});
-  trail.push({wx:playerWX,y:playerY});if(trail.length>28)trail.shift();
+  trail.push({wx:playerWX,y:playerY});if(trail.length>28&&!noclipEnabled&&!trainingMode)trail.shift();
   const{top,bot}=getCorridor(playerWX);
   // Score : chaque seconde écoulée rapporte 30 points moins le nombre de morts
   // (peut devenir négatif au-delà de 30 morts, et le total peut être négatif).
@@ -2304,6 +2315,18 @@ function drawBg(){
 
 function drawWalls(){
   const col=DCFG[diff].col,wall=THEMES[themeIdx].wall,step=4;
+  // Noclip / entraînement : uniquement la ligne centrale du tunnel
+  if(noclipEnabled||trainingMode){
+    cx.strokeStyle=col+'66';cx.lineWidth=1.5;cx.setLineDash([6,5]);
+    cx.shadowBlur=8;cx.shadowColor=col;
+    cx.beginPath();let first=true;
+    for(let sx=0;sx<=W;sx+=step){
+      const wx=cameraX+sx;const{top:t,bot:b}=getCorridor(wx);const cy=(t+b)/2;
+      first?(cx.moveTo(sx,cy),first=false):cx.lineTo(sx,cy);
+    }
+    cx.stroke();cx.setLineDash([]);cx.shadowBlur=0;
+    return;
+  }
   const segs=activeCustomLevel?.invisSegs;
   const mainLen=activeCustomLevel?.mainLen||1;
   function isInvis(wx){
@@ -2389,13 +2412,28 @@ function drawPortals(){
 
 function drawPlayer(){
   const col=DCFG[diff].col,acc=THEMES[themeIdx].accent;
-  if(trailEnabled)for(let i=0;i<trail.length;i++){
-    const t=trail[i],sx=t.wx-cameraX;
-    if(sx<-20||sx>PLAYER_SX+4)continue;
-    const f=i/trail.length;
-    cx.globalAlpha=f*.45;
-    cx.beginPath();cx.arc(sx,t.y,PLAYER_R*.3+f*PLAYER_R*.9,0,Math.PI*2);
-    cx.fillStyle=col;cx.fill();
+  if(trailEnabled&&trail.length>1){
+    if(noclipEnabled||trainingMode){
+      // Traîne persistante : polyline de toute la run
+      cx.save();cx.strokeStyle=col+'99';cx.lineWidth=2;cx.lineJoin='round';
+      cx.shadowBlur=6;cx.shadowColor=col;
+      cx.beginPath();let started=false;
+      for(const t of trail){
+        const sx=t.wx-cameraX;
+        if(sx<-W||sx>W*2)continue;
+        started?(cx.lineTo(sx,t.y)):(cx.moveTo(sx,t.y),started=true);
+      }
+      cx.stroke();cx.restore();
+    } else {
+      for(let i=0;i<trail.length;i++){
+        const t=trail[i],sx=t.wx-cameraX;
+        if(sx<-20||sx>PLAYER_SX+4)continue;
+        const f=i/trail.length;
+        cx.globalAlpha=f*.45;
+        cx.beginPath();cx.arc(sx,t.y,PLAYER_R*.3+f*PLAYER_R*.9,0,Math.PI*2);
+        cx.fillStyle=col;cx.fill();
+      }
+    }
   }
   cx.globalAlpha=1;
   cx.save();cx.translate(PLAYER_SX,playerY);
@@ -2440,6 +2478,11 @@ function drawHUD(){
     const avg=noclipDevCount>0?(noclipDevSum/noclipDevCount).toFixed(1):'--';
     cx.textAlign='center';cx.font='bold 13px monospace';cx.fillStyle='#7de8ffcc';
     cx.fillText(`écart moy : ${avg} px`,W/2,BAR_H+16);
+    const rec=noclipRecordLabel();
+    if(rec){
+      cx.save();cx.textAlign='right';cx.font='bold 11px monospace';
+      cx.fillStyle='#ffffff44';cx.fillText(`record : ${rec}`,W-8,BAR_H+16);cx.restore();
+    }
   } else {
     const dscale=1+deathPulse*.6;
     cx.textAlign='center';cx.font=`bold ${(13*dscale).toFixed(1)}px monospace`;
