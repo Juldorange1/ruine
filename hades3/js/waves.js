@@ -77,14 +77,27 @@ function buildChapterRosters() {
   return groups;
 }
 
-// x3 de base : "toutes les salles doivent être plus dures".
-var ENEMY_COUNT_BASE_MULT = 3;
+// x1.5 de base (moitié moins qu'avant) : moins d'ennemis par salle, mais chacun est
+// deux fois plus costaud (voir generateRandomWave) — des affrontements moins "nuée",
+// plus lisibles individuellement.
+var ENEMY_COUNT_BASE_MULT = 1.5;
+
+// Chaque ennemi normal généré est deux fois plus fort (PV et dégâts) pour compenser
+// la baisse de nombre — la difficulté totale d'une salle reste comparable, seule sa
+// composition change.
+var ROOM_ENEMY_STRENGTH_PCT = 200;
+
+// Un soigneur (Chaman, circle tier 4) de trop dans une même salle rend le combat
+// interminable plutôt que difficile — jamais plus de 6 simultanément.
+var MAX_HEALERS_PER_ROOM = 6;
 
 // Échelle adoucie (0.4 au lieu de 0.7) : moins d'écart de nombre d'ennemis entre le
 // premier et le dernier chapitre.
 function randomEnemyCountFor(chapter, roomInChapter) {
   return (2 + Math.floor((chapter - 1) * 0.4) + Math.floor(roomInChapter / 2)) * ENEMY_COUNT_BASE_MULT;
 }
+
+function isHealerCombo(combo) { return combo.shape === 'circle' && combo.tier === 4; }
 
 // Les ennemis normaux infligent proportionnellement moins de dégâts à mesure que le run
 // avance (surtout au chapitre 4) : l'écart de difficulté entre chapitres vient moins d'un
@@ -115,13 +128,21 @@ function generateRandomWave(chapter, roomInChapter, mods, roster) {
   mods = mods || DEFAULT_DIFFICULTY_MODS;
   var chapterDmgMult = CHAPTER_DMG_MULT[Math.min(chapter, CHAPTER_DMG_MULT.length) - 1];
   var count = Math.max(1, Math.round(randomEnemyCountFor(chapter, roomInChapter) * mods.enemyCountPct / 100));
+  var nonHealerRoster = roster.filter(function (c) { return !isHealerCombo(c); });
   var enemies = [];
+  var healerCount = 0;
   for (var i = 0; i < count; i++) {
     var combo = roster[Math.floor(Math.random() * roster.length)];
+    if (isHealerCombo(combo) && healerCount >= MAX_HEALERS_PER_ROOM) {
+      combo = nonHealerRoster.length ? nonHealerRoster[Math.floor(Math.random() * nonHealerRoster.length)] : combo;
+    }
+    if (isHealerCombo(combo)) healerCount++;
     enemies.push({
       shape: combo.shape, tier: combo.tier,
       x: 50 + Math.random() * (ARENA_W - 100), y: 50 + Math.random() * (ARENA_H - 100),
-      dmgPct: mods.enemyDmgPct * chapterDmgMult, spdPct: mods.enemySpdPct, atkSpdPct: mods.enemyAtkSpdPct
+      hpPct: ROOM_ENEMY_STRENGTH_PCT,
+      dmgPct: mods.enemyDmgPct * chapterDmgMult * (ROOM_ENEMY_STRENGTH_PCT / 100),
+      spdPct: mods.enemySpdPct, atkSpdPct: mods.enemyAtkSpdPct
     });
   }
   return { enemies: enemies, playerStats: { dmgPct: 100, spdPct: 100 } };
@@ -157,9 +178,10 @@ function generateBossWave(chapter, bossTier, mods, roster, extraBossTier) {
     return entry;
   }
 
+  var bossSpawnY = ARENA_H * 0.35;
   var enemies = isDouble
-    ? [makeBossEntry(bossTier, ARENA_W * 0.32, 140), makeBossEntry(extraBossTier, ARENA_W * 0.68, 140)]
-    : [makeBossEntry(bossTier, ARENA_W / 2, 140)];
+    ? [makeBossEntry(bossTier, ARENA_W * 0.32, bossSpawnY), makeBossEntry(extraBossTier, ARENA_W * 0.68, bossSpawnY)]
+    : [makeBossEntry(bossTier, ARENA_W / 2, bossSpawnY)];
   return { enemies: enemies, playerStats: { dmgPct: 100, spdPct: 100 }, isBossRoom: true };
 }
 

@@ -146,7 +146,7 @@ function startRunNow() {
   var queue = buildRunQueue(DIFFICULTY_MODS);
   goToCombat({
     queue: queue,
-    playerConfig: { spawnX: 550, spawnY: 610 },
+    playerConfig: { spawnX: ARENA_W / 2, spawnY: ARENA_H - 90 },
     difficultyMods: {
       enemyDmgPct: DIFFICULTY_MODS.enemyDmgPct,
       enemyCountPct: DIFFICULTY_MODS.enemyCountPct, enemySpdPct: DIFFICULTY_MODS.enemySpdPct,

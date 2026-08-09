@@ -236,7 +236,7 @@ var WAVE_TRANSITION_DUR = 1.8; // assez long pour lire "Chapitre X — Salle Y" 
 // Un vrai combat de boss ne se laisse pas kiter à l'infini : au-delà de cette distance
 // au boss le plus proche, le joueur subit des dégâts constants et se fait ramener vers
 // le combat — CB.leashWarning (0 à 1) est lu par le rendu pour prévenir avant que ça pique.
-var BOSS_LEASH_RADIUS = 340;
+var BOSS_LEASH_RADIUS = 860; // proportionnel à la nouvelle hauteur d'arène (ARENA_H=1140), avec marge au démarrage d'une salle de boss
 var BOSS_LEASH_PULL_FORCE = 260;
 var BOSS_LEASH_DMG_PER_SEC = 14;
 

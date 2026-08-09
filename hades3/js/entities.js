@@ -2,8 +2,11 @@
 
 // Arène volontairement resserrée : plus dur de camper à distance en laissant les ennemis
 // venir mourir tout seuls, l'espace pour fuir indéfiniment est plus limité.
+// ARENA_H est nettement plus grand que ARENA_W en coordonnées de jeu — le monde réel
+// est un rectangle "haut", pas un carré — pour qu'une fois compressé verticalement par
+// la caméra inclinée (ARENA_TILT_Y, render.js), la carte affichée à l'écran soit carrée.
 var ARENA_W = 820;
-var ARENA_H = 520;
+var ARENA_H = 1140;
 var CELL_SIZE = 55; // coïncide avec le quadrillage dessiné en fond d'arène
 
 var _nextId = 1;

@@ -40,7 +40,7 @@ function combatMouseToWorld(canvas, clientX, clientY) {
 // plutôt qu'une vue du dessus parfaitement plate. Purement un effet de rendu — les
 // coordonnées de jeu (déplacement, collisions, visée) restent en repère plat classique,
 // combatMouseToWorld inverse cette même compression pour que le viseur reste précis.
-var ARENA_TILT_Y = 0.62;
+var ARENA_TILT_Y = 0.72;
 
 
 var _floorTextureCache = null;
@@ -854,6 +854,16 @@ function drawEnemy(ctx, e) {
   // Hades plutôt qu'une pure vue de dessus, où tout collerait à son ombre.
   var standH = r * (isBoss ? 0.95 : 0.72);
   var drawY = e.y - bob - standH;
+
+  // Masse effilée reliant l'ombre au sol au corps surélevé : sans elle, la créature
+  // n'est qu'un sprite plat qui flotte au-dessus de son ombre. Avec, elle a un vrai
+  // volume vertical façon caméra inclinée, comme les rochers extrudés (drawBlocks).
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,5,12,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(e.x, e.y - (bob + standH) * 0.5, r * 0.6, (bob + standH) * 0.62 + r * 0.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   // Petit écrasement/étirement au moment de l'impact — une réaction physique brève,
   // en plus du flash blanc déjà existant.

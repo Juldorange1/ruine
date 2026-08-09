@@ -50,100 +50,10 @@
       "port": 5507
     },
     {
-      "name": "arene",
+      "name": "hades3",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5508", "--bind", "127.0.0.1", "--directory", "arene"],
+      "runtimeArgs": ["-m", "http.server", "5508", "--bind", "127.0.0.1", "--directory", "hades3"],
       "port": 5508
-    },
-    {
-      "name": "arene2",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5509", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5509
-    },
-    {
-      "name": "arene3",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5510", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5510
-    },
-    {
-      "name": "arene4",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5511", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5511
-    },
-    {
-      "name": "arene5",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5512", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5512
-    },
-    {
-      "name": "arene6",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5513", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5513
-    },
-    {
-      "name": "arene7",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5514", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5514
-    },
-    {
-      "name": "arene8",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5515", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5515
-    },
-    {
-      "name": "arene9",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5516", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5516
-    },
-    {
-      "name": "arene10",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5517", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5517
-    },
-    {
-      "name": "arene11",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5518", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5518
-    },
-    {
-      "name": "arene12",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5519", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5519
-    },
-    {
-      "name": "arene13",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5520", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5520
-    },
-    {
-      "name": "arene14",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5521", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5521
-    },
-    {
-      "name": "arene15",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5522", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5522
-    },
-    {
-      "name": "arene16",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5523", "--bind", "127.0.0.1", "--directory", "arene"],
-      "port": 5523
     }
   ]
 }

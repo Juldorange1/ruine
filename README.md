@@ -11,7 +11,7 @@ entre les jeux, sauf mention contraire).
 | [`ruine/`](ruine/) | **Ruine** | Top-down desert/ruine, grille 12×12, modes Solo / Coop / PvP |
 | [`hexdefense/`](hexdefense/) | **Hex Défense** | Tower defense hexagonal, plusieurs héros, Mode Infini (prestige, cristaux, Choses aléatoires) |
 | [`wave/`](wave/) | **Wave** | Jeu de rythme/esquive façon Geometry Dash |
-| [`arene/`](arene/) | **Arène** | Combat par vagues façon Hades, dash/échange/mine |
+| [`hades3/`](hades3/) | **Hades 3** | Combat par vagues façon Hades, dash/échange/mine |
 | [`avidite/`](avidite/) | **Avidité** | Dés push-your-luck, thème horloge du jugement |
 | [`ecosysteme/`](ecosysteme/) | **Écosystème (SYLVA)** | Stratégie solo, chaîne trophique |
 | [`enclave/`](enclave/) | **Enclave** | Jeu de territoire |
@@ -40,7 +40,7 @@ ruine/                  (dépôt = "JulGame")
 ├── ruine/              Jeu "Ruine"
 ├── hexdefense/         Jeu "Hex Défense"
 ├── wave/                Jeu "Wave"
-├── arene/              Jeu "Arène"
+├── hades3/              Jeu "Hades 3"
 ├── avidite/             Jeu "Avidité"
 ├── ecosysteme/          Jeu "Écosystème"
 ├── enclave/             Jeu "Enclave"

@@ -78,6 +78,23 @@ function drawCreatureBody(ctx, shape, x, y, r, color, opts) {
   }
   ctx.fillStyle = shapeGradient(ctx, gradCx, gradCy, r, color);
   ctx.fill();
+
+  // Occlusion ambiante en bas à droite (à l'opposé de la lumière de shapeGradient,
+  // en haut à gauche) : renforce le volume 3D du corps sans avoir à redessiner sa
+  // silhouette exacte par forme — 'multiply' n'assombrit que les pixels déjà remplis.
+  if (!opts.flashOnly) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    var ao = ctx.createRadialGradient(x + r * 0.3, y + r * 0.55, r * 0.05, x + r * 0.2, y + r * 0.4, r * 1.1);
+    ao.addColorStop(0, 'rgba(0,0,0,0.4)');
+    ao.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = ao;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 1.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   if (opts.ring) {
     ctx.shadowBlur = 0;
     ctx.strokeStyle = opts.ring;
