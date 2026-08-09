@@ -4,8 +4,26 @@
     {
       "name": "wave",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5503", "--bind", "127.0.0.1"],
+      "runtimeArgs": ["-m", "http.server", "5503", "--bind", "127.0.0.1", "--directory", "wave"],
       "port": 5503
+    },
+    {
+      "name": "hexdefense",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5502", "--bind", "127.0.0.1", "--directory", "hexdefense"],
+      "port": 5502
+    },
+    {
+      "name": "ruine",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5501", "--bind", "127.0.0.1", "--directory", "ruine"],
+      "port": 5501
+    },
+    {
+      "name": "root",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5599", "--bind", "127.0.0.1"],
+      "port": 5599
     },
     {
       "name": "enclave",

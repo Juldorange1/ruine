@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RUINE">
+<meta name="theme-color" content="#d4a040">
+<title>RUINE</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<!-- Textures de sol -->
+<img id="tex-grass1"  src="images/grass1.jpg"  style="display:none">
+<img id="tex-grass2"  src="images/grass2.jpg"  style="display:none">
+<img id="tex-stone"   src="images/stone.jpg"   style="display:none">
+<img id="tex-desert1" src="images/desert1.jpg" style="display:none">
+<img id="tex-desert2" src="images/desert2.jpg" style="display:none">
+
+<div id="cw"><canvas id="c"></canvas></div>
+<div id="restartFade" style="position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:1500"></div>
+<!-- Overlay transparent qui capte les clics pendant la phase de placement -->
+<div id="place-overlay" style="position:fixed;inset:0;z-index:5;display:none;cursor:crosshair;"></div>
+
+<!-- MENU -->
+<div class="ovl" id="ov">
+  <canvas id="gear-bg" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:-1;"></canvas>
+
+  <!-- Zone code map — rejouer une map précédente -->
+  <div style="margin-bottom:10px;padding:8px 16px;background:rgba(8,5,2,0.6);border:1px solid rgba(200,160,50,0.2);border-radius:6px;max-width:480px;width:100%;box-sizing:border-box">
+    <div style="font-size:9px;letter-spacing:3px;color:rgba(200,160,50,0.5);margin-bottom:4px;font-family:'Courier New',monospace">CODE MAP</div>
+    <div id="lastmapcode" style="font-size:8px;color:rgba(200,160,50,0.55);font-family:'Courier New',monospace;margin-bottom:6px;word-break:break-all;min-height:10px;line-height:1.4"></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="mapcodeload" type="text" placeholder="Coller un code ici pour rejouer cette map..." style="flex:1;background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:rgba(220,180,80,0.9);font-family:'Courier New',monospace;font-size:10px;padding:5px 8px;border-radius:3px;outline:none">
+    </div>
+  </div>
+
+  <h1 class="title">RUINE</h1>
+  <div class="sub" data-i18n="choose_mode">CHOISISSEZ UN MODE</div>
+  <div class="mcards">
+
+    <!-- RECORD card (solo) -->
+    <div class="mcard" style="min-width:260px">
+
+      <!-- Colonnes : stats + bouton durée -->
+      <div style="display:flex;gap:4px;margin-bottom:10px;justify-content:center;font-family:'Courier New',monospace">
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-best-500" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Meilleur temps">—</div>
+          <div id="stat-wins-500"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
+          <button class="rec-dur" data-dur="500d" onclick="recSetDur('500d')" style="background:rgba(240,210,80,0.2);border:1px solid rgba(240,210,80,0.7);color:#f0d250;font-weight:bold;font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">500</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-best-1000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Meilleur temps">—</div>
+          <div id="stat-wins-1000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
+          <button class="rec-dur" data-dur="1000d" onclick="recSetDur('1000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">1000</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-best-2000" style="font-size:11px;color:#70d090;letter-spacing:1px" title="Meilleur temps">—</div>
+          <div id="stat-wins-2000"  style="font-size:12px;font-weight:bold;color:#a0d880">0</div>
+          <button class="rec-dur" data-dur="2000d" onclick="recSetDur('2000d')" style="background:rgba(240,210,80,0.05);border:1px solid rgba(240,210,80,0.35);color:rgba(240,210,80,0.6);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 14px;">2000</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-survivor-best" style="font-size:11px;color:#e08060;letter-spacing:1px" title="Record : meilleur nb d'ennemis tués en une partie">—</div>
+          <div id="stat-survivor-kills" style="font-size:12px;font-weight:bold;color:#e0a060">0</div>
+          <button class="rec-dur" data-dur="survivor" onclick="recSetDur('survivor')" title="SURVIVANT" style="background:rgba(220,80,40,0.05);border:1px solid rgba(220,80,40,0.35);color:rgba(220,100,60,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 10px;">☠</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-daily-best" style="font-size:11px;color:#d0a0ff;letter-spacing:1px" title="Meilleur temps du jour">—</div>
+          <div id="stat-daily-date" style="font-size:9px;font-weight:bold;color:#a888d8">—</div>
+          <button class="rec-dur" data-dur="daily" onclick="recSetDur('daily')" title="DÉFI DU JOUR" style="background:rgba(140,60,220,0.05);border:1px solid rgba(140,60,220,0.35);color:rgba(170,110,230,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 10px;">📅</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div id="stat-boss-best" style="font-size:11px;color:#ff9050;letter-spacing:1px" title="Meilleurs dégâts infligés au boss">—</div>
+          <div id="stat-boss-kills" style="font-size:12px;font-weight:bold;color:#ffb070">0</div>
+          <button class="rec-dur" data-dur="boss" onclick="recSetDur('boss')" title="BOSS" style="background:rgba(220,30,30,0.05);border:1px solid rgba(220,30,30,0.35);color:rgba(230,90,80,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;transition:all .2s;padding:9px 10px;">👹</button>
+        </div>
+
+      </div>
+
+      <button id="btn-record-play" style="background:transparent;border:1px solid rgba(220,170,80,0.4);color:#d4b060;font-family:'Courier New',monospace;font-size:15px;letter-spacing:2px;padding:13px 36px;cursor:pointer;border-radius:4px;width:100%">JOUER</button>
+    </div>
+
+  </div>
+
+  <!-- Options -->
+  <div style="margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap">
+    <button onclick="document.getElementById('rulesov').style.display='flex'" style="background:rgba(10,8,2,0.7);border:1px solid rgba(200,160,50,0.35);color:rgba(220,180,80,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all" data-i18n="btn_rules">? R&#200;GLES</button>
+    <button onclick="openParams()" style="background:rgba(10,8,2,0.7);border:1px solid rgba(160,120,200,0.35);color:rgba(180,140,220,0.75);font-family:'Courier New',monospace;font-size:13px;letter-spacing:2px;cursor:pointer;border-radius:4px;padding:8px 18px;pointer-events:all" data-i18n="btn_params">&#9881; PARAM&#200;TRES</button>
+  </div>
+
+
+</div>
+
+<!-- PAUSE -->
+<div id="pauseov" style="position:fixed;inset:0;background:rgba(4,2,0,0.82);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:998;backdrop-filter:blur(2px)">
+  <div style="font-size:42px;font-weight:bold;letter-spacing:10px;color:#d4a040;font-family:'Courier New',monospace;margin-bottom:8px;text-shadow:0 0 30px rgba(200,140,20,0.4)" data-i18n="pause_title">PAUSE</div>
+  <div style="margin-bottom:28px"></div>
+  <button class="btn" id="btnpauseresume" style="font-size:13px;padding:11px 32px;margin-bottom:12px" data-i18n="btn_resume">REPRENDRE</button>
+  <button class="btn" id="btnpausemenu" style="font-size:11px;padding:8px 24px;opacity:0.7" data-i18n="btn_menu_short">MENU</button>
+</div>
+
+<!-- END -->
+<div class="ovl" id="endov">
+  <h1 class="title" id="endtitle"></h1>
+  <div class="sub" id="endsub"></div>
+  <div id="endmode" style="font-size:11px;letter-spacing:3px;opacity:0.45;color:#c8a060;margin-bottom:10px;font-family:'Courier New',monospace"></div>
+  <div id="endmapcode" onclick="copyMapCode()" title="Cliquer pour copier ce code" style="font-size:8px;color:rgba(200,160,50,0.5);font-family:'Courier New',monospace;margin-bottom:12px;cursor:pointer;word-break:break-all;max-width:440px;text-align:center;padding:4px 8px;border:1px solid rgba(200,160,50,0.15);border-radius:3px;transition:color .3s"></div>
+  <div style="font-size:9px;color:rgba(200,160,50,0.3);font-family:'Courier New',monospace;margin-bottom:12px;letter-spacing:1px">↑ Cliquer pour copier le code map (rejouer via le menu)</div>
+  <button class="btn" id="btnreplay" data-i18n="btn_replay">REJOUER</button>
+  <button class="btn" id="btnmenu" style="margin-top:10px;font-size:11px;padding:8px 24px" data-i18n="btn_menu_short">MENU</button>
+</div>
+
+<!-- HUD -->
+<div class="hud" style="visibility:hidden">
+  <div id="team1hud">
+    <div class="pc">
+      <h3 id="p1role">P1</h3>
+      <div class="nm" id="p1nm">-</div>
+      <div class="hb"><div class="hf" id="p1hf" style="width:100%"></div></div>
+      <div style="font-size:9px;opacity:0.4;color:#c0a060" id="p1hn">100/100</div>
+      <div class="srow" id="p1sr">DMG 10  SPD 1.4</div>
+      <div class="res"><span style="color:#b0b0c8" id="p1co">C 0</span><span style="color:#f0c030" id="p1go">G 0</span><span style="color:#80eeff" id="p1di">D 0</span></div>
+    </div>
+  </div>
+  <div id="ch">
+  <div id="gamemodedisp" style="font-size:17px;letter-spacing:4px;font-weight:bold;color:#f0c858;margin-bottom:2px;text-transform:uppercase;font-family:'Courier New',monospace;text-shadow:0 0 10px rgba(240,180,60,0.6)"></div>
+  <div id="timer">00:00</div>
+  <div id="phase">MENU</div>
+</div>
+  <div id="team2hud">
+    <div class="pc" id="p2card">
+      <h3 id="p2role">P2</h3>
+      <div class="nm" id="p2nm">-</div>
+      <div class="hb"><div class="hf" id="p2hf" style="width:100%"></div></div>
+      <div style="font-size:9px;opacity:0.4;color:#c0a060" id="p2hn">100/100</div>
+      <div class="srow" id="p2sr">DMG 10  SPD 1.4</div>
+      <div class="res"><span style="color:#b0b0c8" id="p2co">C 0</span><span style="color:#f0c030" id="p2go">G 0</span><span style="color:#80eeff" id="p2di">D 0</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Panel gauche : objectif roi, coûts aléatoires, pool ultime — empilés verticalement -->
+<div id="leftpanel" style="position:fixed;top:175px;left:12px;z-index:49;display:flex;flex-direction:column;gap:7px;pointer-events:none;visibility:hidden">
+  <div id="ultimatehud" style="display:none;background:rgba(8,2,12,0.95);border:1px solid rgba(140,30,180,0.3);border-radius:6px;padding:10px 16px;font-family:'Courier New',monospace;letter-spacing:1px;min-width:160px"></div>
+  <div id="survivorhud" style="display:none;background:rgba(20,4,2,0.9);border:1px solid rgba(220,80,40,0.4);border-radius:5px;padding:6px 16px;font-family:'Courier New',monospace;font-size:13px;color:rgba(240,140,90,0.9);letter-spacing:1px;white-space:nowrap"></div>
+</div>
+<div id="placeind" style="display:none;position:fixed;left:50%;transform:translateX(-50%);background:rgba(8,5,2,0.95);border:1px solid rgba(220,170,80,0.5);border-radius:6px;padding:9px 28px;z-index:50;font-family:'Courier New',monospace;font-size:15px;color:#d4b060;letter-spacing:2px;pointer-events:none;white-space:nowrap;box-shadow:0 0 18px rgba(200,140,20,0.25)"></div>
+
+<!-- MODAL RÈGLES -->
+<div id="rulesov" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(4,2,0,0.97);z-index:1200;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:28px 16px">
+  <div style="max-width:720px;width:100%;font-family:'Courier New',monospace">
+
+    <!-- En-tête -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:1px solid rgba(200,160,50,0.2);padding-bottom:18px">
+      <div style="font-size:26px;font-weight:bold;letter-spacing:8px;color:#d4a040;text-shadow:0 0 20px rgba(200,140,20,0.4)" data-i18n="rules_title">RÈGLES DU JEU</div>
+      <button onclick="document.getElementById('rulesov').style.display='none'" style="background:rgba(8,5,2,0.8);border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;padding:7px 20px;letter-spacing:1px" data-i18n="close_x">FERMER ✕</button>
+    </div>
+
+    <div id="rules-fr" style="display:flex;flex-direction:column;gap:16px;font-size:13px;line-height:1.85;color:#c0b080">
+
+      <!-- OBJECTIF -->
+      <div style="border:1px solid rgba(240,210,80,0.28);border-radius:8px;padding:16px 20px;background:rgba(30,20,0,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#f0d060;letter-spacing:4px;margin-bottom:10px">◆ OBJECTIF</div>
+        <div>Atteindre le quota de <span style="color:#80eeff">diamants</span> choisi (<b style="color:#f0d060">500 / 1000 / 2000</b>) le plus vite possible. Le chrono monte dès le début du combat et s'arrête dès que l'objectif est atteint. <b>Meilleur score = temps le plus court.</b> Pour l'objectif <b>1000</b>, il faut que le minerai que tu possèdes en plus petite quantité atteigne 1000 (et pas seulement le diamant). Les records sont sauvegardés séparément selon l'objectif.</div>
+      </div>
+
+      <!-- RESSOURCES -->
+      <div style="border:1px solid rgba(180,160,80,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,15,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e8c850;letter-spacing:4px;margin-bottom:10px">⛏ RESSOURCES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">
+          <div style="text-align:center;padding:8px;border:1px solid rgba(180,180,200,0.18);border-radius:5px">
+            <div style="color:#b0b0c8;font-size:16px;font-weight:bold">C</div>
+            <div style="color:#8888aa;font-size:11px;margin-top:3px">CHARBON</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">achète les foreuses</div>
+          </div>
+          <div style="text-align:center;padding:8px;border:1px solid rgba(240,190,30,0.2);border-radius:5px">
+            <div style="color:#f0c030;font-size:16px;font-weight:bold">G</div>
+            <div style="color:#c09020;font-size:11px;margin-top:3px">OR</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">améliore les stats</div>
+          </div>
+          <div style="text-align:center;padding:8px;border:1px solid rgba(80,220,255,0.2);border-radius:5px">
+            <div style="color:#80eeff;font-size:16px;font-weight:bold">D</div>
+            <div style="color:#40c0d8;font-size:11px;margin-top:3px">DIAMANT</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">objectif + blocs</div>
+          </div>
+        </div>
+        <div>La carte contient des blocs de minerai (charbon ■, or ★, diamant ◆) en quantité fixe par type. La ressource à collecter est toujours le <span style="color:#80eeff">diamant</span>.</div>
+      </div>
+
+      <!-- PHASES -->
+      <div style="border:1px solid rgba(200,140,50,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,12,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e0a840;letter-spacing:4px;margin-bottom:10px">⏱ DÉROULEMENT</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div><b style="color:#f0d060">1. PLACEMENT</b> — Tu places tes 4 foreuses de départ. Chaque foreuse doit être adjacente à un bloc de minerai. Les bâtiments ne peuvent pas être placés sur le contour ni sur un bloc occupé. Confirme chaque placement en cliquant la case.</div>
+          <div><b style="color:#f0d060">2. COMBAT</b> — Le chrono démarre. Tu te déplaces, collectes, construis et améliores. La partie se termine quand tu atteins l'objectif en diamants.</div>
+          <div><b style="color:#f0d060">PAUSE</b> — Touches P ou ESC. Utilise-la quand tu as besoin de souffler.</div>
+        </div>
+      </div>
+
+      <!-- CONTRÔLES -->
+      <div style="border:1px solid rgba(160,160,180,0.18);border-radius:8px;padding:16px 20px;background:rgba(15,12,20,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#c0b8e0;letter-spacing:4px;margin-bottom:10px">🎮 CONTRÔLES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">DÉPLACEMENT</div>
+            <div>Flèches directionnelles <span style="color:#888;font-size:11px">(modifiable dans Paramètres)</span></div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ACTIVER BÂTIMENT</div>
+            <div>Clic gauche (à 1 case)</div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ATTAQUER</div>
+            <div>Clic droit (vise une case)</div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ANNULER / PAUSE</div>
+            <div>ESC · P</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USINE & SHOP -->
+      <div style="border:1px solid rgba(220,160,60,0.22);border-radius:8px;padding:16px 20px;background:rgba(25,15,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e8b840;letter-spacing:4px;margin-bottom:10px">🏭 USINE</div>
+        <div style="margin-bottom:8px">L'usine est le seul bâtiment de commerce. Approche-toi à 1 case et clique dessus pour ouvrir le shop. Achats disponibles :</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">FOREUSE</span><span style="color:#888">— extraction automatique (5s/unité). Doit faire face à un bloc.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">FOREUSE+</span><span style="color:#888">— extraction rapide (2,5s/unité). Coûte plus cher.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">BLOC</span><span style="color:#888">— place un bloc de ressource (charbon, or ou diamant) sur la carte.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">+2 DÉGÂTS</span><span style="color:#888">— augmente tes dégâts de corps-à-corps de 2.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">+0.2 VITESSE</span><span style="color:#888">— augmente ta vitesse de déplacement de 0,2 case/s.</span></div>
+        </div>
+        <div style="margin-top:8px;color:#888;font-size:12px">Après avoir acheté une foreuse ou un bloc, tu entres en phase de placement : choisis la case et l'orientation, puis confirme. ESC annule et rembourse.</div>
+      </div>
+
+      <!-- FOREUSES & COLLECTE -->
+      <div style="border:1px solid rgba(100,200,120,0.18);border-radius:8px;padding:16px 20px;background:rgba(10,20,12,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#70d888;letter-spacing:4px;margin-bottom:10px">⚙ FOREUSES</div>
+        <div>Une foreuse extrait automatiquement la ressource du bloc adjacent dans la direction où elle fait face. Elle stocke les ressources jusqu'à ce que tu viennes les récupérer (clic gauche sur la foreuse). La <b>FOREUSE+</b> est deux fois plus rapide. Les foreuses ne peuvent pas être placées sur le contour ni à 1 case de l'usine.</div>
+        <div style="margin-top:8px;color:#888;font-size:12px">Astuce : aligne plusieurs foreuses sur un même bloc pour extraire vite. Les blocs ne sont pas indestructibles — surveille-les !</div>
+      </div>
+
+      <!-- CODE MAP -->
+      <div style="border:1px solid rgba(180,140,60,0.18);border-radius:8px;padding:16px 20px;background:rgba(18,12,0,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#d4a040;letter-spacing:4px;margin-bottom:10px">🗺 CODE MAP</div>
+        <div>À la fin de chaque partie, un <b>code map</b> s'affiche (clique dessus pour le copier). Colle-le dans le champ du menu principal pour rejouer exactement la même configuration de carte. Attention : jouer sur une carte importée via code ne compte que pour <b>la moitié des victoires</b> et <b>n'enregistre pas de record de temps</b>.</div>
+      </div>
+
+      <!-- RECORDS -->
+      <div style="border:1px solid rgba(80,210,130,0.25);border-radius:8px;padding:16px 20px;background:rgba(5,18,10,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#50d888;letter-spacing:4px;margin-bottom:10px">🏆 RECORDS</div>
+        <div><b style="color:#50d888">Le meilleur temps est enregistré à chaque victoire.</b> Les victoires (nombre de parties gagnées) sont toujours comptées également.</div>
+      </div>
+
+      <!-- DÉFI DU JOUR -->
+      <div style="border:1px solid rgba(140,60,220,0.25);border-radius:8px;padding:16px 20px;background:rgba(14,4,22,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#b070e8;letter-spacing:4px;margin-bottom:10px">📅 DÉFI DU JOUR</div>
+        <div>Chaque jour, une carte (seed) et un effet ULTIME fixe sont tirés au hasard — les mêmes pour tout le monde ce jour-là. Objectif : 1000 ◆ le plus vite possible. Le lendemain, une nouvelle carte et un nouvel effet sont tirés, et le record de la veille est remplacé.</div>
+      </div>
+
+      <!-- BOSS -->
+      <div style="border:1px solid rgba(220,30,30,0.28);border-radius:8px;padding:16px 20px;background:rgba(22,3,3,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#ff7050;letter-spacing:4px;margin-bottom:10px">👹 BOSS</div>
+        <div>Un boss géant apparaît en haut de l'écran. Toutes les <b>N secondes</b> (30, puis 29, 28, 27… de moins en moins), il attaque <b>toutes les cases libres sauf une</b> : si tu n'es pas sur la case sûre au moment de l'attaque, tu meurs instantanément. La case sûre est révélée dès le début du décompte. But : infliger le plus de dégâts possible au boss avant de mourir.</div>
+      </div>
+
+      <!-- ULTIME -->
+      <div style="border:2px solid rgba(140,30,180,0.4);border-radius:8px;padding:16px 20px;background:rgba(20,0,28,0.45)">
+        <div style="font-size:15px;font-weight:bold;color:rgba(200,80,255,0.95);letter-spacing:4px;margin-bottom:12px">⚡ MODE ULTIME (toujours actif)</div>
+        <div style="margin-bottom:12px">Dès le début de la partie, une option est tirée au hasard parmi 6 possibilités. Elle reste active <b>30 secondes</b> (ou <b>60 s pour DBL VITESSE</b>). À la fin du délai, l'option déclenche son effet (si applicable), puis une nouvelle option est tirée au sort (jamais la même deux fois de suite). L'option active et le pool restant sont affichés à gauche de l'écran.</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+
+          <div style="padding:9px 13px;border:1px solid rgba(80,100,200,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(120,140,240,0.9);min-width:110px;font-weight:bold">🌙 NOCTURNE</span>
+            <span>Brouillard de guerre : vision limitée à 3,25 cases. Toutes les 35 s un éclair illumine tout le terrain 1,5 s. Pas d'effet de fin : actif pendant toute la durée de l'option.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(200,130,30,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(220,160,60,0.95);min-width:110px;font-weight:bold">⚡ FRÉNÉSIE</span>
+            <span>Le temps s'écoule 1,75× plus vite (foreuses aussi). Dure 60 s réelles. Pas d'effet de fin.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(140,60,200,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(200,120,255,0.9);min-width:110px;font-weight:bold">◎ TÉLÉPORT</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique une case libre pour y poser un portail. Approche-toi du portail et clique dessus pour te téléporter dessus. Puis l'option change.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(60,180,100,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(80,210,130,0.9);min-width:110px;font-weight:bold">⇄ INVERSION</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique 2 minerais, foreuses ou l'usine. Leurs positions sont échangées. Le 1er sélectionné est entouré en rouge. Puis l'option change.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(200,50,30,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(220,70,50,0.9);min-width:110px;font-weight:bold">💥 DESTRUCTION</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique un minerai, une foreuse ou l'usine. L'élément est détruit instantanément. Les cibles possibles sont entourées en cyan. Puis l'option change.</span>
+          </div>
+
+          <div style="padding:9px 13px;border:1px solid rgba(40,140,200,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(70,170,220,0.9);min-width:110px;font-weight:bold">👻 FANTÔME</span>
+            <span>Au bout de 30 s, les déplacements sont gelés : clique un minerai, une foreuse ou l'usine. L'élément devient traversable (semi-transparent) pour le reste de la partie. Les cibles possibles sont entourées en cyan. Puis l'option change.</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SURVIVANT -->
+      <div style="border:1px solid rgba(220,80,40,0.3);border-radius:8px;padding:16px 20px;background:rgba(28,6,2,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#e05030;letter-spacing:4px;margin-bottom:10px">☠ MODE SURVIVANT</div>
+        <div>À chaque changement d'option ULTIME (toutes les 30 s), une vague de 3 ennemis apparaît sur le contour de la carte et se dirige vers les minerais les plus proches pour les détruire. Chaque nouvelle vague d'ennemis a +20% de vitesse, de PV et de dégâts par rapport à la précédente. Détruis les ennemis au lance-pierre (clic droit) avant qu'ils ne détruisent toutes les ressources. La partie se termine quand il ne reste plus aucun minerai. <b>Le record affiché est ton plus grand nombre d'ennemis tués en une seule partie</b>, et le compteur indique le nombre total d'ennemis tués (toutes parties confondues).</div>
+      </div>
+
+    </div>
+
+    <div id="rules-en" style="display:none;flex-direction:column;gap:16px;font-size:13px;line-height:1.85;color:#c0b080">
+
+      <div style="border:1px solid rgba(240,210,80,0.28);border-radius:8px;padding:16px 20px;background:rgba(30,20,0,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#f0d060;letter-spacing:4px;margin-bottom:10px">◆ OBJECTIVE</div>
+        <div>Reach the chosen <span style="color:#80eeff">diamond</span> quota (<b style="color:#f0d060">500 / 1000 / 2000</b>) as fast as possible. The timer starts when combat begins and stops when the goal is reached. <b>Best score = shortest time.</b> For the <b>1000</b> goal, the mineral you hold the least of must reach 1000 (not just diamond). Records are saved separately per goal.</div>
+      </div>
+
+      <div style="border:1px solid rgba(180,160,80,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,15,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e8c850;letter-spacing:4px;margin-bottom:10px">⛏ RESOURCES</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">
+          <div style="text-align:center;padding:8px;border:1px solid rgba(180,180,200,0.18);border-radius:5px">
+            <div style="color:#b0b0c8;font-size:16px;font-weight:bold">C</div>
+            <div style="color:#8888aa;font-size:11px;margin-top:3px">COAL</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">buys drills</div>
+          </div>
+          <div style="text-align:center;padding:8px;border:1px solid rgba(240,190,30,0.2);border-radius:5px">
+            <div style="color:#f0c030;font-size:16px;font-weight:bold">G</div>
+            <div style="color:#c09020;font-size:11px;margin-top:3px">GOLD</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">upgrades stats</div>
+          </div>
+          <div style="text-align:center;padding:8px;border:1px solid rgba(80,220,255,0.2);border-radius:5px">
+            <div style="color:#80eeff;font-size:16px;font-weight:bold">D</div>
+            <div style="color:#40c0d8;font-size:11px;margin-top:3px">DIAMOND</div>
+            <div style="color:#888;font-size:10px;margin-top:2px">goal + blocks</div>
+          </div>
+        </div>
+        <div>The map contains mineral blocks (coal ■, gold ★, diamond ◆), a fixed amount per type. The resource to collect is always <span style="color:#80eeff">diamond</span>.</div>
+      </div>
+
+      <div style="border:1px solid rgba(200,140,50,0.2);border-radius:8px;padding:16px 20px;background:rgba(20,12,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e0a840;letter-spacing:4px;margin-bottom:10px">⏱ FLOW</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div><b style="color:#f0d060">1. PLACEMENT</b> — Place your 4 starting drills. Each drill must be adjacent to a mineral block. Buildings cannot be placed on the border or an occupied tile. Confirm each placement by clicking the tile.</div>
+          <div><b style="color:#f0d060">2. COMBAT</b> — Timer starts. Move, collect, build and upgrade. The game ends when you reach the diamond goal.</div>
+          <div><b style="color:#f0d060">PAUSE</b> — Press P or ESC. Use it whenever you need a breather.</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(160,160,180,0.18);border-radius:8px;padding:16px 20px;background:rgba(15,12,20,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#c0b8e0;letter-spacing:4px;margin-bottom:10px">🎮 CONTROLS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">MOVEMENT</div>
+            <div>Arrow keys <span style="color:#888;font-size:11px">(configurable in Settings)</span></div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ACTIVATE BUILDING</div>
+            <div>Left click (1 tile away)</div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">ATTACK</div>
+            <div>Right click (aim at tile)</div>
+          </div>
+          <div style="padding:8px 10px;border:1px solid rgba(180,160,80,0.15);border-radius:5px">
+            <div style="color:#e0d060;font-size:11px;letter-spacing:2px;margin-bottom:4px">CANCEL / PAUSE</div>
+            <div>ESC · P</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(220,160,60,0.22);border-radius:8px;padding:16px 20px;background:rgba(25,15,0,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#e8b840;letter-spacing:4px;margin-bottom:10px">🏭 FACTORY</div>
+        <div style="margin-bottom:8px">The factory is the only trading building. Approach within 1 tile and click it to open the shop. Available purchases:</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">DRILL</span><span style="color:#888">— auto extraction (5s/unit). Must face a block.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">DRILL+</span><span style="color:#888">— fast extraction (2.5s/unit). Costs more.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">BLOCK</span><span style="color:#888">— place a resource block (coal, gold or diamond) on the map.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">+2 DAMAGE</span><span style="color:#888">— increases your melee damage by 2.</span></div>
+          <div style="display:flex;gap:10px;align-items:center"><span style="color:#80eeff;min-width:110px">+0.2 SPEED</span><span style="color:#888">— increases your movement speed by 0.2 tile/s.</span></div>
+        </div>
+        <div style="margin-top:8px;color:#888;font-size:12px">After buying a drill or block, you enter placement mode: choose the tile and orientation, then confirm. ESC cancels and refunds.</div>
+      </div>
+
+      <div style="border:1px solid rgba(100,200,120,0.18);border-radius:8px;padding:16px 20px;background:rgba(10,20,12,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#70d888;letter-spacing:4px;margin-bottom:10px">⚙ DRILLS</div>
+        <div>A drill automatically extracts the resource from the adjacent block it faces. It stores resources until you collect them (left click on the drill). <b>DRILL+</b> is twice as fast. Drills cannot be placed on the border or within 1 tile of the factory.</div>
+        <div style="margin-top:8px;color:#888;font-size:12px">Tip: align multiple drills on the same block to extract quickly. Blocks are not indestructible — watch them!</div>
+      </div>
+
+      <div style="border:1px solid rgba(180,140,60,0.18);border-radius:8px;padding:16px 20px;background:rgba(18,12,0,0.3)">
+        <div style="font-size:15px;font-weight:bold;color:#d4a040;letter-spacing:4px;margin-bottom:10px">🗺 MAP CODE</div>
+        <div>At the end of each game, a <b>map code</b> is displayed (click it to copy). Paste it in the main menu field to replay the exact same map layout. Note: playing on an imported map counts for only <b>half the wins</b> and <b>does not record a time record</b>.</div>
+      </div>
+
+      <div style="border:1px solid rgba(80,210,130,0.25);border-radius:8px;padding:16px 20px;background:rgba(5,18,10,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#50d888;letter-spacing:4px;margin-bottom:10px">🏆 RECORDS</div>
+        <div><b style="color:#50d888">The best time is recorded on every win.</b> Win counts are always tracked too.</div>
+      </div>
+
+      <div style="border:1px solid rgba(140,60,220,0.25);border-radius:8px;padding:16px 20px;background:rgba(14,4,22,0.35)">
+        <div style="font-size:15px;font-weight:bold;color:#b070e8;letter-spacing:4px;margin-bottom:10px">📅 DAILY CHALLENGE</div>
+        <div>Every day, a fixed map (seed) and a fixed ULTIMATE effect are drawn at random — the same for everyone that day. Goal: 1000 ◆ as fast as possible. The next day, a new map and effect are drawn, and yesterday's record is replaced.</div>
+      </div>
+
+      <div style="border:1px solid rgba(220,30,30,0.28);border-radius:8px;padding:16px 20px;background:rgba(22,3,3,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#ff7050;letter-spacing:4px;margin-bottom:10px">👹 BOSS</div>
+        <div>A giant boss appears at the top of the screen. Every <b>N seconds</b> (30, then 29, 28, 27… decreasing), it attacks <b>every free tile except one</b>: if you're not on the safe tile when it hits, you die instantly. The safe tile is revealed as soon as the countdown starts. Goal: deal as much damage as possible to the boss before dying.</div>
+      </div>
+
+      <div style="border:2px solid rgba(140,30,180,0.4);border-radius:8px;padding:16px 20px;background:rgba(20,0,28,0.45)">
+        <div style="font-size:15px;font-weight:bold;color:rgba(200,80,255,0.95);letter-spacing:4px;margin-bottom:12px">⚡ ULTIMATE MODE (always active)</div>
+        <div style="margin-bottom:12px">From the start of the game, an option is drawn at random from 6 possibilities. It stays active <b>30 seconds</b> (or <b>60 s for DBL SPEED</b>). At the end of the delay, the option triggers its effect (if applicable), then a new option is drawn (never the same twice in a row). The active option and remaining pool are shown on the left side of the screen.</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="padding:9px 13px;border:1px solid rgba(80,100,200,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(120,140,240,0.9);min-width:110px;font-weight:bold">🌙 NIGHT</span>
+            <span>Fog of war: vision limited to 3.25 tiles. Every 35 s, lightning illuminates the entire field for 1.5 s. No end effect: active for the full option duration.</span>
+          </div>
+          <div style="padding:9px 13px;border:1px solid rgba(200,130,30,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(220,160,60,0.95);min-width:110px;font-weight:bold">⚡ FRENZY</span>
+            <span>Time passes 1.75× faster (drills too). Lasts 60 real seconds. No end effect.</span>
+          </div>
+          <div style="padding:9px 13px;border:1px solid rgba(140,60,200,0.25);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(200,120,255,0.9);min-width:110px;font-weight:bold">◎ TELEPORT</span>
+            <span>After 30 s, movement freezes: click an empty tile to place a portal. Approach the portal and click it to teleport there. Then the option changes.</span>
+          </div>
+          <div style="padding:9px 13px;border:1px solid rgba(60,180,100,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(80,210,130,0.9);min-width:110px;font-weight:bold">⇄ SWAP</span>
+            <span>After 30 s, movement freezes: click 2 minerals, drills, or the factory. Their positions are swapped. The first selected is highlighted in red. Then the option changes.</span>
+          </div>
+          <div style="padding:9px 13px;border:1px solid rgba(200,50,30,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(220,70,50,0.9);min-width:110px;font-weight:bold">💥 DESTRUCTION</span>
+            <span>After 30 s, movement freezes: click a mineral, drill, or the factory. It is instantly destroyed. Valid targets are highlighted in cyan. Then the option changes.</span>
+          </div>
+          <div style="padding:9px 13px;border:1px solid rgba(40,140,200,0.22);border-radius:6px;display:flex;gap:10px;align-items:flex-start">
+            <span style="color:rgba(70,170,220,0.9);min-width:110px;font-weight:bold">👻 GHOST</span>
+            <span>After 30 s, movement freezes: click a mineral, drill, or the factory. It becomes passable (semi-transparent) for the rest of the game. Valid targets are highlighted in cyan. Then the option changes.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SURVIVOR -->
+      <div style="border:1px solid rgba(220,80,40,0.3);border-radius:8px;padding:16px 20px;background:rgba(28,6,2,0.4)">
+        <div style="font-size:15px;font-weight:bold;color:#e05030;letter-spacing:4px;margin-bottom:10px">☠ SURVIVOR MODE</div>
+        <div>Every time the ULTIMATE option changes (every 30 s), a wave of 3 enemies appears on the map border and heads toward the nearest minerals to destroy them. Each new wave of enemies has +20% speed, HP and damage compared to the previous one. Destroy enemies with your rock throw (right click) before they wipe out all resources. The game ends once no mineral block is left. <b>The displayed record is your highest number of enemies killed in a single game</b>, and the counter shows the total number of enemies killed (across all games).</div>
+      </div>
+
+    </div>
+
+    <div style="text-align:center;margin-top:24px;padding-top:18px;border-top:1px solid rgba(200,160,50,0.15)">
+      <button onclick="document.getElementById('rulesov').style.display='none'" style="background:rgba(30,20,0,0.8);border:1px solid rgba(220,170,80,0.4);color:#d4a040;font-family:'Courier New',monospace;font-size:14px;letter-spacing:2px;cursor:pointer;border-radius:5px;padding:11px 42px" data-i18n="close">FERMER</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL PARAMÈTRES -->
+<div id="paramsov" onclick="if(event.target===this)closeParams()" style="display:none;position:fixed;inset:0;background:rgba(4,2,0,0.97);z-index:1300;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:28px 16px">
+  <div style="max-width:520px;width:100%;font-family:'Courier New',monospace">
+
+    <!-- En-tête -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;border-bottom:1px solid rgba(160,120,200,0.25);padding-bottom:18px">
+      <div style="font-size:22px;font-weight:bold;letter-spacing:6px;color:#b080d8;text-shadow:0 0 20px rgba(140,80,200,0.4)" data-i18n="params_title">PARAMÈTRES</div>
+      <button onclick="closeParams()" style="background:rgba(8,5,2,0.8);border:1px solid rgba(180,140,220,0.35);color:rgba(180,140,220,0.7);font-family:'Courier New',monospace;font-size:14px;cursor:pointer;border-radius:4px;padding:7px 20px;letter-spacing:1px" data-i18n="close_x">FERMER ✕</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Volume -->
+      <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
+        <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:12px" data-i18n="vol_title">VOLUME</div>
+        <div style="display:flex;align-items:center;gap:12px;font-family:'Courier New',monospace;font-size:11px;color:rgba(200,160,240,0.7)">
+          <span>🔈</span>
+          <input id="vol-slider" type="range" min="0" max="1" step="0.05" value="0.7"
+            oninput="masterVolume=parseFloat(this.value);document.getElementById('vol-val').textContent=Math.round(this.value*100)+'%'"
+            style="flex:1;accent-color:rgba(160,120,200,0.8);cursor:pointer">
+          <span id="vol-val" style="min-width:36px">70%</span>
+          <span>🔊</span>
+        </div>
+      </div>
+
+      <!-- Langue -->
+      <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
+        <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:12px" data-i18n="lang_title">LANGUE / LANGUAGE</div>
+        <div style="display:flex;gap:10px">
+          <button id="langbtn-fr" onclick="setLanguage('fr')" style="flex:1;padding:10px;font-family:'Courier New',monospace;font-size:14px;font-weight:bold;letter-spacing:2px;cursor:pointer;border-radius:5px;background:rgba(8,5,2,0.7);border:1px solid rgba(220,170,80,0.85);color:#d4b060;opacity:1;transition:all .2s">🇫🇷 FR</button>
+          <button id="langbtn-en" onclick="setLanguage('en')" style="flex:1;padding:10px;font-family:'Courier New',monospace;font-size:14px;font-weight:bold;letter-spacing:2px;cursor:pointer;border-radius:5px;background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.25);color:#d4b060;opacity:0.38;transition:all .2s">🇬🇧 EN</button>
+        </div>
+      </div>
+
+      <!-- Pseudonyme -->
+      <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
+        <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:12px" data-i18n="nick_title">PSEUDONYME</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="nick-input" type="text" maxlength="16" data-i18n-ph="nick_ph" placeholder="Ton nom (affiché en jeu)..." style="flex:1;background:rgba(8,5,2,0.7);border:1px solid rgba(160,120,200,0.3);color:rgba(200,160,240,0.9);font-family:'Courier New',monospace;font-size:13px;padding:8px 12px;border-radius:4px;outline:none">
+          <button onclick="saveNickname()" style="background:rgba(140,80,200,0.18);border:1px solid rgba(160,120,200,0.45);color:rgba(200,160,240,0.85);font-family:'Courier New',monospace;font-size:12px;letter-spacing:1px;cursor:pointer;border-radius:4px;padding:8px 14px;white-space:nowrap" data-i18n="save_btn">ENREGISTRER</button>
+        </div>
+        <div id="nick-saved-msg" style="display:none;margin-top:8px;font-size:12px;color:#50d888;letter-spacing:1px" data-i18n="saved_msg">✓ Enregistré !</div>
+      </div>
+
+      <!-- Touches -->
+      <div style="border:1px solid rgba(160,120,200,0.2);border-radius:8px;padding:16px 20px;background:rgba(18,10,28,0.5)">
+        <div style="font-size:13px;font-weight:bold;color:#c090e8;letter-spacing:4px;margin-bottom:14px" data-i18n="keys_title">TOUCHES DE DÉPLACEMENT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button id="keybtn-up" onclick="captureKey('up')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+            <span data-i18n="key_up" style="font-size:10px;opacity:0.6;letter-spacing:1px">↑ HAUT</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">↑</span>
+          </button>
+          <button id="keybtn-down" onclick="captureKey('down')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+            <span data-i18n="key_down" style="font-size:10px;opacity:0.6;letter-spacing:1px">↓ BAS</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">↓</span>
+          </button>
+          <button id="keybtn-left" onclick="captureKey('left')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+            <span data-i18n="key_left" style="font-size:10px;opacity:0.6;letter-spacing:1px">← GAUCHE</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">←</span>
+          </button>
+          <button id="keybtn-right" onclick="captureKey('right')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+            <span data-i18n="key_right" style="font-size:10px;opacity:0.6;letter-spacing:1px">→ DROITE</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">→</span>
+          </button>
+          <button id="keybtn-pause" onclick="captureKey('pause')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+            <span data-i18n="key_pause" style="font-size:10px;opacity:0.6;letter-spacing:1px">⏸ PAUSE</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">ESC</span>
+          </button>
+          <button id="keybtn-restart" onclick="captureKey('restart')" style="background:rgba(8,5,2,0.7);border:1px solid rgba(200,160,50,0.3);color:#d4b060;font-family:'Courier New',monospace;font-size:12px;cursor:pointer;border-radius:5px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .15s">
+            <span data-i18n="key_restart" style="font-size:10px;opacity:0.6;letter-spacing:1px">⟳ RELANCER (1,5s)</span>
+            <span class="kv" style="font-size:18px;font-weight:bold">$</span>
+          </button>
+        </div>
+        <div id="key-capture-msg" style="display:none;margin-top:12px;text-align:center;font-size:13px;color:#f0d060;letter-spacing:2px;animation:pulse 0.8s infinite alternate" data-i18n="key_capture">Appuie sur une touche...</div>
+      </div>
+
+    </div>
+
+    <div style="text-align:center;margin-top:24px;padding-top:18px;border-top:1px solid rgba(160,120,200,0.15)">
+      <button onclick="closeParams()" style="background:rgba(18,10,28,0.8);border:1px solid rgba(180,140,220,0.4);color:#b080d8;font-family:'Courier New',monospace;font-size:14px;letter-spacing:2px;cursor:pointer;border-radius:5px;padding:11px 42px" data-i18n="close">FERMER</button>
+    </div>
+  </div>
+</div>
+
+<div id="gamebtn">
+  <button id="btnmidmenu" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,170,80,0.35);color:rgba(220,170,80,0.7);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all" data-i18n="menu_arrow">&#8592; MENU</button>
+  <button id="btnfinish" style="display:none;background:rgba(8,5,2,0.88);border:1px solid rgba(220,80,40,0.4);color:rgba(220,110,70,0.8);font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;padding:5px 14px;cursor:pointer;border-radius:4px;pointer-events:all">&#10003; TERMINER</button>
+</div>
+<div id="mw"></div>
+<div id="log" style="display:none"><div class="le" id="l0"></div><div class="le" id="l1"></div><div class="le" id="l2"></div></div>
+
+<div id="pbar">
+  <h4>PLACEMENT — <span id="pturn">Joueur</span></h4>
+  <div class="pbrow">
+    <button class="pb" id="pbc" data-i18n="pbar_confirm">CONFIRMER</button>
+    <span id="pinfo" data-i18n="pbar_click">Cliquez une case</span>
+  </div>
+</div>
+
+<div id="shop">
+  <button id="sclose">X</button>
+  <h4 id="stitle">USINE</h4>
+  <div class="sg" id="sitems"></div>
+  <div id="shint" data-i18n="shop_close_hint">ESC pour fermer</div>
+</div>
+
+<div id="kh" style="visibility:hidden" data-i18n="kh_text">P1:Fleches+Clic · Clic=activer · Clic-droit=attaquer · ESC=pause</div>
+<button id="mob-pause" onclick="if(gameRunning){gamePaused=!gamePaused;document.getElementById('pauseov').style.display=gamePaused?'flex':'none';}" data-i18n="mob_pause">II PAUSE</button>
+
+
+<script src="js/canvas.js?v=29"></script>
+<script src="js/globals.js?v=29"></script>
+<script src="js/init.js?v=29"></script>
+<script src="js/placement.js?v=29"></script>
+<script src="js/combat.js?v=29"></script>
+<script src="js/shop.js?v=29"></script>
+<script src="js/world.js?v=29"></script>
+<script src="js/ai.js?v=29"></script>
+<script src="js/render.js?v=29"></script>
+<script src="js/game.js?v=29"></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js');}</script>
+</body>
+</html>
