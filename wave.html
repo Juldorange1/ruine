@@ -160,6 +160,10 @@ body.ingame #hint { display:none; }
       <button class="tb" id="noclipToggle">Désactivé</button>
     </div>
     <div class="srow">
+      <label>Records traverser les murs :</label>
+      <button class="tb" id="noclipRecReset" style="color:#f87;">Effacer</button>
+    </div>
+    <div class="srow">
       <label>Personnalisable :</label>
       <button class="tb" id="personnalisableToggle">Désactivé</button>
     </div>
@@ -1574,7 +1578,7 @@ document.getElementById('tracePlayBtn').addEventListener('click',()=>{
 document.getElementById('createBlankLevel').addEventListener('click',createBlankCustomLevel);
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const W=800,H=400,SEG=4,PLAYER_R=4,PLAYER_SX=200,BAR_H=14;
+const W=800,H=400,SEG=4,PLAYER_R=3,PLAYER_SX=200,BAR_H=14;
 const PIQUE_HALF_W=14; // demi-largeur (en wx) du bloc-pique — un peu plus large que la hitbox d'origine
 const PIQUE_HEIGHT_RATIO=0.55; // hauteur du bloc = cette fraction du tiers de bande (un peu moins long)
 // Le bloc-pique dessiné est EXACTEMENT sa hitbox (même rectangle), pour qu'il
@@ -1630,7 +1634,7 @@ let noclipRecords={};
 try{noclipRecords=JSON.parse(localStorage.getItem('wave_noclip_rec'))||{};}catch(_){}
 function saveNoclipRecords(){try{localStorage.setItem('wave_noclip_rec',JSON.stringify(noclipRecords));}catch(_){}}
 function noclipRecKey(){return activeCustomLevel?'c_'+activeCustomLevel.id:mode+'_'+diff;}
-function noclipRecordLabel(){const r=noclipRecords[noclipRecKey()];return r===undefined?null:r.toFixed(1)+' px';}
+function noclipRecordLabel(){const r=noclipRecords[noclipRecKey()];return r===undefined?null:r.toFixed(1)+'%';}
 function cadKey(){return cadenceEnabled?'1':'0';}
 function curRecords(){return records[mode][cadKey()];}
 function recordLabel(d){
@@ -2034,7 +2038,7 @@ function buildLevel(d){
       const maxH=progress<0.25?0:(progress<0.6?1:2);
       const pool=OBSTACLES.filter(o=>o.h<=maxH);
       const ob=pool[Math.floor(rng()*pool.length)];
-      const segLen=baseUnit*ob.sp;
+      const segLen=baseUnit;
       for(let k=1;k<ob.pts.length;k++){
         wx+=segLen;
         const pt=ob.pts[k];
@@ -2247,7 +2251,8 @@ function update(now){
   if(noclipEnabled||trainingMode){
     // Traverser les murs : suivi de l'écart au centre du tunnel.
     const center=(top+bot)/2;
-    const dev=Math.abs(playerY-center);
+    const halfGap=(bot-top)/2;
+    const dev=halfGap>0?Math.abs(playerY-center)/halfGap*100:0;
     noclipDevSum+=dev;noclipDevCount++;
     if(dev>noclipDevMax)noclipDevMax=dev;
     if(dev<noclipDevMin)noclipDevMin=dev;
@@ -2441,16 +2446,17 @@ function drawPlayer(){
   cx.rotate(tiltMul?-Math.PI*tiltMul*Math.max(-1,Math.min(1,shipVel/DCFG[diff].vy)):
     mode==='twokey'?(upHeld&&!downHeld?-Math.PI*.20:(downHeld&&!upHeld?Math.PI*.20:0)):
     (holding?-Math.PI*.20:Math.PI*.20));
-  // Theme accent outer glow
-  cx.shadowBlur=32;cx.shadowColor=acc;cx.fillStyle=acc+'55';
-  cx.beginPath();cx.moveTo(0,-PLAYER_R-3);cx.lineTo(PLAYER_R+4,0);
-  cx.lineTo(0,PLAYER_R+3);cx.lineTo(-PLAYER_R-4,0);cx.closePath();cx.fill();
-  // Level color main body
-  cx.shadowBlur=18;cx.shadowColor=col;cx.fillStyle=col;
-  cx.beginPath();cx.moveTo(0,-PLAYER_R-1);cx.lineTo(PLAYER_R+2,0);
-  cx.lineTo(0,PLAYER_R+1);cx.lineTo(-PLAYER_R-2,0);cx.closePath();cx.fill();
-  cx.shadowBlur=0;cx.fillStyle='rgba(255,255,255,.55)';
-  cx.beginPath();cx.moveTo(0,-5);cx.lineTo(5,0);cx.lineTo(0,5);cx.lineTo(-5,0);cx.closePath();cx.fill();
+  // Glow (légèrement plus grand que la hitbox)
+  cx.shadowBlur=24;cx.shadowColor=acc;cx.fillStyle=acc+'55';
+  cx.beginPath();cx.moveTo(0,-PLAYER_R-1);cx.lineTo(PLAYER_R+1,0);
+  cx.lineTo(0,PLAYER_R+1);cx.lineTo(-PLAYER_R-1,0);cx.closePath();cx.fill();
+  // Corps exactement = hitbox diamant rayon PLAYER_R
+  cx.shadowBlur=14;cx.shadowColor=col;cx.fillStyle=col;
+  cx.beginPath();cx.moveTo(0,-PLAYER_R);cx.lineTo(PLAYER_R,0);
+  cx.lineTo(0,PLAYER_R);cx.lineTo(-PLAYER_R,0);cx.closePath();cx.fill();
+  cx.shadowBlur=0;cx.fillStyle='rgba(255,255,255,.6)';
+  cx.beginPath();cx.moveTo(0,-PLAYER_R*.5);cx.lineTo(PLAYER_R*.5,0);
+  cx.lineTo(0,PLAYER_R*.5);cx.lineTo(-PLAYER_R*.5,0);cx.closePath();cx.fill();
   cx.restore();
 }
 
@@ -2477,7 +2483,7 @@ function drawHUD(){
   if(noclipEnabled||trainingMode){
     const avg=noclipDevCount>0?(noclipDevSum/noclipDevCount).toFixed(1):'--';
     cx.textAlign='center';cx.font='bold 13px monospace';cx.fillStyle='#7de8ffcc';
-    cx.fillText(`écart moy : ${avg} px`,W/2,BAR_H+16);
+    cx.fillText(`écart moy : ${avg}%`,W/2,BAR_H+16);
     const rec=noclipRecordLabel();
     if(rec){
       cx.save();cx.textAlign='right';cx.font='bold 11px monospace';
@@ -2785,6 +2791,11 @@ document.getElementById('noclipToggle').addEventListener('click',()=>{
   noclipEnabled=!noclipEnabled;
   applySettingsToUI();
   saveSettings();
+});
+document.getElementById('noclipRecReset').addEventListener('click',()=>{
+  if(confirm('Effacer tous les records "Traverser les murs" ?')){
+    noclipRecords={};saveNoclipRecords();
+  }
 });
 document.getElementById('personnalisableToggle').addEventListener('click',()=>{
   personnalisableEnabled=!personnalisableEnabled;

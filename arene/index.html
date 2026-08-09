@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hades 3</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ================= MENU PRINCIPAL ================= -->
+<div class="view" id="menuView">
+  <div class="bg-ambient" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="vignette"></div>
+  </div>
+  <div class="menu-center">
+    <h1><span class="brand-glow">HADES 3</span></h1>
+    <p class="subtitle">Un run, quatre chapitres, aucune récompense — juste le combat.</p>
+    <div class="menu-stats">
+      <span class="pill">🪙 Or : <b id="goldTotal">0</b></span>
+      <span class="pill">Runs complétés : <b id="runsCompleted">0</b></span>
+      <span class="pill">🪙 Plus gros gain d'or (1 run) : <b id="bestGoldRun">0</b></span>
+      <span class="pill">Meilleur temps : <b id="bestTime">—</b></span>
+      <span class="pill">Moins de dégâts subis : <b id="leastHpLost">—</b></span>
+    </div>
+    <div class="menu-actions">
+      <button class="btn btn-start" id="goToPrerunBtn">🏃 Lancer un run</button>
+      <button class="btn" id="weaponsBtn">⚔️ Armes</button>
+      <button class="btn" id="settingsBtn">⚙️ Paramètres</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ARMES (biais de tirage) ================= -->
+<div class="view" id="weaponsView" hidden>
+  <div class="bg-ambient" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="vignette"></div>
+  </div>
+  <div class="menu-center">
+    <h1><span class="brand-glow">ARMES</span></h1>
+    <p class="subtitle">Chaque run tire une arme de type 1 et une de type 2 au hasard. Augmente la chance relative d'obtenir tes préférées (jusqu'à +100%).</p>
+    <p class="lock-hint" id="weaponsLockHint" hidden>🔒 Termine un premier run pour pouvoir régler ces biais.</p>
+    <div class="weapons-columns">
+      <div class="weapons-col">
+        <h3>Armes de type 1</h3>
+        <div id="weapon1List" class="weapon-bias-list"></div>
+      </div>
+      <div class="weapons-col">
+        <h3>Armes de type 2</h3>
+        <div id="weapon2List" class="weapon-bias-list"></div>
+      </div>
+    </div>
+    <div class="menu-actions">
+      <button class="btn" id="backToMenuFromWeaponsBtn">← Retour</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DÉFIS PRÉ-RUN ================= -->
+<div class="view" id="prerunView" hidden>
+  <div class="bg-ambient" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="vignette"></div>
+  </div>
+  <div class="menu-center">
+    <h1><span class="brand-glow">DÉFIS</span></h1>
+    <p class="subtitle">Optionnel — augmente la difficulté, augmente l'or gagné en fin de run. L'or ne sert à rien d'autre.</p>
+    <p class="lock-hint" id="prerunLockHint" hidden>🔒 Termine un premier run pour pouvoir régler ces défis.</p>
+    <div class="palette-group prerun-panel">
+      <label class="stat-slider">Dégâts ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modDmgVal" min="100" max="300" value="100">%</span>
+        <input type="range" id="modDmgRange" min="100" max="300" value="100">
+      </label>
+      <label class="stat-slider">Nombre d'ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modCountVal" min="100" max="300" value="100">%</span>
+        <input type="range" id="modCountRange" min="100" max="300" value="100">
+      </label>
+      <label class="stat-slider">Vitesse de déplacement ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modSpdVal" min="100" max="300" value="100">%</span>
+        <input type="range" id="modSpdRange" min="100" max="300" value="100">
+      </label>
+      <label class="stat-slider">Vitesse d'attaque ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modAtkSpdVal" min="100" max="300" value="100">%</span>
+        <input type="range" id="modAtkSpdRange" min="100" max="300" value="100">
+      </label>
+    </div>
+    <div class="gold-mult-indicator">🪙 Multiplicateur d'or potentiel : <b id="goldMultVal">×1</b></div>
+    <div class="menu-actions">
+      <button class="btn btn-start" id="confirmRunBtn">⚔️ Combattre</button>
+      <button class="btn" id="backToMenuFromPrerunBtn">← Retour</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= COMBAT ================= -->
+<div class="view" id="combatView" hidden>
+  <canvas id="combatCanvas"></canvas>
+
+  <div class="hud">
+    <div class="hud-top">
+      <div class="hp-wrap">
+        <span class="hp-label" id="hpLabel">0 dégâts subis</span>
+      </div>
+      <div class="wave-indicator" id="waveIndicator">Vague 1 / 1</div>
+      <div class="score-indicator">
+        <span>⏱ <b id="timerLabel">0:00.0</b></span>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="ability" id="abilityDash" title="Traverse les obstacles et inflige des dégâts sur sa trajectoire">
+        <svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="16"></circle><circle class="ring-fill" cx="18" cy="18" r="16"></circle></svg>
+        <span class="ability-key">Espace</span>
+        <span class="ability-name">Dash</span>
+      </div>
+      <div class="ability" id="abilitySpecial" title="Téléporte vers un point de grappin visé">
+        <svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="16"></circle><circle class="ring-fill" cx="18" cy="18" r="16"></circle></svg>
+        <span class="ability-key">Clic D</span>
+        <span class="ability-name">Grappin</span>
+      </div>
+      <div class="ability" id="abilityPulse" title="Repousse tous les ennemis proches, sans dégâts">
+        <svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="16"></circle><circle class="ring-fill" cx="18" cy="18" r="16"></circle></svg>
+        <span class="ability-key">Clic G</span>
+        <span class="ability-name">Poussée</span>
+      </div>
+    </div>
+
+    <div class="btn-corner-group">
+      <button class="btn btn-quit" id="pauseCombatBtn">⏸ Pause</button>
+      <button class="btn btn-quit" id="combatSettingsBtn">⚙️</button>
+    </div>
+  </div>
+
+  <div class="result-modal" id="resultModal" hidden>
+    <div class="result-card">
+      <h2 id="resultTitle">Victoire</h2>
+      <p id="resultText">Tu as survécu à toutes les vagues.</p>
+      <div class="result-stats" id="resultStats"></div>
+      <div class="result-points" id="resultPoints">+0 points</div>
+      <div class="result-actions">
+        <button class="btn btn-start" id="rematchBtn">Relancer</button>
+        <button class="btn" id="backToMenuBtn">Retour au menu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= RÉGLAGES (accessible depuis le menu ET en combat) ================= -->
+<div class="result-modal" id="settingsModal" hidden>
+  <div class="result-card settings-card">
+    <div class="settings-header">
+      <h2>Réglages</h2>
+      <button class="modal-close-x" id="settingsCloseX" title="Fermer" aria-label="Fermer">✕</button>
+    </div>
+    <div class="settings-scroll">
+      <div id="keybindRows" class="bind-rows"></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-danger" id="resetBindsBtn">Valeurs par défaut</button>
+      <button class="btn btn-start" id="closeSettingsBtn">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/enemies.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/waves.js"></script>
+<script src="js/entities.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/render.js"></script>
+<script src="js/enemyRender.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
