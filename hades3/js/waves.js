@@ -77,15 +77,14 @@ function buildChapterRosters() {
   return groups;
 }
 
-// x1.5 de base (moitié moins qu'avant) : moins d'ennemis par salle, mais chacun est
-// deux fois plus costaud (voir generateRandomWave) — des affrontements moins "nuée",
-// plus lisibles individuellement.
-var ENEMY_COUNT_BASE_MULT = 1.5;
+// Plus de dynamisme demandé explicitement : nettement plus d'ennemis par salle qu'avant
+// (le compromis "moins d'ennemis mais plus costauds" de la version précédente est levé).
+var ENEMY_COUNT_BASE_MULT = 2.4;
 
-// Chaque ennemi normal généré est deux fois plus fort (PV et dégâts) pour compenser
-// la baisse de nombre — la difficulté totale d'une salle reste comparable, seule sa
-// composition change.
-var ROOM_ENEMY_STRENGTH_PCT = 200;
+// Chaque ennemi reste un peu plus fort que la valeur de base (pas autant qu'avant : avec
+// beaucoup plus de monde à l'écran, pas besoin de gonfler chacun à +100% pour que la
+// salle reste un vrai défi).
+var ROOM_ENEMY_STRENGTH_PCT = 140;
 
 // Un soigneur (Chaman, circle tier 4) de trop dans une même salle rend le combat
 // interminable plutôt que difficile — jamais plus de 6 simultanément.
@@ -208,13 +207,32 @@ function buildRunQueue(mods) {
 
 // ---------------- Terrain par chapitre ----------------
 // Régénéré à chaque nouveau chapitre (voir applyZonesToArena/spawnWave dans combat.js) :
-// beaucoup de cailloux (obstacles) + 0 à 3 points de grappin, jamais deux fois le même décor.
-// Comptes réduits en cohérence avec la surface d'arène plus petite (sinon le terrain
-// deviendrait proportionnellement bien plus encombré qu'avant).
-var CHAPTER_ROCK_COUNT_MIN = 7;
-var CHAPTER_ROCK_COUNT_MAX = 11;
-var CHAPTER_GRAPPLE_COUNT_MAX = 3;
+// cailloux (obstacles) + points de grappin, jamais deux fois le même décor au sein d'un
+// même chapitre. Comptes réduits en cohérence avec la surface d'arène plus petite (sinon
+// le terrain deviendrait proportionnellement bien plus encombré qu'avant).
 var CHAPTER_TERRAIN_AVOID_RADIUS = 120;
+
+// ---------------- Identité par chapitre ----------------
+// Les 4 chapitres ont chacun une vraie spécialité (pas juste une palette de couleurs,
+// voir CHAPTER_THEMES dans render.js qui partage le même index) : un piège dominant, une
+// relique à ramasser qui change le gameplay pour le reste du chapitre, et pour le dernier
+// chapitre, l'absence totale de grappin — remplacé par des failles de l'Abîme (téléportation
+// par paires, sans viser). L'index (0-3) est le même que celui utilisé pour CHAPTER_THEMES.
+var CHAPTER_IDENTITIES = [
+  { key: 'sables', name: 'Sables', relic: 'dmg', hasGrapple: true, rockRange: [5, 7], grappleMax: 3 },
+  { key: 'marecage', name: 'Marécage', relic: 'heal', hasGrapple: true, rockRange: [5, 7], grappleMax: 3 },
+  { key: 'braise', name: 'Braise', relic: 'speed', hasGrapple: true, rockRange: [6, 8], grappleMax: 2 },
+  { key: 'abime', name: 'Abîme', relic: 'invincible', hasGrapple: false, rockRange: [7, 9], grappleMax: 0 }
+];
+function chapterIdentityFor(chapterIdx) { return CHAPTER_IDENTITIES[chapterIdx % CHAPTER_IDENTITIES.length]; }
+
+// Effets des reliques (voir tryPlayerCollectRelic dans combat.js) — dmg/speed durent
+// jusqu'à la fin du chapitre (chapterDmgBonusMult/chapterSpeedBonusMult), heal est un
+// soin immédiat, invincible une brève invulnérabilité immédiate.
+var RELIC_DMG_BONUS_MULT = 1.25;
+var RELIC_SPEED_BONUS_MULT = 1.2;
+var RELIC_HEAL_AMOUNT = 40;
+var RELIC_INVINCIBLE_DUR = 3.0;
 
 function randomTerrainPos(margin) {
   return [margin + Math.random() * (ARENA_W - margin * 2), margin + Math.random() * (ARENA_H - margin * 2)];
@@ -222,70 +240,125 @@ function randomTerrainPos(margin) {
 
 // Évite de faire apparaître un obstacle collé à la position actuelle du joueur
 // (sinon le nouveau chapitre pourrait le coincer sous un caillou dès son démarrage).
-function pickTerrainPos(margin, avoidX, avoidY) {
-  for (var attempt = 0; attempt < 12; attempt++) {
+// roomShape (optionnel, voir js/roomShapes.js) : si fourni, rejette aussi les
+// positions hors de la zone marchable de la salle (sinon retombe sur l'ancien
+// tirage purement rectangulaire).
+function pickTerrainPos(margin, avoidX, avoidY, roomShape) {
+  for (var attempt = 0; attempt < 20; attempt++) {
     var pos = randomTerrainPos(margin);
+    if (roomShape && !pointInRoomShape(roomShape, pos[0], pos[1], 0)) continue;
     if (avoidX == null || Math.hypot(pos[0] - avoidX, pos[1] - avoidY) > CHAPTER_TERRAIN_AVOID_RADIUS) return pos;
   }
   return randomTerrainPos(margin);
 }
 
-function generateChapterTerrain(avoidX, avoidY) {
+function generateChapterTerrain(avoidX, avoidY, chapterIdx, roomShape) {
+  var id = chapterIdentityFor(chapterIdx || 0);
   var zones = [];
-  var rockCount = CHAPTER_ROCK_COUNT_MIN + Math.floor(Math.random() * (CHAPTER_ROCK_COUNT_MAX - CHAPTER_ROCK_COUNT_MIN + 1));
+  var rockCount = id.rockRange[0] + Math.floor(Math.random() * (id.rockRange[1] - id.rockRange[0] + 1));
   for (var i = 0; i < rockCount; i++) {
-    var pos = pickTerrainPos(70, avoidX, avoidY);
+    var pos = pickTerrainPos(70, avoidX, avoidY, roomShape);
     zones.push({ kind: 'wall', x: pos[0], y: pos[1], r: 26 + Math.random() * 22 });
   }
-  // Toujours au moins 1 grappin disponible — jamais un chapitre sans aucun moyen de se téléporter.
-  var grappleCount = 1 + Math.floor(Math.random() * CHAPTER_GRAPPLE_COUNT_MAX);
-  for (var g = 0; g < grappleCount; g++) {
-    var gp = pickTerrainPos(90, avoidX, avoidY);
-    zones.push({ kind: 'grapple', x: gp[0], y: gp[1], r: 34 });
+
+  if (id.hasGrapple) {
+    // Toujours au moins 1 grappin disponible dans les chapitres qui en ont.
+    var grappleCount = 1 + Math.floor(Math.random() * id.grappleMax);
+    for (var g = 0; g < grappleCount; g++) {
+      var gp = pickTerrainPos(90, avoidX, avoidY, roomShape);
+      zones.push({ kind: 'grapple', x: gp[0], y: gp[1], r: 34 });
+    }
+  } else {
+    // Abîme : pas de grappin — 2 paires de failles à la place (4 au total), qui
+    // téléportent vers leur jumelle au contact, sans viser. Le grappin (touche dédiée)
+    // devient un no-op ce chapitre-là : la mobilité passe entièrement par les failles.
+    for (var pair = 0; pair < 2; pair++) {
+      var pairId = 'rift' + pair;
+      var p1 = pickTerrainPos(90, avoidX, avoidY, roomShape);
+      var p2 = pickTerrainPos(90, avoidX, avoidY, roomShape);
+      zones.push({ kind: 'abyss_rift', x: p1[0], y: p1[1], r: 30, pairId: pairId, cd: 0 });
+      zones.push({ kind: 'abyss_rift', x: p2[0], y: p2[1], r: 30, pairId: pairId, cd: 0 });
+    }
   }
 
   // Pas systématique : certains chapitres ont en plus des zones de boost de vitesse,
   // de petit soin ou de ralentissement — chacune profite à qui s'y trouve, joueur comme
   // ennemi, ce qui en fait un vrai enjeu tactique plutôt qu'un simple bonus gratuit.
-  if (Math.random() < 0.6) {
+  // Les probabilités varient par chapitre (Braise est hostile — peu de soin/vitesse ;
+  // Marécage privilégie le ralentissement, cohérent avec la boue).
+  var speedChance = id.key === 'braise' ? 0.25 : (id.key === 'marecage' ? 0.3 : 0.6);
+  var healChance = id.key === 'braise' ? 0.25 : (id.key === 'abime' ? 0.2 : 0.45);
+  var slowChance = id.key === 'marecage' ? 1 : (id.key === 'braise' ? 0.2 : 0.35);
+  if (Math.random() < speedChance) {
     var speedCount = 1 + Math.floor(Math.random() * 2);
     for (var s = 0; s < speedCount; s++) {
-      var sp = pickTerrainPos(90, avoidX, avoidY);
+      var sp = pickTerrainPos(90, avoidX, avoidY, roomShape);
       zones.push({ kind: 'speed', x: sp[0], y: sp[1], r: 45 });
     }
   }
-  if (Math.random() < 0.45) {
-    var hp = pickTerrainPos(90, avoidX, avoidY);
+  if (Math.random() < healChance) {
+    var hp = pickTerrainPos(90, avoidX, avoidY, roomShape);
     zones.push({ kind: 'heal', x: hp[0], y: hp[1], r: 40 });
   }
-  if (Math.random() < 0.35) {
-    var slp = pickTerrainPos(90, avoidX, avoidY);
-    zones.push({ kind: 'slow', x: slp[0], y: slp[1], r: 45 });
+  if (Math.random() < slowChance) {
+    var slowCount = id.key === 'marecage' ? (2 + Math.floor(Math.random() * 2)) : 1;
+    for (var sl = 0; sl < slowCount; sl++) {
+      var slp = pickTerrainPos(90, avoidX, avoidY, roomShape);
+      zones.push({ kind: 'slow', x: slp[0], y: slp[1], r: 45 });
+    }
+  }
+
+  // Braise : braises au sol (dégâts continus) comme piège dominant, exclusif à ce
+  // chapitre — le sol lui-même devient hostile, pas juste des mécanismes ponctuels.
+  if (id.key === 'braise') {
+    var flameCount = 2 + Math.floor(Math.random() * 2);
+    for (var fl = 0; fl < flameCount; fl++) {
+      var flp = pickTerrainPos(80, avoidX, avoidY, roomShape);
+      zones.push({ kind: 'flame', x: flp[0], y: flp[1], r: 38 });
+    }
   }
 
   // Pièges : de vrais éléments d'environnement (pas de zone magique), avec leur propre
   // état d'animation (phaseOffset pour les piques, cd/télégraphe pour les flèches).
-  if (Math.random() < 0.4) {
+  // Chaque chapitre a un piège dominant (garanti) et l'autre en secondaire (aléatoire) —
+  // sauf l'Abîme, chaotique, qui garantit les deux.
+  var spikeChance = id.key === 'marecage' ? 1 : (id.key === 'abime' ? 1 : 0.25);
+  var arrowChance = id.key === 'sables' ? 1 : (id.key === 'abime' ? 1 : 0.2);
+  if (Math.random() < spikeChance) {
     var spikeCount = 1 + Math.floor(Math.random() * 2);
     for (var sk = 0; sk < spikeCount; sk++) {
-      var skp = pickTerrainPos(80, avoidX, avoidY);
+      var skp = pickTerrainPos(80, avoidX, avoidY, roomShape);
       zones.push({ kind: 'trap_spike', x: skp[0], y: skp[1], r: 32, phaseOffset: Math.random() * 3 });
     }
   }
-  if (Math.random() < 0.35) {
+  if (Math.random() < arrowChance) {
     var arrowCount = 1 + Math.floor(Math.random() * 2);
     for (var ar = 0; ar < arrowCount; ar++) {
-      var arp = pickTerrainPos(80, avoidX, avoidY);
+      var arp = pickTerrainPos(80, avoidX, avoidY, roomShape);
       zones.push({ kind: 'trap_arrow', x: arp[0], y: arp[1], r: 16, cd: 0.8 + Math.random() * 1.4, telegraphOn: false, telegraphTimer: 0 });
     }
   }
+
+  // Relique du chapitre : un seul exemplaire, ramassable une fois (voir
+  // tryPlayerCollectRelic dans combat.js), change concrètement le gameplay pour le
+  // reste du chapitre plutôt qu'un simple bonus cosmétique.
+  var rp = pickTerrainPos(90, avoidX, avoidY, roomShape);
+  zones.push({ kind: 'chapter_relic', x: rp[0], y: rp[1], r: 26, effect: id.relic, consumed: false });
+
+  // Matérialise la zone non-marchable de la forme de salle (voir js/roomShapes.js) en
+  // rochers — obstacle physique ET décor de gravats/ruine.
+  zones = zones.concat(carveZonesForRoomShape(roomShape));
+
   return zones;
 }
 
-// Décrit une position dans le run pour l'affichage (HUD, transition de salle).
+// Décrit une position dans le run pour l'affichage (HUD, transition de salle). Le nom
+// de l'identité du chapitre est affiché en clair — la différence entre chapitres doit
+// se voir jusque dans le HUD, pas juste dans le décor.
 function describeWaveIndex(waveIndex) {
   var chapter = Math.floor(waveIndex / ROOMS_PER_CHAPTER) + 1;
+  var chapterName = chapterIdentityFor(chapter - 1).name;
   var posInChapter = waveIndex % ROOMS_PER_CHAPTER;
-  if (posInChapter === RANDOM_ROOMS_PER_CHAPTER) return 'Chapitre ' + chapter + ' — Boss';
-  return 'Chapitre ' + chapter + ' — Salle ' + (posInChapter + 1) + '/' + RANDOM_ROOMS_PER_CHAPTER;
+  if (posInChapter === RANDOM_ROOMS_PER_CHAPTER) return 'Chapitre ' + chapter + ' — ' + chapterName + ' — Boss';
+  return 'Chapitre ' + chapter + ' — ' + chapterName + ' — Salle ' + (posInChapter + 1) + '/' + RANDOM_ROOMS_PER_CHAPTER;
 }

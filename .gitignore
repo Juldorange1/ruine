@@ -1,2 +1,4 @@
 __pycache__/
 start-server.vbs
+pokedex/start-pokedex.vbs
+pokedex/data/_cache/

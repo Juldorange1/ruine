@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "pokedex",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5571", "--bind", "127.0.0.1", "--directory", "pokedex"],
+      "port": 5571
+    },
+    {
       "name": "wave",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5503", "--bind", "127.0.0.1", "--directory", "wave"],
@@ -16,7 +22,7 @@
     {
       "name": "ruine",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5501", "--bind", "127.0.0.1", "--directory", "ruine"],
+      "runtimeArgs": ["-m", "http.server", "5501", "--bind", "127.0.0.1", "--directory", "ruines"],
       "port": 5501
     },
     {
@@ -24,18 +30,6 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5599", "--bind", "127.0.0.1"],
       "port": 5599
-    },
-    {
-      "name": "enclave",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5504", "--bind", "127.0.0.1", "--directory", "enclave"],
-      "port": 5504
-    },
-    {
-      "name": "hexcristal",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5505", "--bind", "127.0.0.1", "--directory", "hexcristal"],
-      "port": 5505
     },
     {
       "name": "ecosysteme",
@@ -50,10 +44,340 @@
       "port": 5507
     },
     {
+      "name": "bestiaire",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5570", "--bind", "127.0.0.1", "--directory", "bestiaire"],
+      "port": 5570
+    },
+    {
       "name": "hades3",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5508", "--bind", "127.0.0.1", "--directory", "hades3"],
       "port": 5508
+    },
+    {
+      "name": "hades3b",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5510", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5510
+    },
+    {
+      "name": "hades3c",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5511", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5511
+    },
+    {
+      "name": "hades3d",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5512", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5512
+    },
+    {
+      "name": "hades3e",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5513", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5513
+    },
+    {
+      "name": "hades3f",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5514", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5514
+    },
+    {
+      "name": "hades3g",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5515", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5515
+    },
+    {
+      "name": "hades3h",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5516", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5516
+    },
+    {
+      "name": "hades3i",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5517", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5517
+    },
+    {
+      "name": "hades3k",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5519", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5519
+    },
+    {
+      "name": "hades3l",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5520", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5520
+    },
+    {
+      "name": "hades3m",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5521", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5521
+    },
+    {
+      "name": "hades3n",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5522", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5522
+    },
+    {
+      "name": "hades3o",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5523", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5523
+    },
+    {
+      "name": "hades3p",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5524", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5524
+    },
+    {
+      "name": "hades3q",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5525", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5525
+    },
+    {
+      "name": "hades3r",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5526", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5526
+    },
+    {
+      "name": "hades3s",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5527", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5527
+    },
+    {
+      "name": "hades3t",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5528", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5528
+    },
+    {
+      "name": "hades3u",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5529", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5529
+    },
+    {
+      "name": "hades3v",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5530", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5530
+    },
+    {
+      "name": "hades3w",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5531", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5531
+    },
+    {
+      "name": "hades3x",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5532", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5532
+    },
+    {
+      "name": "hades3y",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5533", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5533
+    },
+    {
+      "name": "hades3z",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5534", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5534
+    },
+    {
+      "name": "hades3aa",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5535", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5535
+    },
+    {
+      "name": "hades3ab",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5536", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5536
+    },
+    {
+      "name": "hades3ac",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5537", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5537
+    },
+    {
+      "name": "hades3bundle",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5540", "--bind", "127.0.0.1", "--directory", "C:\\Users\\JULDOR~1\\AppData\\Local\\Temp\\claude\\C--Users-juldorange-ruine\\5cc64912-32f7-45cc-a32f-e3f4afc7dad6\\scratchpad"],
+      "port": 5540
+    },
+    {
+      "name": "hades3ad",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5541", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5541
+    },
+    {
+      "name": "hades3ae",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5542", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5542
+    },
+    {
+      "name": "hades3af",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5543", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5543
+    },
+    {
+      "name": "hades3bundle2",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5544", "--bind", "127.0.0.1", "--directory", "C:\\Users\\JULDOR~1\\AppData\\Local\\Temp\\claude\\C--Users-juldorange-ruine\\5cc64912-32f7-45cc-a32f-e3f4afc7dad6\\scratchpad"],
+      "port": 5544
+    },
+    {
+      "name": "hades3ag",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5545", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5545
+    },
+    {
+      "name": "hades3ah",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5546", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5546
+    },
+    {
+      "name": "hades3ai",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5547", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5547
+    },
+    {
+      "name": "hades3aj",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5548", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5548
+    },
+    {
+      "name": "hades3ak",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5549", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5549
+    },
+    {
+      "name": "hades3al",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5550", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5550
+    },
+    {
+      "name": "hades3am",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5551", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5551
+    },
+    {
+      "name": "hades3an",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5552", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5552
+    },
+    {
+      "name": "hades3ao",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5553", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5553
+    },
+    {
+      "name": "hades3ap",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5554", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5554
+    },
+    {
+      "name": "hades3aq",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5555", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5555
+    },
+    {
+      "name": "hades3ar",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5556", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5556
+    },
+    {
+      "name": "hades3as",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5557", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5557
+    },
+    {
+      "name": "hades3at",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5558", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5558
+    },
+    {
+      "name": "hades3bundle3",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5559", "--bind", "127.0.0.1", "--directory", "C:\\Users\\JULDOR~1\\AppData\\Local\\Temp\\claude\\C--Users-juldorange-ruine\\5cc64912-32f7-45cc-a32f-e3f4afc7dad6\\scratchpad"],
+      "port": 5559
+    },
+    {
+      "name": "hades3au",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5560", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5560
+    },
+    {
+      "name": "hades3av",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5561", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5561
+    },
+    {
+      "name": "hades3aw",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5562", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5562
+    },
+    {
+      "name": "hades3ax",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5563", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5563
+    },
+    {
+      "name": "hades3ay",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5564", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5564
+    },
+    {
+      "name": "hades3az",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5565", "--bind", "127.0.0.1", "--directory", "hades3"],
+      "port": 5565
+    },
+    {
+      "name": "hades3bundle4",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5566", "--bind", "127.0.0.1", "--directory", "C:\\Users\\JULDOR~1\\AppData\\Local\\Temp\\claude\\C--Users-juldorange-ruine\\5cc64912-32f7-45cc-a32f-e3f4afc7dad6\\scratchpad"],
+      "port": 5566
     }
   ]
 }

@@ -1,6 +1,5 @@
 // Persistance localStorage : records, or, raccourcis clavier, défis pré-run.
 
-var STORAGE_HIGHSCORE_KEY = 'arene.highscore';
 var STORAGE_KEYBINDS_KEY = 'arene.keybinds';
 var STORAGE_BESTTIME_KEY = 'arene.besttime';
 var STORAGE_LEASTHPLOST_KEY = 'arene.leastdmgtaken'; // dégâts subis bruts (pas un %, distinct de l'ancienne clé)
@@ -9,22 +8,10 @@ var STORAGE_GOLD_KEY = 'arene.gold';
 var STORAGE_DIFFICULTY_MODS_KEY = 'arene.difficultymods';
 var STORAGE_WEAPON_BIAS_KEY = 'arene.weaponbias';
 var STORAGE_BEST_GOLD_RUN_KEY = 'arene.bestgoldrun';
-
-function loadHighScore() {
-  try {
-    var raw = localStorage.getItem(STORAGE_HIGHSCORE_KEY);
-    return raw ? parseInt(raw, 10) || 0 : 0;
-  } catch (e) { return 0; }
-}
-
-function saveHighScoreIfBetter(points) {
-  var current = loadHighScore();
-  if (points > current) {
-    try { localStorage.setItem(STORAGE_HIGHSCORE_KEY, String(points)); } catch (e) {}
-    return true;
-  }
-  return false;
-}
+var STORAGE_BEST_GOLD_RUN_BY_WEAPON_KEY = 'arene.bestgoldrunbyweapon';
+var STORAGE_CHALLENGE_BEST_KEY = 'arene.challengebest';
+var STORAGE_CHALLENGE_BEST_TIME_KEY = 'arene.challengebesttime';
+var STORAGE_AUDIO_KEY = 'arene.audio';
 
 function loadKeybinds() {
   try {
@@ -138,4 +125,94 @@ function saveBestGoldRunIfBetter(amount) {
     return true;
   }
   return false;
+}
+
+// Même record que ci-dessus, mais un par arme de type 1 (celle utilisée pendant le run) —
+// même motif objet-clé-valeur que loadChallengeBests, comparaison "plus grand gagne".
+function loadBestGoldRunByWeapons() {
+  try {
+    var raw = localStorage.getItem(STORAGE_BEST_GOLD_RUN_BY_WEAPON_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function loadBestGoldRunByWeapon(id) {
+  var all = loadBestGoldRunByWeapons();
+  return (all && all[id] != null) ? all[id] : null;
+}
+
+function saveBestGoldRunByWeaponIfBetter(id, amount) {
+  var all = loadBestGoldRunByWeapons();
+  var current = all[id];
+  if (current == null || amount > current) {
+    all[id] = amount;
+    try { localStorage.setItem(STORAGE_BEST_GOLD_RUN_BY_WEAPON_KEY, JSON.stringify(all)); } catch (e) {}
+    return true;
+  }
+  return false;
+}
+
+// Records de défis (moins de dégâts subis pour terminer chaque défi) : un objet
+// {challengeId: dégâts} en une seule clé, comme les défis pré-run (loadDifficultyMods)
+// plutôt que 10 clés séparées.
+function loadChallengeBests() {
+  try {
+    var raw = localStorage.getItem(STORAGE_CHALLENGE_BEST_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function loadChallengeBest(id) {
+  var all = loadChallengeBests();
+  return (all && all[id] != null) ? all[id] : null;
+}
+
+function saveChallengeBestIfBetter(id, amount) {
+  var all = loadChallengeBests();
+  var current = all[id];
+  if (current == null || amount < current) {
+    all[id] = amount;
+    try { localStorage.setItem(STORAGE_CHALLENGE_BEST_KEY, JSON.stringify(all)); } catch (e) {}
+    return true;
+  }
+  return false;
+}
+
+// Record de temps par défi, même motif que le record de dégâts ci-dessus — les deux
+// coexistent (deux records individuels distincts, demandé), plus les scores totaux
+// agrégés (voir totalChallengeTime/totalChallengeDamage, editor.js).
+function loadChallengeBestTimes() {
+  try {
+    var raw = localStorage.getItem(STORAGE_CHALLENGE_BEST_TIME_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+
+function loadChallengeBestTime(id) {
+  var all = loadChallengeBestTimes();
+  return (all && all[id] != null) ? all[id] : null;
+}
+
+function saveChallengeBestTimeIfBetter(id, seconds) {
+  var all = loadChallengeBestTimes();
+  var current = all[id];
+  if (current == null || seconds < current) {
+    all[id] = seconds;
+    try { localStorage.setItem(STORAGE_CHALLENGE_BEST_TIME_KEY, JSON.stringify(all)); } catch (e) {}
+    return true;
+  }
+  return false;
+}
+
+// Volumes musique/effets sonores (0 à 1), voir js/audio.js — un seul objet, comme les
+// défis pré-run et le biais d'armes.
+function loadAudioSettings() {
+  try {
+    var raw = localStorage.getItem(STORAGE_AUDIO_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function saveAudioSettings(settings) {
+  try { localStorage.setItem(STORAGE_AUDIO_KEY, JSON.stringify(settings)); } catch (e) {}
 }

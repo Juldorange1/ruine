@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokédex — Apprentissage</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app-shell">
+
+  <header class="topbar">
+    <h1>📘 Pokédex — Apprentissage</h1>
+    <nav id="main-nav">
+      <button data-nav="home">Accueil</button>
+      <button data-nav="learn">Apprendre</button>
+      <button data-nav="review">Réviser</button>
+      <button data-nav="quiz-config">Jeu</button>
+      <button data-nav="pokedex">Pokédex</button>
+      <button data-nav="stats">Statistiques</button>
+      <button data-nav="settings" title="Paramètres et sauvegarde">⚙️</button>
+    </nav>
+  </header>
+
+  <main id="view">
+
+    <!-- ===== ACCUEIL ===== -->
+    <section class="screen" id="screen-home">
+      <div class="home-hero card">
+        <div class="headline-num" id="home-headline">0 / 0</div>
+        <div class="headline-sub">Pokémon maîtrisés</div>
+        <div class="progress-bar"><span id="home-progress-fill" style="width:0%"></span></div>
+      </div>
+
+      <div class="stat-tiles">
+        <div class="stat-tile card"><div class="value" id="home-learning">0</div><div class="label">En cours d'apprentissage</div></div>
+        <div class="stat-tile card"><div class="value" id="home-toreview">0</div><div class="label">À revoir</div></div>
+        <div class="stat-tile card"><div class="value" id="home-score">0%</div><div class="label">Score de maîtrise</div></div>
+        <div class="stat-tile card"><div class="value" id="home-accuracy">—</div><div class="label">Précision globale</div></div>
+      </div>
+
+      <div class="menu-grid">
+        <button class="btn primary" data-nav="learn"><span class="icon">🎓</span>Apprendre</button>
+        <button class="btn primary" data-nav="review"><span class="icon">🔁</span>Réviser</button>
+        <button class="btn primary" data-nav="quiz-config"><span class="icon">❓</span>Jeu</button>
+        <button class="btn" data-nav="pokedex"><span class="icon">📖</span>Pokédex</button>
+        <button class="btn" data-nav="stats"><span class="icon">📊</span>Statistiques</button>
+      </div>
+
+      <div class="section-title">Progression par génération</div>
+      <div id="home-chart-gen" class="card"></div>
+    </section>
+
+    <!-- ===== APPRENDRE ===== -->
+    <section class="screen" id="screen-learn">
+      <h2>Apprendre</h2>
+      <p class="headline-sub">Chaque groupe est une lignée évolutive complète. L'image est toujours visible ; maintiens le bouton (ou la touche Espace) pour révéler le reste, relâche pour le cacher à nouveau.</p>
+      <div class="toolbar">
+        <input type="search" id="learn-search" placeholder="Rechercher une lignée par nom…">
+      </div>
+      <div id="learn-groups"></div>
+    </section>
+
+    <!-- ===== REVISER ===== -->
+    <section class="screen" id="screen-review">
+      <h2>Réviser</h2>
+      <div class="stat-tiles">
+        <div class="stat-tile card"><div class="value" id="review-due-count">0</div><div class="label">Pokémon à réviser</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="review-start-due">Réviser les Pokémon en retard</button>
+        <button class="btn" id="review-start-weak">Réviser mes 20 Pokémon les moins maîtrisés</button>
+      </div>
+      <div class="section-title">Pokémon que je connais mal</div>
+      <div class="pokemon-grid" id="review-weak-grid"></div>
+    </section>
+
+    <!-- ===== JEU (configuration) ===== -->
+    <section class="screen" id="screen-quiz-config">
+      <h2>Jeu</h2>
+      <p class="headline-sub">Les questions ne portent que sur les Pokémon déjà rencontrés dans « Apprendre ». Choisis les sujets sur lesquels tu veux être interrogé.</p>
+
+      <div class="config-section">
+        <h3>Sujets</h3>
+        <div class="checkbox-grid" id="quiz-mode-picker"></div>
+      </div>
+
+      <div class="config-section">
+        <h3>Format</h3>
+        <div class="radio-grid" id="quiz-format-picker">
+          <label><input type="radio" name="format" value="normal" checked> Session (20 questions)</label>
+          <label><input type="radio" name="format" value="marathon"> Marathon (sans limite)</label>
+          <label><input type="radio" name="format" value="timeattack"> Contre-la-montre</label>
+        </div>
+        <div id="quiz-timeattack-durations" class="radio-grid hidden">
+          <label><input type="radio" name="duration" value="30"> 30 s</label>
+          <label><input type="radio" name="duration" value="60" checked> 1 min</label>
+          <label><input type="radio" name="duration" value="180"> 3 min</label>
+          <label><input type="radio" name="duration" value="300"> 5 min</label>
+          <label>Personnalisé: <input type="number" id="quiz-duration-custom" min="10" max="1800" style="width:70px"> s</label>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>Génération(s)</h3>
+        <div class="checkbox-grid" id="quiz-filter-gen"></div>
+      </div>
+      <div class="config-section">
+        <h3>Type(s)</h3>
+        <div class="checkbox-grid" id="quiz-filter-type"></div>
+      </div>
+      <div class="config-section">
+        <h3>Région(s)</h3>
+        <div class="checkbox-grid" id="quiz-filter-region"></div>
+      </div>
+
+      <button class="btn primary" id="quiz-start-btn">Démarrer le quiz</button>
+    </section>
+
+    <!-- ===== JEU (quiz / apprentissage / révision) ===== -->
+    <section class="screen" id="screen-play">
+      <div class="quiz-header">
+        <span class="quiz-progress" id="play-progress"></span>
+        <span class="quiz-progress" id="play-score"></span>
+        <button class="btn ghost" id="play-quit">✕ Quitter (Échap)</button>
+      </div>
+      <div class="quiz-stage" id="play-stage"></div>
+      <div id="play-feedback"></div>
+    </section>
+
+    <!-- ===== POKEDEX ===== -->
+    <section class="screen" id="screen-pokedex">
+      <h2>Pokédex personnel</h2>
+      <div class="toolbar">
+        <input type="search" id="pokedex-search" placeholder="Rechercher par nom ou numéro…">
+      </div>
+      <div class="config-section">
+        <div class="filter-group" id="pokedex-filter-gen"></div>
+      </div>
+      <div class="config-section">
+        <div class="filter-group" id="pokedex-filter-type"></div>
+      </div>
+      <div class="result-count" id="pokedex-count"></div>
+      <div class="pokemon-grid" id="pokedex-grid"></div>
+    </section>
+
+    <!-- ===== STATISTIQUES ===== -->
+    <section class="screen" id="screen-stats">
+      <h2>Statistiques</h2>
+      <div class="stat-tiles">
+        <div class="stat-tile card"><div class="value" id="stats-accuracy">—</div><div class="label">Précision</div></div>
+        <div class="stat-tile card"><div class="value" id="stats-answered">0</div><div class="label">Questions répondues</div></div>
+        <div class="stat-tile card"><div class="value" id="stats-errors">0</div><div class="label">Erreurs</div></div>
+        <div class="stat-tile card"><div class="value" id="stats-streak">0</div><div class="label">Série actuelle</div></div>
+        <div class="stat-tile card"><div class="value" id="stats-beststreak">0</div><div class="label">Meilleure série</div></div>
+      </div>
+
+      <div class="chart-block card">
+        <h3>Répartition des niveaux de maîtrise</h3>
+        <div id="stats-mastery-chart"></div>
+        <div id="stats-mastery-legend"></div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-block card">
+          <h3>Progression par génération</h3>
+          <div id="stats-chart-gen"></div>
+        </div>
+        <div class="chart-block card">
+          <h3>Progression par région</h3>
+          <div id="stats-chart-region"></div>
+        </div>
+      </div>
+      <div class="chart-block card">
+        <h3>Progression par type</h3>
+        <div class="chart-row">
+          <div id="stats-chart-type-a"></div>
+          <div id="stats-chart-type-b"></div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="card">
+          <h3>Meilleurs élèves 🏆</h3>
+          <div id="stats-best-list"></div>
+        </div>
+        <div class="card">
+          <h3>À retravailler 📌</h3>
+          <div id="stats-worst-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== PARAMETRES ===== -->
+    <section class="screen" id="screen-settings">
+      <h2>Paramètres et sauvegarde</h2>
+      <div class="card">
+        <h3>Sauvegarde</h3>
+        <p class="headline-sub">Toute ta progression reste uniquement sur cet ordinateur (localStorage). Exporte-la pour la garder en sécurité ou la transférer sur un autre appareil.</p>
+        <div class="btn-row">
+          <button class="btn primary" id="settings-export">⬇️ Exporter ma sauvegarde</button>
+          <button class="btn" id="settings-import-btn">⬆️ Importer une sauvegarde</button>
+          <input type="file" id="settings-import-file" accept="application/json" class="hidden">
+          <button class="btn danger" id="settings-reset">🗑️ Réinitialiser ma progression</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3>Raccourcis clavier</h3>
+        <ul>
+          <li><b>Entrée</b> — valider une réponse</li>
+          <li><b>Échap</b> — quitter le quiz en cours</li>
+          <li><b>1–4</b> — sélectionner une réponse à choix multiple</li>
+          <li><b>Espace</b> — continuer / question suivante</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="modal-root"></div>
+  <div id="toast" class="toast hidden"></div>
+</div>
+
+<script src="js/pokedexData.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/srs.js"></script>
+<script src="js/quizEngine.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

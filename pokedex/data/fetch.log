@@ -1,0 +1,43 @@
+[fetch] Récupération des types...
+[fetch] Récupération des générations/régions...
+[fetch] Récupération de 1025 fiches espèce + pokemon...
+[fetch]   espèces: 100/1025
+[fetch]   espèces: 200/1025
+[fetch]   espèces: 300/1025
+[fetch]   espèces: 400/1025
+[fetch]   espèces: 500/1025
+[fetch]   espèces: 600/1025
+[fetch]   espèces: 700/1025
+[fetch]   espèces: 800/1025
+[fetch]   espèces: 900/1025
+[fetch]   espèces: 1000/1025
+[fetch]   pokemon: 100/1025
+[fetch]   pokemon: 200/1025
+[fetch]   pokemon: 300/1025
+[fetch]   pokemon: 400/1025
+[fetch]   pokemon: 500/1025
+[fetch]   pokemon: 600/1025
+[fetch]   pokemon: 700/1025
+[fetch]   pokemon: 800/1025
+[fetch]   pokemon: 900/1025
+[fetch]   pokemon: 1000/1025
+[fetch] Récupération des chaînes d'évolution (dédupliquées)...
+[fetch]   chaines: 50/541
+[fetch]   chaines: 100/541
+[fetch]   chaines: 150/541
+[fetch]   chaines: 200/541
+[fetch]   chaines: 250/541
+[fetch]   chaines: 300/541
+[fetch]   chaines: 350/541
+[fetch]   chaines: 400/541
+[fetch]   chaines: 450/541
+[fetch]   chaines: 500/541
+[fetch] Récupération des formes alternatives...
+[fetch]   formes: 50/326
+[fetch]   formes: 100/326
+[fetch]   formes: 150/326
+[fetch]   formes: 200/326
+[fetch]   formes: 250/326
+[fetch]   formes: 300/326
+[fetch] Assemblage du JSON final...
+[fetch] Terminé: 1025 Pokémon écrits dans C:\Users\juldorange\ruine\pokedex\data\pokedex.json

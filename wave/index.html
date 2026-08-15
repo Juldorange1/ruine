@@ -117,7 +117,7 @@ body.ingame #hint { display:none; }
 <div id="ui">
   <div id="row">
     <button class="mb on" data-m="wave">WAVE</button>
-    <button id="cadenceToggle">⏱ CADENCE</button>
+    <button class="mb" data-m="ship">VAISSEAU</button>
     <button id="customLevelsBtn">📁 PARTIES CRÉÉES</button>
     <button id="settingsBtn">⚙ PARAMÈTRES</button>
     <button id="play">▶ JOUER</button>
@@ -176,6 +176,26 @@ body.ingame #hint { display:none; }
       <button class="tb" id="trainingModeToggle">Désactivé</button>
     </div>
     <div id="trainingModeHint" style="display:none;color:#556677;font:.72em monospace;margin-bottom:8px;">Clic sur la barre = téléportation · ↑↓ en mode Double</div>
+    <div class="srow">
+      <label>Durée niveau de base :</label>
+      <button class="tb" id="durMulToggle">60 sec</button>
+    </div>
+    <div class="srow">
+      <label>Largeur tunnel (%) :</label>
+      <input id="gapPctInput" type="number" min="10" max="95" step="1" placeholder="auto"
+        style="width:70px;background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.9em monospace;padding:4px 8px;text-align:center;">
+      <span style="color:#556677;font:.75em monospace;">% de l'écran (vide = défaut)</span>
+    </div>
+    <div class="srow">
+      <label>Clics/s cadence :</label>
+      <input id="cadenceCPSInput" type="number" min="0.5" max="15" step="0.5" value="3.5"
+        style="width:70px;background:#080818;border:2px solid #223;border-radius:5px;color:#eee;font:.9em monospace;padding:4px 8px;text-align:center;">
+      <span style="color:#556677;font:.75em monospace;">clics/s moy (défaut : 3.5)</span>
+    </div>
+    <div class="srow">
+      <label>Vaisseau — gravité :</label>
+      <button class="tb" id="shipGravityToggle">Clic = monte</button>
+    </div>
     <hr id="settingsSep">
     <div class="srow">
       <label>Reset niveau :</label>
@@ -264,11 +284,15 @@ const THEMES = [
 ];
 let themeIdx = 0;
 let trailEnabled = true;
-let cadenceEnabled = false;
+const cadenceEnabled = true; // toujours activé
 let noclipEnabled = false;
 let speedMul = 1; // vitesse de déplacement du personnage (50%-200%) — augmente aussi l'angle de déplacement dans la même proportion
 let angleMul = 1; // pourcentage de taille d'angle des déplacements (50%-200%), indépendant de la vitesse
 let gapStartMul = 1; // épaisseur du tunnel au démarrage des parties (1%-1000%), aussi en mode Cadence
+let baseLevelGapPct = null; // si défini (10-95), force la largeur du tunnel à X% de l'écran pour les niveaux de base
+let durMul = 1; // multiplicateur de durée des niveaux de base (1 = 60s, 5 = 5 min)
+let cadenceCPS = 3.5; // clics par seconde moyen pour le score parfait (mode Cadence)
+let gravityInvert = false; // false = clic monte (défaut GD), true = clic descend — s'applique à tous les modes
 let randomLevelsEnabled = false; // si activé, les niveaux du Défi Aléatoire changent à chaque partie au lieu d'être toujours la même map fixe
 let trainingMode = false;
 // ─── PARTIES PERSONNALISABLES ───────────────────────────────────────────────
@@ -310,7 +334,7 @@ function syncKeyLabels() {
 function saveSettings() {
   // le site doit rester jouable même si le stockage est indisponible (navigation
   // privée, quota plein, etc.) — on perd juste la sauvegarde, pas l'accès au jeu.
-  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,trailEnabled,cadenceEnabled,noclipEnabled,gapStartMul,randomLevelsEnabled,personnalisableEnabled,speedMul,angleMul,modeNames,trainingMode}));}catch(_){}
+  try{localStorage.setItem('wave_settings',JSON.stringify({pseudo,themeIdx,keyReset,keyQuit,trailEnabled,noclipEnabled,gapStartMul,randomLevelsEnabled,personnalisableEnabled,speedMul,angleMul,modeNames,trainingMode,baseLevelGapPct,durMul,cadenceCPS,gravityInvert}));}catch(_){}
 }
 function loadSettings() {
   try {
@@ -321,7 +345,6 @@ function loadSettings() {
     if(typeof s.keyReset==='string')keyReset=s.keyReset;
     if(typeof s.keyQuit==='string') keyQuit =s.keyQuit;
     if(typeof s.trailEnabled==='boolean')trailEnabled=s.trailEnabled;
-    if(typeof s.cadenceEnabled==='boolean')cadenceEnabled=s.cadenceEnabled;
     if(typeof s.noclipEnabled==='boolean')noclipEnabled=s.noclipEnabled;
     if(typeof s.gapStartMul==='number'&&s.gapStartMul>=0.01&&s.gapStartMul<=10)gapStartMul=s.gapStartMul;
     if(typeof s.randomLevelsEnabled==='boolean')randomLevelsEnabled=s.randomLevelsEnabled;
@@ -332,6 +355,11 @@ function loadSettings() {
       MODES.forEach(m=>{if(typeof s.modeNames[m]==='string'&&s.modeNames[m].trim())modeNames[m]=s.modeNames[m].trim().slice(0,12);});
     }
     if(typeof s.trainingMode==='boolean')trainingMode=s.trainingMode;
+    if(s.baseLevelGapPct===null||typeof s.baseLevelGapPct==='number')baseLevelGapPct=s.baseLevelGapPct;
+    if(typeof s.durMul==='number'&&(s.durMul===1||s.durMul===5))durMul=s.durMul;
+    if(typeof s.cadenceCPS==='number'&&s.cadenceCPS>=0.5&&s.cadenceCPS<=15)cadenceCPS=s.cadenceCPS;
+    if(typeof s.gravityInvert==='boolean')gravityInvert=s.gravityInvert;
+    else if(typeof s.shipGravityInvert==='boolean')gravityInvert=s.shipGravityInvert; // compat ancienne clé
   }catch(_){}
 }
 function applySettingsToUI() {
@@ -340,9 +368,6 @@ function applySettingsToUI() {
   const trailBtn=document.getElementById('trailToggle');
   trailBtn.classList.toggle('on',trailEnabled);
   trailBtn.textContent=trailEnabled?'Activée':'Désactivée';
-  const cadBtn=document.getElementById('cadenceToggle');
-  cadBtn.classList.toggle('on',cadenceEnabled);
-  cadBtn.textContent=cadenceEnabled?'⏱ CADENCE ✓':'⏱ CADENCE';
   const noclipBtn=document.getElementById('noclipToggle');
   noclipBtn.classList.toggle('on',noclipEnabled);
   noclipBtn.textContent=noclipEnabled?'Activé':'Désactivé';
@@ -356,6 +381,15 @@ function applySettingsToUI() {
   tmBtn.classList.toggle('on',trainingMode);
   tmBtn.textContent=trainingMode?'Activé':'Désactivé';
   document.getElementById('trainingModeHint').style.display=trainingMode?'':'none';
+  const durBtn=document.getElementById('durMulToggle');
+  durBtn.classList.toggle('on',durMul===5);
+  durBtn.textContent=durMul===5?'5 minutes':'60 sec';
+  const gapInp=document.getElementById('gapPctInput');
+  gapInp.value=baseLevelGapPct===null?'':baseLevelGapPct;
+  document.getElementById('cadenceCPSInput').value=cadenceCPS;
+  const sgBtn=document.getElementById('shipGravityToggle');
+  sgBtn.classList.toggle('on',gravityInvert);
+  sgBtn.textContent=gravityInvert?'Clic = descend':'Clic = monte';
   document.querySelectorAll('.tb[data-t]').forEach(b=>{
     const on=parseInt(b.dataset.t)===themeIdx;
     b.classList.toggle('on',on);
@@ -1700,7 +1734,7 @@ const cv=document.getElementById('cv'),cx=cv.getContext('2d');
 let diff=5,mode='wave',state='menu',pseudo='';
 let corridor=null,waypoints=[],particles=[],trail=[],endWallWX=0;
 let cadenceTraj=[],cadenceEaseWX=0; // trajectoire enregistrée pour l'option Cadence
-let playerWX=0,playerY=H/2,cameraX=0,holding=false,hitFlash=0,deathPulse=0,shipVel=0,gravityDir=1,jumpQueued=false,upHeld=false,downHeld=false,spiderState='bot';
+let playerWX=0,playerY=H/2,cameraX=0,holding=false,hitFlash=0,deathPulse=0,shipVel=0,gravityDir=1,jumpQueued=false,upHeld=false,downHeld=false,spiderState='bot'; // gravityDir/spiderState recalculés au 1er resetRun
 let trainingDeaths=0,startMs=0,trainingTotalStartMs=0,elapsed=0,totalLen=0,lastDeathMs=-999,difficultyEase=0;
 let noclipDevSum=0,noclipDevCount=0,noclipDevMax=0,noclipDevMin=Infinity;
 let score=0,lastScoreSec=0;
@@ -1881,33 +1915,25 @@ function recordCadenceTrajectory(cfg, mode, mainLen, easeWX){
   const accel=cfg.vy/0.18;
   const rng=randomLevelsEnabled?Math.random:mkRng(MAP_SEEDS[mode]);
   const CENTER=H/2, MAX_DRIFT=H*0.16; // reste plutôt vers le centre, pas trop haut/bas
-  let y=H/2, vel=0, holding=false, gravityDir=1, twokeyState=0, spiderSt='bot'; // -1=monter,0=droit,1=descendre
-  // Bandes de tempo (lent/normal/rapide) qui changent toutes les quelques
-  // secondes, pour que le rythme demandé varie sans cesse au fil du niveau —
-  // en plus des fenêtres de spam forcées ci-dessous.
-  const PACES=[[0.45,0.75],[0.2,0.45],[0.12,0.28]];
-  let paceUntil=0, pace=PACES[0];
-  let nextClickT=0.2+rng()*0.5;
-  // Au moins une fenêtre de spam forcé (6-9 clics/s) dès le début, puis
-  // régulièrement ensuite — garantit qu'aucun niveau Cadence n'en est privé.
-  let burstUntil=-1, nextBurstT=3+rng()*3;
+  let y=H/2, vel=0, holding=false, gravityDir=gravityInvert?-1:1, twokeyState=0, spiderSt=gravityInvert?'top':'bot';
+  // Intervalle moyen = 1/cadenceCPS, avec variation ±40% aléatoire.
+  const avgInterval=1/cadenceCPS;
+  let nextClickT=avgInterval*(0.5+rng()*0.5);
   let t=0;
   cadenceTraj=new Float32Array(nSamples);
   cadenceEaseWX=easeWX;
   for(let i=0;i<nSamples;i++){
-    if(t>=paceUntil){
-      pace=PACES[Math.floor(rng()*PACES.length)];
-      paceUntil=t+2+rng()*3;
-    }
-    if(t>=nextBurstT && t>=burstUntil){
-      burstUntil=t+1+rng()*1.5; // section forcée de spam, durée garantie ≥1s
-      nextBurstT=burstUntil+4+rng()*5;
-    }
-    const inBurst=t<burstUntil;
     if(t>=nextClickT){
       const tooLow=y>CENTER+MAX_DRIFT, tooHigh=y<CENTER-MAX_DRIFT;
       if(mode==='wave'||mode==='ship'){
-        holding = tooLow?true:(tooHigh?false:(rng()<0.5));
+        // gravityInvert : "tooLow" = trop bas = besoin de monter
+        // sans invert : holding=true = monte → tooLow → holding=true
+        // avec invert  : holding=true = descend → tooLow → holding=false
+        // gravityInvert=false → holding=true=monte ; true → holding=true=descend
+        // Pour monter (tooLow) : sans invert → holding=true, avec invert → holding=false
+        holding = gravityInvert
+          ? (tooLow?false:(tooHigh?true:(rng()<0.5)))
+          : (tooLow?true:(tooHigh?false:(rng()<0.5)));
       } else if(mode==='swing'){
         gravityDir = tooLow?-1:(tooHigh?1:(rng()<0.5?1:-1));
       } else if(mode==='twokey'){
@@ -1915,14 +1941,13 @@ function recordCadenceTrajectory(cfg, mode, mainLen, easeWX){
         else if(tooHigh) twokeyState=1;
         else { const opts=[-1,0,1].filter(v=>v!==twokeyState); twokeyState=opts[Math.floor(rng()*opts.length)]; }
       } else if(mode==='spider'){
-        // Pas de "centrage" possible : la position est toujours à un extrême,
-        // c'est le principe du mode — alternance équiprobable à chaque clic.
         spiderSt = rng()<0.5?'top':'bot';
       }
-      nextClickT = inBurst ? t+1/(6+rng()*3) : t+pace[0]+rng()*(pace[1]-pace[0]); // 6-9 cps en burst, sinon rythme variable selon la bande de tempo
+      nextClickT = t + avgInterval*(0.6+rng()*0.8);
     }
     if(mode==='ship'){
-      vel+=(holding?-accel:accel)*dt;
+      const shipUp=gravityInvert?!holding:holding;
+      vel+=(shipUp?-accel:accel)*dt;
       vel=Math.max(-cfg.vy,Math.min(cfg.vy,vel));
       y+=vel*dt;
     }else if(mode==='swing'){
@@ -1930,11 +1955,11 @@ function recordCadenceTrajectory(cfg, mode, mainLen, easeWX){
       vel=Math.max(-cfg.vy,Math.min(cfg.vy,vel));
       y+=vel*dt;
     }else if(mode==='twokey'){
-      y+=twokeyState*cfg.vy*dt;
+      y+=(gravityInvert?-twokeyState:twokeyState)*cfg.vy*dt;
     }else if(mode==='spider'){
       y=spiderSt==='top'?PLAYER_R+1:H-PLAYER_R-1;
     }else{ // wave
-      y+=(holding?-1:1)*cfg.vy*dt;
+      y+=((gravityInvert?!holding:holding)?-1:1)*cfg.vy*dt;
     }
     y=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,y));
     cadenceTraj[i]=y;
@@ -1987,12 +2012,17 @@ function buildLevel(d){
   // nouveau niveau/une nouvelle boucle repart des valeurs réglées.
   runtimeSpeedMul=speedMul;runtimeAngleMul=angleMul;runtimeGapMul=gapStartMul;
   const cfg=DCFG[d];
-  totalLen =cfg.dur*cfg.speed+W+600;
-  endWallWX=cfg.dur*cfg.speed;
+  const effectiveDur=cfg.dur*durMul;
+  totalLen =effectiveDur*cfg.speed+W+600;
+  endWallWX=effectiveDur*cfg.speed;
   const easeWX=cfg.speed*0.8;
   const nSeg=Math.ceil(totalLen/SEG)+2;
   corridor=new Float32Array(nSeg*2);
-  const gap=cfg.gap*NONCADENCE_GAP_MUL*modeGapMul(mode)*gapStartMul,m=gap/2+10,rng=H-2*m;
+  const baseGapMul=baseLevelGapPct!==null
+    ? baseLevelGapPct/100*(H-20)/(cfg.gap*NONCADENCE_GAP_MUL*modeGapMul(mode))
+    : gapStartMul;
+  runtimeGapMul=baseGapMul;
+  const gap=cfg.gap*NONCADENCE_GAP_MUL*modeGapMul(mode)*baseGapMul,m=gap/2+10,rng=H-2*m;
   const TOP=m+rng*.06,HITOP=m+rng*.25,MID=m+rng*.50,HIBOT=m+rng*.75,BOT=m+rng*.94;
   const KEY={TOP,HITOP,MID,HIBOT,BOT};
   const mainLen=totalLen-easeWX-W;
@@ -2111,7 +2141,7 @@ function triggerEffect(e){
 function resetRun(keepDeaths){
   playerWX=0;playerY=H/2;cameraX=-PLAYER_SX;
   holding=false;hitFlash=0;deathPulse=0;particles=[];trail=[];elapsed=0;shipVel=0;difficultyEase=0;
-  gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;spiderState='bot';
+  gravityDir=gravityInvert?-1:1;jumpQueued=false;upHeld=false;downHeld=false;spiderState=gravityInvert?'top':'bot';
   score=0;lastScoreSec=0;
   runtimeSpeedMul=speedMul;runtimeAngleMul=angleMul;runtimeGapMul=gapStartMul;triggeredPortals=new Set();
   triggeredEffects=new Set();
@@ -2192,15 +2222,17 @@ function update(now){
   const vyNow=cfg.vy*runtimeSpeedMul*runtimeAngleMul*vyMulAt(playerWX);
   if(mode==='ship'){
     // VAISSEAU (façon Geometry Dash) : pas de changement instantané de
-    // direction — une poussée vers le haut quand on maintient, sinon la
-    // gravité tire vers le bas ; la vitesse s'accumule avec inertie.
+    // direction — une poussée quand on maintient, gravité sinon.
+    // gravityInvert=false → clic monte ; true → clic descend.
     const accel=vyNow/0.18;
-    shipVel+=(holding?-accel:accel)*dt;
+    const shipUp=gravityInvert?!holding:holding;
+    shipVel+=(shipUp?-accel:accel)*dt;
     shipVel=Math.max(-vyNow,Math.min(vyNow,shipVel));
     playerY+=shipVel*dt;
   } else if(mode==='swing'){
     // SWING : chaque appui inverse le sens de la gravité, la vitesse
     // s'accumule avec inertie dans cette direction jusqu'au prochain appui.
+    // gravityInvert=true → gravité tire vers le haut par défaut.
     if(jumpQueued){jumpQueued=false;gravityDir=-gravityDir;}
     const accel=vyNow/0.18;
     shipVel+=gravityDir*accel*dt;
@@ -2209,7 +2241,9 @@ function update(now){
   } else if(mode==='twokey'){
     // DOUBLE : sans rien faire on avance tout droit ; la touche "Monter"
     // fait monter, la touche "Descendre" fait descendre.
-    const dir=(upHeld&&!downHeld)?-1:((downHeld&&!upHeld)?1:0);
+    // gravityInvert : les touches sont inversées.
+    const rawDir=(upHeld&&!downHeld)?-1:((downHeld&&!upHeld)?1:0);
+    const dir=gravityInvert?-rawDir:rawDir;
     playerY+=dir*vyNow*dt;
   } else if(mode==='spider'){
     // ARAIGNÉE (façon Geometry Dash) : aucun mouvement progressif — chaque
@@ -2222,8 +2256,8 @@ function update(now){
     const{top:t0,bot:b0}=getCorridor(playerWX);
     playerY=spiderState==='top'?t0+PLAYER_R+1:b0-PLAYER_R-1;
   } else {
-    // WAVE : maintenir fait monter en ligne droite, relâcher fait descendre.
-    const dir=holding?-1:1;
+    // WAVE : maintenir fait monter, relâcher fait descendre (ou inversé si gravityInvert).
+    const dir=(gravityInvert?!holding:holding)?-1:1;
     playerY+=dir*vyNow*dt;
   }
   playerY=Math.max(PLAYER_R+1,Math.min(H-PLAYER_R-1,playerY));
@@ -2258,11 +2292,13 @@ function update(now){
     if(dev<noclipDevMin)noclipDevMin=dev;
   }else if(playerY-PLAYER_R<top){
     playerY=top+PLAYER_R;
-    if(inertial)shipVel=Math.max(0,shipVel);
+    if(mode==='ship')shipVel=Math.max(vyNow*0.1,shipVel); // rebond minimal pour s'écarter du plafond
+    else if(inertial)shipVel=Math.max(0,shipVel);
     if(!nokill)die();
   }else if(playerY+PLAYER_R>bot){
     playerY=bot-PLAYER_R;
-    if(inertial)shipVel=Math.min(0,shipVel);
+    if(mode==='ship')shipVel=Math.min(-vyNow*0.1,shipVel); // rebond minimal pour s'écarter du sol
+    else if(inertial)shipVel=Math.min(0,shipVel);
     if(!nokill)die();
   }
   // Piques ajoutés via l'éditeur de partie créée : hasard supplémentaire dans
@@ -2684,7 +2720,7 @@ cv.addEventListener('mousedown',e=>{
       cameraX=Math.round(playerWX-PLAYER_SX);
       const{top:t,bot:b}=getCorridor(playerWX);
       playerY=(t+b)/2;
-      trail=[];shipVel=0;gravityDir=1;jumpQueued=false;
+      trail=[];shipVel=0;gravityDir=gravityInvert?-1:1;jumpQueued=false;
       return;
     }
   }
@@ -2751,7 +2787,7 @@ document.querySelectorAll('.mb').forEach(btn=>btn.addEventListener('click',()=>{
   }
   document.querySelectorAll('.mb').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');mode=m;activeCustomLevel=null;
-  shipVel=0;gravityDir=1;jumpQueued=false;upHeld=false;downHeld=false;spiderState='bot';
+  shipVel=0;gravityDir=gravityInvert?-1:1;jumpQueued=false;upHeld=false;downHeld=false;spiderState=gravityInvert?'top':'bot';
   if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
 }));
 document.getElementById('customLevelsBtn').addEventListener('click',()=>{renderCustomList();document.getElementById('customPanel').classList.add('open');});
@@ -2781,12 +2817,6 @@ document.getElementById('trailToggle').addEventListener('click',()=>{
   applySettingsToUI();
   saveSettings();
 });
-document.getElementById('cadenceToggle').addEventListener('click',()=>{
-  cadenceEnabled=!cadenceEnabled;
-  applySettingsToUI();
-  saveSettings();
-  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
-});
 document.getElementById('noclipToggle').addEventListener('click',()=>{
   noclipEnabled=!noclipEnabled;
   applySettingsToUI();
@@ -2796,6 +2826,27 @@ document.getElementById('noclipRecReset').addEventListener('click',()=>{
   if(confirm('Effacer tous les records "Traverser les murs" ?')){
     noclipRecords={};saveNoclipRecords();
   }
+});
+document.getElementById('durMulToggle').addEventListener('click',()=>{
+  durMul=durMul===1?5:1;
+  applySettingsToUI();saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('gapPctInput').addEventListener('change',e=>{
+  const v=parseInt(e.target.value);
+  baseLevelGapPct=(isNaN(v)||e.target.value.trim()==='')?null:Math.max(10,Math.min(95,v));
+  applySettingsToUI();saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('cadenceCPSInput').addEventListener('change',e=>{
+  const v=parseFloat(e.target.value);
+  if(!isNaN(v))cadenceCPS=Math.max(0.5,Math.min(15,v));
+  applySettingsToUI();saveSettings();
+  if(state==='menu'||state==='win'||state==='dead')buildLevel(diff);
+});
+document.getElementById('shipGravityToggle').addEventListener('click',()=>{
+  gravityInvert=!gravityInvert;
+  applySettingsToUI();saveSettings();
 });
 document.getElementById('personnalisableToggle').addEventListener('click',()=>{
   personnalisableEnabled=!personnalisableEnabled;

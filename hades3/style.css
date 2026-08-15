@@ -103,13 +103,6 @@ h1,h2{font-family:'Cinzel',serif; margin:0;}
 .prerun-panel{ width:100%; max-width:380px; display:flex; flex-direction:column; gap:14px; padding:20px 24px; }
 .prerun-panel .stat-slider{ font-size:13px; gap:4px; }
 
-.weapons-columns{ display:flex; gap:18px; width:100%; max-width:760px; flex-wrap:wrap; justify-content:center; }
-.weapons-col{
-  flex:1 1 320px; max-width:360px; background:#15101cb0; border:1px solid #ffffff14; border-radius:12px;
-  padding:14px 16px; backdrop-filter:blur(10px); box-shadow:0 6px 22px #0005; max-height:52vh; overflow-y:auto;
-}
-.weapons-col h3{ font-size:15px; color:var(--gold-soft); margin:0 0 12px; letter-spacing:1px; text-align:left; }
-.weapon-bias-list{ display:flex; flex-direction:column; gap:16px; }
 .weapon-bias-row{ text-align:left; }
 .weapon-bias-name{ font-size:14px; font-weight:700; color:var(--text); }
 .weapon-bias-desc{ font-size:12.5px; color:var(--text-dim); margin:3px 0 8px; line-height:1.5; }
@@ -222,6 +215,72 @@ h1,h2{font-family:'Cinzel',serif; margin:0;}
 
 /* ---------- Combat ---------- */
 #combatCanvas{ position:absolute; inset:0; width:100%; height:100%; display:block; background:#0b0810; cursor:inherit; }
+#combatCanvas3D{ position:absolute; inset:0; width:100%; height:100%; display:none; background:#0b0810; cursor:inherit; }
+
+/* Retour visuel de dégâts subis, commun aux rendus 2D ET 3D (jusqu'ici l'effet
+   n'existait que dans le rendu 2D de secours, jamais vu par un joueur en 3D — la
+   majorité). Discret par conception : un simple vignettage aux bords, jamais un flash
+   plein écran, piloté par updateHUD (opacity uniquement, voir render.js). */
+.damage-flash{
+  position:absolute; inset:0; z-index:3; pointer-events:none;
+  background:radial-gradient(ellipse at 50% 50%, rgba(255,50,50,0) 55%, rgba(255,40,40,0.4) 100%);
+  opacity:0; transition:opacity .08s ease-out;
+}
+
+/* Panneau flottant de l'armurerie : s'ouvre en surimpression du combat quand on équipe
+   une arme à un présentoir (voir openArmoryPanel, editor.js) — reprend .weapon-bias-row
+   pour la description/le curseur de biais, pas un écran séparé. */
+.armory-panel{
+  position:absolute; left:50%; bottom:120px; transform:translateX(-50%); z-index:5;
+  width:340px; max-width:calc(100% - 40px);
+  background:linear-gradient(180deg,#1c1522f0,#120d18f0); border:1px solid #ffffff22; border-radius:14px;
+  padding:18px 20px; box-shadow:0 16px 50px #000c, inset 0 1px 0 #ffffff14;
+  pointer-events:auto;
+}
+.armory-panel[hidden]{ display:none; }
+.armory-panel .modal-close-x{ position:absolute; top:8px; right:8px; }
+
+/* ---------- Défis (grille de cartes, menu principal) ---------- */
+.challenges-grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px;
+  width:100%; max-width:900px; max-height:56vh; overflow-y:auto; padding:4px;
+}
+.challenge-card{
+  background:#15101cb0; border:1px solid #ffffff14; border-radius:12px; padding:16px;
+  backdrop-filter:blur(10px); box-shadow:0 6px 22px #0005; text-align:left;
+  display:flex; flex-direction:column; gap:6px;
+}
+.challenge-icon{ font-size:26px; }
+.challenge-card h3{ font-size:15px; color:var(--gold-soft); margin:0; letter-spacing:0.5px; }
+.challenge-desc{ font-size:12.5px; color:var(--text-dim); line-height:1.5; margin:0; flex:1; }
+.challenge-record{ font-size:12px; color:var(--text-dim); }
+.challenge-record b{ color:var(--tier5); }
+.challenge-card .btn{ align-self:flex-start; margin-top:4px; }
+
+.challenges-totals{
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px;
+  color:var(--text-dim); background:#1c1522cc; border:1px solid #ffffff14; border-radius:999px;
+  padding:8px 18px; margin:-6px 0 2px;
+}
+.challenges-totals b{ color:var(--gold-soft); }
+
+/* ---------- Hub explorable (menu principal) ---------- */
+#hubCanvas{ position:absolute; inset:0; width:100%; height:100%; display:block; background:#0b0810; cursor:inherit; }
+.hub-title{
+  position:absolute; top:22px; left:50%; transform:translateX(-50%); z-index:2;
+  font-family:'Cinzel',serif; font-size:26px; letter-spacing:8px; pointer-events:none;
+  text-shadow:0 2px 12px #000c;
+}
+.hub-prompt{
+  position:absolute; bottom:64px; left:50%; transform:translateX(-50%); z-index:2;
+  background:#1c1522e6; border:1px solid #e3b96866; border-radius:999px;
+  padding:10px 20px; font-size:14px; font-weight:600; color:var(--gold-soft);
+  box-shadow:0 6px 20px #0008; pointer-events:none; white-space:nowrap;
+}
+.hub-stats-list{
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+  margin:18px 0;
+}
 
 .hud{ position:absolute; inset:0; z-index:4; pointer-events:none; }
 .hud-top{
@@ -283,7 +342,6 @@ h1,h2{font-family:'Cinzel',serif; margin:0;}
 }
 .result-stats b{ color:var(--gold-soft); }
 .gold-detail{ grid-column:1 / -1; font-size:12px; color:var(--text-dim); opacity:0.9; line-height:1.6; margin-top:4px; }
-.result-points{ font-size:32px; font-weight:800; color:var(--tier5); text-shadow:0 0 20px #b34bf277; margin-bottom:22px; }
 .result-actions{ display:flex; gap:10px; justify-content:center; }
 
 /* ---------- Terrain ---------- */

@@ -1,13 +1,22 @@
 // Dimensions logiques de l'arène + factories des entités de combat.
 
-// Arène volontairement resserrée : plus dur de camper à distance en laissant les ennemis
-// venir mourir tout seuls, l'espace pour fuir indéfiniment est plus limité.
-// ARENA_H est nettement plus grand que ARENA_W en coordonnées de jeu — le monde réel
-// est un rectangle "haut", pas un carré — pour qu'une fois compressé verticalement par
-// la caméra inclinée (ARENA_TILT_Y, render.js), la carte affichée à l'écran soit carrée.
-var ARENA_W = 820;
-var ARENA_H = 1140;
+// Arène carrée, 20% plus grande que la version resserrée précédente (410 -> 492).
+// Taille de base ; la taille réelle d'un run est tirée au hasard entre 125% et 160%
+// de cette base (voir randomizeArenaSize, appelée une fois par run dans editor.js).
+// Plancher relevé (était 100%-135%) : les formes de salle non rectangulaires (voir
+// js/roomShapes.js) peuvent découper une bonne partie de la surface — sans ce
+// plancher plus haut, une petite arène + une découpe généreuse (ex. croix, haltère)
+// pouvait laisser une zone marchable trop exiguë.
+var ARENA_BASE_SIZE = 492;
+var ARENA_W = ARENA_BASE_SIZE;
+var ARENA_H = ARENA_BASE_SIZE;
 var CELL_SIZE = 55; // coïncide avec le quadrillage dessiné en fond d'arène
+
+function randomizeArenaSize() {
+  var size = Math.round(ARENA_BASE_SIZE * (1.25 + Math.random() * 0.35));
+  ARENA_W = size;
+  ARENA_H = size;
+}
 
 var _nextId = 1;
 function nextId() { return _nextId++; }
@@ -27,25 +36,37 @@ function makePlayer(spawnX, spawnY) {
     dashCd: 0, dashCdMax: 1.2,
     specialCd: 0, specialCdMax: 2,
     pulseCd: 0, pulseCdMax: 4.5,
+    // isDashing/dashTimer/dashDir*/dashStart* : état de la "charge" (arme type 1), nommé
+    // dash pour des raisons historiques (l'arme dash a été retirée, la charge en reprend
+    // le mécanisme + repousse aussi les pierres, voir tryPlayerCharge dans combat.js).
     isDashing: false, dashTimer: 0, dashDurMax: 0.286, dashSpeed: 900 * GAME_SPEED_MULT,
     dashDirX: 0, dashDirY: -1, dashStartX: 0, dashStartY: 0,
     invulnTimer: 0,
     vx: 0, vy: 0,
     // Armes tirées au hasard en début de run (dashCd/dashCdMax = cooldown de l'arme de
     // type 1 quelle qu'elle soit ; pulseCd/pulseCdMax = celui de l'arme de type 2).
-    weapon1: 'dash', weapon2: 'pulse',
-    w1Charging: false, w1ChargeTime: 0, w1AimX: 0, w1AimY: 0,
+    weapon1: 'sword', weapon2: 'pulse',
+    w1Charging: false, w1ChargeTime: 0, w1AimX: 0, w1AimY: 0, chargeFrac: 1,
+    boomerangCd: 0,
     w2Resource: 100, w2ResourceMax: 100,
-    trailKind: 'flame', trailTimer: 0
+    mimicWeapon: null, mimicActive: false,
+    // Bonus de la relique de chapitre (voir tryPlayerCollectRelic dans combat.js) :
+    // persistent jusqu'à la fin du chapitre, contrairement à dmgMult/speed qui sont
+    // recalculés à chaque salle par applyWaveStatsToPlayer — remis à 1 à chaque
+    // nouveau chapitre (voir spawnWave).
+    chapterDmgBonusMult: 1, chapterSpeedBonusMult: 1,
+    riftCd: 0
   };
 }
 
 // Appelé à chaque nouvelle vague : c'est la vague qui pilote les stats du personnage.
+// Le bonus de relique de chapitre (chapterDmgBonusMult/chapterSpeedBonusMult) se
+// compose par-dessus, sans quoi il serait écrasé au changement de salle suivant.
 function applyWaveStatsToPlayer(p, waveStats) {
   var dmgMult = ((waveStats && waveStats.dmgPct != null) ? waveStats.dmgPct : 100) / 100;
   var spdMult = ((waveStats && waveStats.spdPct != null) ? waveStats.spdPct : 100) / 100;
-  p.dmgMult = dmgMult;
-  p.speed = PLAYER_BASE_SPEED * spdMult;
+  p.dmgMult = dmgMult * (p.chapterDmgBonusMult || 1);
+  p.speed = PLAYER_BASE_SPEED * spdMult * (p.chapterSpeedBonusMult || 1);
 }
 
 // Champs de temporisation (cooldowns/télégraphes) scalés par la vitesse d'attaque —
@@ -66,11 +87,11 @@ function scaleDefForAtkSpeed(def, atkSpdMult) {
   return scaled;
 }
 
-// De base (défi à 100%), les ennemis se déplacent et attaquent 20% moins vite — pousser
-// les curseurs de défi au-delà de 100% est ce qui ramène (et dépasse) le rythme d'origine,
-// pour que monter la difficulté soit toujours un choix clairement payant (voir goldDifficultyMult).
-var ENEMY_BASE_SPD_MULT = 0.8;
-var ENEMY_BASE_ATKSPD_MULT = 0.8;
+// Ennemis nettement plus rapides ET plus agressifs — plus de dynamisme demandé
+// explicitement (vitesse de déplacement ET fréquence d'attaque toutes deux relevées,
+// alors qu'avant l'attaque restait volontairement plus lente que le reste).
+var ENEMY_BASE_SPD_MULT = 1.4;
+var ENEMY_BASE_ATKSPD_MULT = 1.25;
 
 // Le rayon de collision réel diffère légèrement du rayon de rendu selon la silhouette :
 // un carré déborde de son cercle aux coins mais le déborde bien plus aux bords plats
@@ -79,13 +100,27 @@ var ENEMY_BASE_ATKSPD_MULT = 0.8;
 // réel de ce que le joueur voit, sans réécrire toute la détection de collision en polygones.
 var HIT_SHAPE_MULT = { square: 0.9, triangle: 0.85, circle: 0.88, boss: 0.92 };
 
+// Ennemis d'élite : 5% de chance à chaque création (hors boss) — plus PV et dégâts
+// mais PLUS PETITS (élites plus denses/vicieux, pas de simples "gros ennemis" faciles
+// à repérer et à contourner) : +20% PV/dégâts, -20% de taille. Reconnaissables via
+// l'anneau doré (voir render.js/combat3d.js STATE_RING_COLORS.elite), pas via la taille.
+var ELITE_CHANCE = 0.05;
+var ELITE_STAT_MULT = 1.2;
+var ELITE_SIZE_MULT = 0.8;
+
 function makeEnemy(def, x, y, mult) {
   mult = mult || {};
-  var hpMult = (mult.hpPct != null ? mult.hpPct : 100) / 100;
-  var dmgMult = (mult.dmgPct != null ? mult.dmgPct : 100) / 100;
+  // mult.forceElite (booléen explicite) outrepasse le tirage aléatoire — utilisé par les
+  // défis fixes (voir js/challenges.js) pour garantir un statut élite sans aléa ; les
+  // salles normales ne passent jamais ce champ, donc le tirage à 5% reste inchangé.
+  var isElite = mult.forceElite != null ? mult.forceElite : (def.shape !== 'boss' && Math.random() < ELITE_CHANCE);
+  var eliteStatMult = isElite ? ELITE_STAT_MULT : 1;
+  var eliteSizeMult = isElite ? ELITE_SIZE_MULT : 1;
+  var hpMult = (mult.hpPct != null ? mult.hpPct : 100) / 100 * eliteStatMult;
+  var dmgMult = (mult.dmgPct != null ? mult.dmgPct : 100) / 100 * eliteStatMult;
   var spdMult = ENEMY_BASE_SPD_MULT * (mult.spdPct != null ? mult.spdPct : 100) / 100;
   var atkSpdMult = ENEMY_BASE_ATKSPD_MULT * (mult.atkSpdPct != null ? mult.atkSpdPct : 100) / 100;
-  var sizeMult = (mult.sizePct != null ? mult.sizePct : 100) / 100;
+  var sizeMult = (mult.sizePct != null ? mult.sizePct : 100) / 100 * eliteSizeMult;
   var hp = Math.max(1, Math.round(def.hp * hpMult));
   var scaledDef = scaleDefForAtkSpeed(def, atkSpdMult);
   return {
@@ -93,6 +128,7 @@ function makeEnemy(def, x, y, mult) {
     id: nextId(),
     def: scaledDef,
     shape: def.shape, tier: def.tier, name: def.name, behavior: def.behavior,
+    isElite: isElite,
     x: x, y: y, r: def.r * sizeMult,
     hitR: def.r * sizeMult * (HIT_SHAPE_MULT[def.shape] || 0.9),
     hp: hp, maxHp: hp,
@@ -116,8 +152,12 @@ function makeEnemy(def, x, y, mult) {
   };
 }
 
-function makeProjectile(x, y, vx, vy, dmg, r, color) {
-  return { kind: 'projectile', id: nextId(), x: x, y: y, vx: vx, vy: vy, dmg: dmg, r: r || 6, color: color || '#f2603f', life: 4 };
+// pierceBlocks : les projectiles de boss traversent les rochers (voir updateProjectiles)
+// au lieu de s'y arrêter, pour rester une vraie menace même quand le joueur se met à couvert.
+// fromPlayer : projectile appartenant au joueur (tourelle, onde de piques...) — vise les
+// ennemis au lieu du joueur, voir la branche dédiée dans updateProjectiles.
+function makeProjectile(x, y, vx, vy, dmg, r, color, pierceBlocks, fromPlayer) {
+  return { kind: 'projectile', id: nextId(), x: x, y: y, vx: vx, vy: vy, dmg: dmg, r: r || 6, color: color || '#f2603f', life: 4, pierceBlocks: !!pierceBlocks, fromPlayer: !!fromPlayer };
 }
 
 function makePendingBlast(x, y, radius, dmg, delay, color, hitsEnemies) {

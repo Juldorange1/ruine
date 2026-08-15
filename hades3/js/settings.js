@@ -102,6 +102,7 @@ function resetBinds() {
 function openSettings() {
   cancelCapture();
   buildSettingsRows();
+  syncAudioSettingsUI();
   document.getElementById('settingsModal').hidden = false;
 }
 function closeSettings() {
@@ -116,7 +117,45 @@ function mergeDefaults(loaded, defaults) {
   return { merged: merged, changed: changed };
 }
 
+// Curseur + champ numérique éditable, même motif que les modificateurs de défi
+// pré-run (editor.js DIFFICULTY_MOD_FIELDS) — musique et effets sonores réglables
+// indépendamment (demandé), 0 à 100%.
+var AUDIO_FIELDS = [
+  { rangeId: 'musicVolRange', valId: 'musicVolVal', get: function () { return AudioEngine.getMusicVolume(); }, set: function (v) { AudioEngine.setMusicVolume(v); } },
+  { rangeId: 'sfxVolRange', valId: 'sfxVolVal', get: function () { return AudioEngine.getSfxVolume(); }, set: function (v) { AudioEngine.setSfxVolume(v); } }
+];
+
+function syncAudioSettingsUI() {
+  AUDIO_FIELDS.forEach(function (f) {
+    var pct = Math.round(f.get() * 100);
+    document.getElementById(f.rangeId).value = pct;
+    document.getElementById(f.valId).value = pct;
+  });
+}
+
+function wireAudioSettings() {
+  AUDIO_FIELDS.forEach(function (f) {
+    document.getElementById(f.rangeId).addEventListener('input', function () {
+      var v = parseInt(this.value, 10);
+      f.set(v / 100);
+      document.getElementById(f.valId).value = v;
+    });
+    var numInput = document.getElementById(f.valId);
+    numInput.addEventListener('input', function () {
+      var v = parseInt(this.value, 10);
+      if (isNaN(v)) return;
+      v = Math.min(100, Math.max(0, v));
+      f.set(v / 100);
+      document.getElementById(f.rangeId).value = v;
+    });
+    numInput.addEventListener('blur', syncAudioSettingsUI);
+  });
+}
+
 function initSettings() {
+  wireAudioSettings();
+  syncAudioSettingsUI();
+
   var loadedKeys = loadKeybinds();
   if (loadedKeys) {
     var km = mergeDefaults(loadedKeys, DEFAULT_KEYBINDS);
@@ -127,7 +166,6 @@ function initSettings() {
     saveKeybinds(KEYBINDS);
   }
 
-  document.getElementById('settingsBtn').addEventListener('click', openSettings);
   document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
   document.getElementById('settingsCloseX').addEventListener('click', closeSettings);
   document.getElementById('resetBindsBtn').addEventListener('click', function () { resetBinds(); buildSettingsRows(); });

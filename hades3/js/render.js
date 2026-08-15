@@ -67,6 +67,57 @@ function drawGrassTuft(fx, x, y, scale, color) {
   fx.restore();
 }
 
+// Silhouette de décor "hero" (voir js3d/combat3d.js buildDuneRockArch/buildReedCluster/
+// buildBrazierStand/buildVoidObelisk) — équivalent 2D bien plus léger : un simple tracé
+// canvas baké une fois dans la texture de sol, pas une vraie géométrie 3D, mais assez
+// pour que le repli 2D ait lui aussi de vrais points d'intérêt au lieu d'un sol plat.
+function drawHeroSilhouette(fx, x, y, scale, themeName) {
+  fx.save();
+  fx.translate(x, y);
+  fx.scale(scale, scale);
+  if (themeName === 'Sables') {
+    fx.fillStyle = 'rgba(0,0,0,0.28)';
+    fx.beginPath(); fx.ellipse(0, 4, 26, 9, 0, 0, Math.PI * 2); fx.fill();
+    fx.fillStyle = '#6b5a3a';
+    fx.save(); fx.rotate(-0.28); fx.fillRect(-20, -34, 9, 34); fx.restore();
+    fx.save(); fx.rotate(0.28); fx.fillRect(11, -34, 9, 34); fx.restore();
+  } else if (themeName === 'Marécage') {
+    fx.fillStyle = 'rgba(20,60,45,0.4)';
+    fx.beginPath(); fx.ellipse(0, 0, 20, 12, 0, 0, Math.PI * 2); fx.fill();
+    fx.strokeStyle = '#3c6a34';
+    fx.lineWidth = 2;
+    fx.lineCap = 'round';
+    for (var i = 0; i < 7; i++) {
+      var a = (i / 7) * Math.PI * 2;
+      var rx = Math.cos(a) * 8, ry = Math.sin(a) * 5;
+      fx.beginPath();
+      fx.moveTo(rx, ry);
+      fx.quadraticCurveTo(rx + 3, ry - 16, rx + 6, ry - 26);
+      fx.stroke();
+    }
+  } else if (themeName === 'Braise') {
+    fx.fillStyle = 'rgba(0,0,0,0.3)';
+    fx.beginPath(); fx.ellipse(0, 6, 14, 6, 0, 0, Math.PI * 2); fx.fill();
+    fx.fillStyle = '#2c1c16';
+    fx.fillRect(-4, -10, 8, 16);
+    var glow = fx.createRadialGradient(0, -14, 0, 0, -14, 16);
+    glow.addColorStop(0, 'rgba(255,138,74,0.55)');
+    glow.addColorStop(1, 'rgba(255,138,74,0)');
+    fx.fillStyle = glow;
+    fx.beginPath(); fx.arc(0, -14, 16, 0, Math.PI * 2); fx.fill();
+  } else {
+    fx.fillStyle = 'rgba(0,0,0,0.3)';
+    fx.beginPath(); fx.ellipse(0, 8, 12, 5, 0, 0, Math.PI * 2); fx.fill();
+    fx.fillStyle = '#241f30';
+    fx.beginPath(); fx.moveTo(-6, 8); fx.lineTo(-3, -30); fx.lineTo(3, -30); fx.lineTo(6, 8); fx.closePath(); fx.fill();
+    fx.strokeStyle = '#b34bf2';
+    fx.lineWidth = 1.5;
+    fx.globalAlpha = 0.7;
+    fx.beginPath(); fx.ellipse(0, -14, 6, 2.4, 0, 0, Math.PI * 2); fx.stroke();
+  }
+  fx.restore();
+}
+
 function drawPebble(fx, x, y, r) {
   fx.save();
   fx.fillStyle = '#00000050';
@@ -134,6 +185,11 @@ function buildFloorTexture(w, h, theme) {
   }
   fx.restore();
 
+  var heroCount = 3 + Math.floor(Math.random() * 3);
+  for (var hs = 0; hs < heroCount; hs++) {
+    drawHeroSilhouette(fx, 60 + Math.random() * (w - 120), 60 + Math.random() * (h - 120), 0.9 + Math.random() * 0.5, theme ? theme.name : '');
+  }
+
   return off;
 }
 
@@ -179,6 +235,9 @@ var CHAPTER_THEMES = [
 
 function currentChapterTheme() {
   if (typeof CB === 'undefined' || !CB) return CHAPTER_THEMES[0];
+  // Armurerie/défis (voir js/game.js enterArmory, js/challenges.js) figent le thème visuel
+  // au lieu de le dériver de waveIndex — ce ne sont pas des salles de run normales.
+  if (CB.forcedChapterTheme != null) return CHAPTER_THEMES[CB.forcedChapterTheme % CHAPTER_THEMES.length];
   var idx = Math.floor(Math.min(CB.waveIndex, CB.totalWaves - 1) / ROOMS_PER_CHAPTER);
   return CHAPTER_THEMES[idx % CHAPTER_THEMES.length];
 }
@@ -207,10 +266,29 @@ function drawArenaBackground(ctx, w, h, t) {
     ctx.fillRect(0, 0, w, h);
   });
 
+  // Formes de salle non-rectangulaires (voir js/roomShapes.js) : tracé de la bordure
+  // suivant le vrai contour de la salle (polygone pour L/croix/haltère, cercle pour
+  // l'anneau) au lieu d'un simple strokeRect — le calcul d'échelle à l'écran reste
+  // inchangé (toujours basé sur la bounding box w x h, correcte quelle que soit la
+  // forme inscrite). Pas de lavis sombre sur les zones découpées : la texture de sol
+  // normale y reste visible (même décor que le reste), seuls les rochers (drawBlocks,
+  // zones 'wall' issues de carveZonesForRoomShape) marquent la zone infranchissable —
+  // un aplat sombre plat y ressemblait à une flaque/piscine plutôt qu'à un vrai décor.
+  var roomShape = (typeof CB !== 'undefined' && CB) ? CB.roomShape : null;
+
   ctx.save();
   ctx.strokeStyle = theme.border + '33';
   ctx.lineWidth = 3;
-  ctx.strokeRect(6, 6, w - 12, h - 12);
+  ctx.beginPath();
+  if (roomShape && roomShape.type === 'ring') {
+    ctx.arc(roomShape.cx, roomShape.cy, roomShape.rOuter, 0, Math.PI * 2);
+  } else {
+    var poly = (roomShape && roomShape.outerPolygon) ? roomShape.outerPolygon : [{ x: 6, y: 6 }, { x: w - 6, y: 6 }, { x: w - 6, y: h - 6 }, { x: 6, y: h - 6 }];
+    ctx.moveTo(poly[0].x, poly[0].y);
+    for (var pi = 1; pi < poly.length; pi++) ctx.lineTo(poly[pi].x, poly[pi].y);
+    ctx.closePath();
+  }
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -301,12 +379,19 @@ function drawShapeCanvas(ctx, shape, x, y, r, color, opts) {
   }
 }
 
+// Une teinte par zone bien séparée sur le cercle chromatique — converted_trap et
+// abyss_rift partageaient EXACTEMENT la même couleur (b34bf2) malgré des effets
+// totalement différents (piège vs téléportation), et grapple/chapter_relic étaient
+// trop proches de leurs voisines : plus aucune paire ne se confond maintenant.
 var ZONE_STYLES = {
   slow: { rgb: '120,180,255', ring: '#7db4ff', icon: '#dbeaff' },
   speed: { rgb: '255,224,120', ring: '#f2d060', icon: '#fff6d9' },
   heal: { rgb: '140,230,160', ring: '#8fe3a0', icon: '#e8ffec' },
   flame: { rgb: '255,110,70', ring: '#ff6e46', icon: '#ffe3d2' },
-  grapple: { rgb: '155,92,240', ring: '#9b5cf0', icon: '#ecdcff' }
+  grapple: { rgb: '155,92,240', ring: '#9b5cf0', icon: '#ecdcff' },
+  converted_trap: { rgb: '255,79,163', ring: '#ff4fa3', icon: '#ffd9ec' },
+  abyss_rift: { rgb: '75,232,242', ring: '#4be8f2', icon: '#d9fbff' },
+  chapter_relic: { rgb: '242,166,63', ring: '#f2a63f', icon: '#fff0d9' }
 };
 
 // Pièges : éléments mécaniques/environnementaux, pas des auras magiques — rendu séparé
@@ -394,6 +479,82 @@ function drawArrowTrap(ctx, z, alphaOverride) {
   ctx.restore();
 }
 
+// Habillage 2D miroir de buildZoneDressing (js3d/combat3d.js) pour heal/flame/grapple —
+// offsets calculés une seule fois et mis en cache sur la zone elle-même (z._dressing),
+// pour rester fixes d'une frame à l'autre plutôt que de scintiller à chaque appel.
+function drawZoneDressing(ctx, z, alphaOverride) {
+  var baseAlpha = alphaOverride != null ? alphaOverride : 1;
+  if (z.kind === 'heal') {
+    if (!z._dressing) {
+      z._dressing = [];
+      for (var i = 0; i < 4; i++) {
+        var a = (i / 4) * Math.PI * 2 + Math.random() * 0.5;
+        var r = 0.4 + Math.random() * 0.35;
+        z._dressing.push([Math.cos(a) * r, Math.sin(a) * r]);
+      }
+    }
+    ctx.save();
+    ctx.globalAlpha = baseAlpha * 0.85;
+    z._dressing.forEach(function (o) {
+      var px = z.x + o[0] * z.r, py = z.y + o[1] * z.r;
+      ctx.strokeStyle = '#2e5c2a';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py + 6);
+      ctx.lineTo(px, py - 6);
+      ctx.stroke();
+      ctx.fillStyle = '#8fe3a0';
+      ctx.shadowColor = '#8fe3a0';
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(px, py - 8, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    ctx.restore();
+    return;
+  }
+  if (z.kind === 'flame') {
+    if (!z._dressing) {
+      z._dressing = [];
+      for (var j = 0; j < 4; j++) {
+        var ea = Math.random() * Math.PI * 2, er = 0.3 + Math.random() * 0.35;
+        z._dressing.push([Math.cos(ea) * er, Math.sin(ea) * er]);
+      }
+    }
+    ctx.save();
+    ctx.globalAlpha = baseAlpha * 0.8;
+    ctx.fillStyle = 'rgba(10,6,4,0.5)';
+    ctx.beginPath();
+    ctx.arc(z.x, z.y, z.r * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    z._dressing.forEach(function (o) {
+      var px = z.x + o[0] * z.r, py = z.y + o[1] * z.r;
+      ctx.fillStyle = '#ff6e30';
+      ctx.shadowColor = '#ff5a1a';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+    ctx.restore();
+    return;
+  }
+  if (z.kind === 'grapple') {
+    ctx.save();
+    ctx.globalAlpha = baseAlpha * 0.9;
+    ctx.fillStyle = '#342c40';
+    ctx.beginPath();
+    ctx.ellipse(z.x, z.y, z.r * 0.34, z.r * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1e1826';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function drawZones(ctx, zones, t, alphaOverride) {
   zones.forEach(function (z) {
     if (z.kind === 'wall') {
@@ -415,6 +576,7 @@ function drawZones(ctx, zones, t, alphaOverride) {
     if (z.kind === 'trap_arrow') { drawArrowTrap(ctx, z, alphaOverride); return; }
     var style = ZONE_STYLES[z.kind];
     if (!style) return;
+    drawZoneDressing(ctx, z, alphaOverride);
     var pulse = 0.85 + Math.sin(t * 2.4 + z.x * 0.01) * 0.15;
     var baseAlpha = alphaOverride != null ? alphaOverride : 1;
     ctx.save();
@@ -536,6 +698,46 @@ function drawZones(ctx, zones, t, alphaOverride) {
         ctx.arc(z.x + Math.cos(ga) * z.r * 0.7, z.y + Math.sin(ga) * z.r * 0.7, 2, 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (z.kind === 'converted_trap') {
+      // Piège hérissé : une pique centrale entourée de pointes plus courtes — se lit
+      // comme "danger fixe", distinct d'un simple pictogramme de soin/vitesse.
+      for (var tpi = 0; tpi < 6; tpi++) {
+        var tpa = (Math.PI * 2 / 6) * tpi;
+        ctx.beginPath();
+        ctx.moveTo(z.x + Math.cos(tpa) * 4, z.y + Math.sin(tpa) * 4);
+        ctx.lineTo(z.x + Math.cos(tpa) * 16, z.y + Math.sin(tpa) * 16);
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(z.x, z.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (z.kind === 'abyss_rift') {
+      // Double spirale tournante : lit clairement comme "portail", pas un piège ni
+      // un simple bonus — deux anneaux excentrés qui tournent en sens opposés.
+      ctx.save();
+      ctx.translate(z.x, z.y);
+      ctx.rotate(t * 1.4);
+      ctx.beginPath(); ctx.arc(0, 0, 12, 0.2 * Math.PI, 1.6 * Math.PI); ctx.stroke();
+      ctx.rotate(-t * 2.6);
+      ctx.beginPath(); ctx.arc(0, 0, 7, 1.1 * Math.PI, 2.5 * Math.PI); ctx.stroke();
+      ctx.restore();
+    } else if (z.kind === 'chapter_relic') {
+      // Gemme facettée qui tourne + scintillement — se démarque nettement d'une
+      // simple aura, cohérent avec "objet précieux à ramasser une fois".
+      ctx.save();
+      ctx.translate(z.x, z.y);
+      ctx.rotate(Math.sin(t * 1.2) * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(0, -16); ctx.lineTo(9, -3); ctx.lineTo(6, 14); ctx.lineTo(-6, 14); ctx.lineTo(-9, -3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      var sparkA = t * 3;
+      ctx.globalAlpha = baseAlpha * (0.5 + 0.5 * Math.sin(sparkA));
+      ctx.beginPath();
+      ctx.arc(z.x + Math.cos(sparkA) * 13, z.y + Math.sin(sparkA * 1.3) * 13, 1.6, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   });
@@ -659,48 +861,134 @@ function drawPulseRings(ctx, rings) {
   });
 }
 
-function drawMines(ctx, mines) {
-  mines.forEach(function (m) {
-    var pulse = 0.7 + Math.sin(performance.now() / 130) * 0.3;
+// Présentoirs d'armes de l'armurerie (fallback 2D — voir buildPedestalMesh dans
+// js3d/combat3d.js pour l'équivalent 3D). Même icône que partout ailleurs (WEAPON_ICONS).
+function drawArmoryPedestals(ctx, pedestals, nearPedestal) {
+  (pedestals || []).forEach(function (ped) {
+    var isNear = nearPedestal === ped;
+    var color = ped.type === 1 ? '#e3b968' : '#7db4ff';
     ctx.save();
-    ctx.globalAlpha = m.armed ? 1 : 0.5;
-    ctx.shadowColor = '#f2b84b';
-    ctx.shadowBlur = m.armed ? 10 * pulse : 4;
-    ctx.fillStyle = '#3a2e42';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = isNear ? 22 : 12;
+    ctx.fillStyle = '#241c2c';
     ctx.beginPath();
-    ctx.arc(m.x, m.y, 10, 0, Math.PI * 2);
+    ctx.arc(ped.x, ped.y, ped.r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = m.armed ? '#f2b84b' : '#8a7a52';
+    ctx.strokeStyle = color;
     ctx.lineWidth = 2.5;
     ctx.stroke();
-    ctx.fillStyle = m.armed ? '#f2b84b' : '#8a7a52';
-    ctx.beginPath();
-    ctx.arc(m.x, m.y, 3, 0, Math.PI * 2);
-    ctx.fill();
-    if (m.armed) {
-      ctx.globalAlpha = 0.35 * pulse;
-      ctx.strokeStyle = '#f2b84b';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(m.x, m.y, MINE_TRIGGER_RADIUS, 0, Math.PI * 2);
-      ctx.stroke();
-    }
+    ctx.fillStyle = '#f0e6da';
+    ctx.font = '700 ' + Math.round(ped.r * 1.1) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(WEAPON_ICONS[ped.id] || '❓', ped.x, ped.y + 1);
     ctx.restore();
   });
+}
+
+// Nombre de dégâts par coup sur le mannequin (voir updateArmoryHitNumbers, combat.js) :
+// monte doucement puis s'efface — le montant du coup, jamais le total cumulé (déjà
+// affiché en continu dans le HUD).
+function drawArmoryHitNumbers(ctx, numbers) {
+  (numbers || []).forEach(function (n) {
+    var frac = clamp(n.life / n.maxLife, 0, 1);
+    var rise = (1 - frac) * ARMORY_HIT_NUMBER_RISE;
+    ctx.save();
+    ctx.globalAlpha = frac;
+    ctx.shadowColor = '#ff5a3c';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = '#ffb08a';
+    ctx.font = '800 22px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('-' + n.amount, n.x, n.y - 40 - rise);
+    ctx.restore();
+  });
+}
+
+function drawTurrets(ctx, turrets) {
+  turrets.forEach(function (tu) {
+    var pulse = 0.7 + Math.sin(performance.now() / 160) * 0.3;
+    ctx.save();
+    ctx.shadowColor = '#7db4ff';
+    ctx.shadowBlur = 10 * pulse;
+    ctx.fillStyle = '#241c2c';
+    ctx.beginPath();
+    ctx.arc(tu.x, tu.y, TURRET_R, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#7db4ff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.fillStyle = '#bfe6ff';
+    ctx.beginPath();
+    ctx.arc(tu.x, tu.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.3 * pulse;
+    ctx.strokeStyle = '#7db4ff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(tu.x, tu.y, TURRET_RANGE, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+// Vraie silhouette à deux pales (au lieu d'un simple V filiforme) : bien plus grosse et
+// détaillée, cohérente avec le nouveau maillage 3D (createBoomerangMesh équivalent,
+// voir js3d/combat3d.js) — même arme, même lecture visuelle des deux côtés du rendu.
+function drawBoomerang(ctx, bm) {
+  if (!bm) return;
+  var spin = performance.now() / 140;
+  var R = BOOMERANG_R;
+  ctx.save();
+  ctx.translate(bm.x, bm.y);
+  ctx.rotate(spin);
+  ctx.shadowColor = '#e3b968';
+  ctx.shadowBlur = 16;
+  var grd = ctx.createLinearGradient(-R, 0, R, 0);
+  grd.addColorStop(0, '#fff6d9');
+  grd.addColorStop(0.5, '#e3b968');
+  grd.addColorStop(1, '#a3742f');
+  ctx.fillStyle = grd;
+  ctx.strokeStyle = '#fff6d9cc';
+  ctx.lineWidth = 1.5;
+  [0, Math.PI].forEach(function (rot) {
+    ctx.save();
+    ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(R * 0.55, -R * 0.18, R, -R * 0.6);
+    ctx.quadraticCurveTo(R * 0.7, -R * 0.05, R * 0.32, R * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
+  ctx.beginPath();
+  ctx.arc(0, 0, R * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff6d9';
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawBrasier(ctx, b) {
   if (!b) return;
   ctx.save();
   ctx.shadowColor = '#ff6e46';
-  ctx.shadowBlur = 22;
-  var grd = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, BRASIER_RADIUS);
-  grd.addColorStop(0, 'rgba(255,224,150,0.95)');
-  grd.addColorStop(0.5, 'rgba(255,110,70,0.75)');
+  ctx.shadowBlur = 32;
+  var glowR = BRASIER_RADIUS * 1.4;
+  var grd = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, glowR);
+  grd.addColorStop(0, 'rgba(255,236,180,1)');
+  grd.addColorStop(0.45, 'rgba(255,130,80,0.9)');
   grd.addColorStop(1, 'rgba(255,60,30,0)');
   ctx.fillStyle = grd;
   ctx.beginPath();
-  ctx.arc(b.x, b.y, BRASIER_RADIUS, 0, Math.PI * 2);
+  ctx.arc(b.x, b.y, glowR, 0, Math.PI * 2);
+  ctx.fill();
+  // Coeur incandescent bien net, pour repérer sa position exacte même en mouvement rapide.
+  ctx.fillStyle = 'rgba(255,250,220,0.95)';
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, BRASIER_RADIUS * 0.32, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 }
@@ -719,29 +1007,6 @@ function drawSwordSwings(ctx, swings) {
     ctx.stroke();
     ctx.restore();
   });
-}
-
-function drawPlayerLaser(ctx, p) {
-  if (!p.laserActive) return;
-  ctx.save();
-  ctx.shadowColor = '#fff2c8';
-  ctx.shadowBlur = 16;
-  ctx.strokeStyle = '#fff8e0';
-  ctx.lineWidth = LASER_WIDTH_PLAYER * 0.5;
-  ctx.lineCap = 'round';
-  ctx.globalAlpha = 0.85;
-  ctx.beginPath();
-  ctx.moveTo(p.x, p.y);
-  ctx.lineTo(p.laserEndX, p.laserEndY);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = '#ffe9a8';
-  ctx.lineWidth = LASER_WIDTH_PLAYER * 0.22;
-  ctx.beginPath();
-  ctx.moveTo(p.x, p.y);
-  ctx.lineTo(p.laserEndX, p.laserEndY);
-  ctx.stroke();
-  ctx.restore();
 }
 
 function drawProjectiles(ctx, projectiles) {
@@ -844,6 +1109,7 @@ function drawEnemy(ctx, e) {
 
   var opts = { glow: true, tier: isBoss ? 5 : e.tier };
   if (e.invulnOn) opts.alpha = 0.45 + Math.sin(Date.now() / 60) * 0.15;
+  if (e.isElite) opts.ring = '#ffd700'; // repère doré, écrasé par les anneaux d'état plus urgents ci-dessous
   if (e.speedBuffTimer > 0) opts.ring = '#8fe3a0';
   if (e.shieldOn) opts.ring = '#88d4ff';
   if (e.telegraphOn || e.chargeTelegraphOn || e.slamTelegraphOn) opts.ring = '#ff5a3c';
@@ -1013,11 +1279,15 @@ function drawPlayer(ctx, p) {
   ctx.restore();
 }
 
-// Barre de charge au-dessus du joueur pendant la charge du météore (arme de type 1) —
-// visible en jeu, pas juste dans le HUD, puisque le joueur doit rester immobile pour charger.
+// Barre de charge au-dessus du joueur pendant la charge du météore OU de la charge
+// (arme de type 1) — visible en jeu, pas juste dans le HUD, puisque le joueur doit
+// rester immobile pour charger (voir p.w1Charging dans updatePlayer, générique aux
+// deux armes).
+var CHARGE_BAR_MAX_TIME = { meteor: METEOR_MAX_CHARGE, charge: CHARGE_MAX_CHARGE_TIME };
 function drawMeteorChargeBar(ctx, p) {
-  if (p.weapon1 !== 'meteor' || !p.w1Charging) return;
-  var frac = clamp(p.w1ChargeTime / METEOR_MAX_CHARGE, 0, 1);
+  var maxTime = CHARGE_BAR_MAX_TIME[p.weapon1];
+  if (!maxTime || !p.w1Charging) return;
+  var frac = clamp(p.w1ChargeTime / maxTime, 0, 1);
   var barW = 46, barH = 7;
   var x = p.x - barW / 2, y = p.y - p.r * 1.8 - 24;
   ctx.save();
@@ -1057,7 +1327,9 @@ function renderCombat(ctx, w, h, t) {
   drawZones(ctx, CB.zones || [], t);
   drawBlocks(ctx, CB.blocks);
   drawBlasts(ctx, CB.blasts);
-  drawMines(ctx, CB.mines || []);
+  drawTurrets(ctx, CB.turrets || []);
+  if (CB.isArmory) { drawArmoryPedestals(ctx, CB.armoryPedestals, CB.armoryNearPedestal); drawArmoryHitNumbers(ctx, CB.armoryHitNumbers); }
+  drawBoomerang(ctx, CB.boomerang);
   drawBrasier(ctx, CB.brasier);
   drawDashTrails(ctx, CB.dashTrails);
   drawGrappleRopes(ctx, CB.grappleRopes || []);
@@ -1065,8 +1337,8 @@ function renderCombat(ctx, w, h, t) {
   CB.enemies.forEach(function (e) { drawEnemy(ctx, e); });
   drawPlayer(ctx, CB.player);
   drawMeteorChargeBar(ctx, CB.player);
-  drawPlayerLaser(ctx, CB.player);
   drawProjectiles(ctx, CB.projectiles);
+  drawProjectiles(ctx, CB.knives || []);
   drawLasers(ctx, CB.lasers || []);
   drawPulseRings(ctx, CB.pulseRings || []);
   drawParticles(ctx, CB.particles);
@@ -1121,32 +1393,194 @@ function renderCombat(ctx, w, h, t) {
     ctx.restore();
   }
 
-  // Flash de bordure, discret et bref, pour signaler un coup reçu sans gêner la lecture du jeu.
-  if (CB.damageFlashTime > 0) {
-    var flashFrac = clamp(CB.damageFlashTime / DAMAGE_FLASH_DUR, 0, 1);
+  // Le flash de dégâts est géré par la surcouche HTML #damageFlash (voir updateHUD),
+  // commune aux rendus 2D et 3D — pas de duplication ici.
+}
+
+// ============================================================================
+// Hub explorable (menu principal) : une petite cour de temple qu'on traverse à
+// pied plutôt qu'un empilement de boutons. Même traitement de caméra inclinée
+// que le combat (ARENA_TILT_Y) pour rester cohérent visuellement.
+// ============================================================================
+
+function drawHubFloor(ctx, w, h, t) {
+  var grd = ctx.createRadialGradient(w / 2, h * 0.4, h * 0.15, w / 2, h * 0.5, h * 0.75);
+  grd.addColorStop(0, '#2a2032');
+  grd.addColorStop(1, '#120e18');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, 0, w, h);
+
+  // Dallage discret.
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 1;
+  var step = 55;
+  for (var gx = 0; gx <= w; gx += step) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+  for (var gy = 0; gy <= h; gy += step) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }
+  ctx.restore();
+
+  // Sentier plus clair menant du point d'apparition au portail : guide l'œil sans
+  // imposer de déplacement, le joueur reste libre d'aller directement à un PNJ.
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = '#f2d38f';
+  ctx.beginPath();
+  ctx.moveTo(w * 0.44, h);
+  ctx.lineTo(w * 0.56, h);
+  ctx.lineTo(w * 0.53, h * 0.16);
+  ctx.lineTo(w * 0.47, h * 0.16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Bordure ouvragée façon tapis de pierre.
+  ctx.save();
+  ctx.strokeStyle = '#e3b96833';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(14, 14, w - 28, h - 28);
+  ctx.restore();
+}
+
+function drawHubTorch(ctx, x, y, t, phase) {
+  var flick = 0.75 + Math.sin(t * 6 + phase) * 0.15 + Math.sin(t * 13 + phase) * 0.08;
+  ctx.save();
+  ctx.fillStyle = '#241d28';
+  ctx.fillRect(x - 4, y - 6, 8, 40);
+  ctx.shadowColor = '#ff8a4a';
+  ctx.shadowBlur = 26 * flick;
+  var grd = ctx.createRadialGradient(x, y - 10, 0, x, y - 10, 30 * flick);
+  grd.addColorStop(0, 'rgba(255,220,150,0.95)');
+  grd.addColorStop(0.5, 'rgba(255,120,60,0.6)');
+  grd.addColorStop(1, 'rgba(255,90,40,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(x, y - 10, 30 * flick, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// Icônes simples par point d'intérêt — pas besoin d'un sprite dédié, juste assez
+// lisible pour reconnaître portail/armes/réglages/statistiques au premier coup d'œil.
+function drawHubPoint(ctx, pt, t, isNear) {
+  var pulse = 0.85 + Math.sin(t * 2.2) * 0.15;
+  drawGroundShadow(ctx, pt.x, pt.y, pt.r * 1.1);
+
+  var color = pt.id === 'portal' ? '#9b5cf0' : pt.id === 'challenges' ? '#ff4fa3' : pt.id === 'weapons' ? '#e3b968' : pt.id === 'settings' ? '#7db4ff' : '#f2d38f';
+  var standH = pt.r * 0.7;
+  var y = pt.y - standH;
+
+  ctx.save();
+  ctx.shadowColor = color;
+  ctx.shadowBlur = isNear ? 30 : 18;
+  ctx.globalAlpha = 0.9;
+  var grd = ctx.createRadialGradient(pt.x, y, 0, pt.x, y, pt.r * pulse);
+  grd.addColorStop(0, shadeColor(color, 0.3));
+  grd.addColorStop(0.6, color);
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(pt.x, y, pt.r * pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = '#15101cdd';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(pt.x, y, pt.r * 0.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#f0e6da';
+  ctx.font = '700 18px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  var icon = pt.id === 'portal' ? '⛩' : pt.id === 'challenges' ? '🎯' : pt.id === 'weapons' ? '🚪' : pt.id === 'settings' ? '⚙' : '🏆';
+  ctx.fillText(icon, pt.x, y + 1);
+  ctx.restore();
+
+  if (isNear) {
     ctx.save();
-    var vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.max(w, h) * 0.62);
-    vg.addColorStop(0, 'rgba(255,60,60,0)');
-    vg.addColorStop(1, 'rgba(255,40,40,' + (0.32 * flashFrac) + ')');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.7;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.r + 12, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 }
 
+function renderHub(ctx, w, h, t) {
+  ctx.save();
+  ctx.clearRect(0, 0, w, h);
+
+  var scale = Math.min(w / HUB_W, h / (HUB_H * ARENA_TILT_Y));
+  var scaleY = scale * ARENA_TILT_Y;
+  var offX = (w - HUB_W * scale) / 2;
+  var offY = (h - HUB_H * scaleY) / 2;
+  ctx.translate(offX, offY);
+  ctx.scale(scale, scaleY);
+
+  drawHubFloor(ctx, HUB_W, HUB_H, t);
+  drawHubTorch(ctx, HUB_W * 0.08, HUB_H * 0.1, t, 0);
+  drawHubTorch(ctx, HUB_W * 0.92, HUB_H * 0.1, t, 2);
+  drawHubTorch(ctx, HUB_W * 0.08, HUB_H * 0.9, t, 4);
+  drawHubTorch(ctx, HUB_W * 0.92, HUB_H * 0.9, t, 1);
+
+  HUB.points.forEach(function (pt) { drawHubPoint(ctx, pt, t, HUB.nearPoint === pt); });
+  drawPlayer(ctx, HUB.player);
+
+  ctx.restore();
+}
+
 function updateHUD() {
   var p = CB.player;
-  document.getElementById('hpLabel').innerHTML = '<b>' + Math.round(CB.totalDamageTaken) + '</b> dégâts subis';
-  document.getElementById('hpLabel').classList.toggle('hit', CB.damageFlashTime > 0);
-  document.getElementById('waveIndicator').textContent = describeWaveIndex(Math.min(CB.waveIndex, CB.totalWaves - 1));
+  // En armurerie, ce même repère HUD affiche les dégâts INFLIGÉS au mannequin (dégâts
+  // subis par le joueur toujours à 0, aucun intérêt à l'afficher ici) — dérivé
+  // directement de sa perte de PV (maxHp - hp), aucun compteur séparé à maintenir.
+  if (CB.isArmory && CB.enemies[0]) {
+    var dummy = CB.enemies[0];
+    document.getElementById('hpLabel').innerHTML = '<b>' + Math.round(dummy.maxHp - dummy.hp) + '</b> dégâts infligés';
+    document.getElementById('hpLabel').classList.toggle('hit', (dummy.hitFlash || 0) > 0);
+  } else {
+    document.getElementById('hpLabel').innerHTML = '<b>' + Math.round(CB.totalDamageTaken) + '</b> dégâts subis';
+    document.getElementById('hpLabel').classList.toggle('hit', CB.damageFlashTime > 0);
+  }
+  document.getElementById('damageFlash').style.opacity = CB.damageFlashTime > 0 ? String(CB.damageFlashTime / DAMAGE_FLASH_DUR) : '0';
   document.getElementById('timerLabel').textContent = formatTime(CB.elapsed);
 
-  setAbilityRing('abilityDash', p.dashCd, p.dashCdMax || 1);
+  var promptEl = document.getElementById('armoryPrompt');
+  if (CB.isArmory) {
+    document.getElementById('waveIndicator').textContent = 'Armurerie';
+    if (CB.armoryNearPedestal) { promptEl.hidden = false; promptEl.textContent = 'Touche E — ' + weaponLabel(CB.armoryNearPedestal.id); }
+    else promptEl.hidden = true;
+  } else {
+    document.getElementById('waveIndicator').textContent = describeWaveIndex(Math.min(CB.waveIndex, CB.totalWaves - 1));
+    promptEl.hidden = true;
+  }
+
+  // Boomerang : pas de minuteur classique, "prêt" tant qu'aucun boomerang n'est en vol
+  // (voir updateBoomerang) — la bague affiche donc plein/vide selon sa présence.
+  if (p.weapon1 === 'boomerang') {
+    setAbilityRing('abilityDash', CB.boomerang ? 1 : 0, 1);
+  } else {
+    setAbilityRing('abilityDash', p.dashCd, p.dashCdMax || 1);
+  }
   setAbilityRing('abilitySpecial', p.specialCd, p.specialCdMax);
-  if (p.weapon2 === 'sprint') {
+  if (p.weapon2 === 'sprint' || p.weapon2 === 'mimic') {
     setAbilityRing('abilityPulse', p.w2ResourceMax - p.w2Resource, p.w2ResourceMax);
   } else {
     setAbilityRing('abilityPulse', p.pulseCd, p.pulseCdMax || 1);
+  }
+  // Mimétisme actif : affiche le nom de l'arme empruntée le temps de l'effet, puis
+  // revient au nom réel de l'arme équipée (appliqué une seule fois par défaut, voir
+  // applyWeaponHUDLabels dans game.js — sinon le libellé resterait figé sur l'emprunt).
+  if (p.weapon2 === 'mimic') {
+    var abilityNameEl = document.getElementById('abilityDash').querySelector('.ability-name');
+    var shownWeapon = (p.mimicActive && p.mimicWeapon) ? p.mimicWeapon : p.weapon1;
+    abilityNameEl.textContent = weaponLabel(shownWeapon);
   }
 }
 

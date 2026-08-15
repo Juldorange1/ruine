@@ -22,22 +22,30 @@ var ZONE_HEAL_PER_SEC = 12; // ennemis uniquement (ils ont un vrai pool de PV ut
 var ZONE_HEAL_PLAYER_PER_SEC = 2; // réduit les PV perdus affichés, seul indicateur qui compte pour le joueur
 var ZONE_FLAME_PER_SEC = 16;
 var CELL_REVISIT_FORBID_SEC = 15;
-var DASH_DMG = 48; // nerfé (était 68, +50% d'origine)
-var DASH_TRAIL_WIDTH = 46;
-var DASH_KNOCKBACK_FORCE = 400;
-var DASH_SLAM_BONUS_DMG = 70;
+// "Charge" (arme type 1) : nommées CHARGE_* mais réutilisent le mécanisme historique du
+// dash (isDashing/dashTimer/etc. dans entities.js) — voir tryPlayerCharge. Depuis le rework
+// charge-puis-relâche (comme la météorite), dégâts/poussée montent avec le temps maintenu,
+// entre les paires MIN/MAX ci-dessous (voir p.chargeFrac, résolu dans resolveChargeDamage).
+var CHARGE_MAX_CHARGE_TIME = 1.2;
+var CHARGE_MIN_DMG = 24;
+var CHARGE_MAX_DMG = 60;
+var CHARGE_TRAIL_WIDTH = 46;
+var CHARGE_MIN_KNOCKBACK_FORCE = 260;
+var CHARGE_MAX_KNOCKBACK_FORCE = 500;
+var CHARGE_BLOCK_KNOCKBACK_FORCE = 260; // repousse aussi les pierres (CB.blocks), pas juste les ennemis
+var WALL_SLAM_BONUS_DMG = 70; // bonus générique quand un ennemi repoussé (dash/pulse/pull/etc.) percute un obstacle
 var MIN_TELEPORT_DIST = CELL_SIZE * 5;
 var PULSE_RADIUS = 220;
 var PULSE_FORCE = 1040;
 var PASSIVE_DRAIN_PER_SEC = 2;
-var GRAPPLE_DMG = 60;
+var GRAPPLE_DMG = 42; // -30% (était 60)
 var GRAPPLE_DMG_RADIUS = 95;
 
 // ---------------- Pièges de terrain ----------------
 var SPIKE_TRAP_CYCLE = 2.6; // rétractées la plupart du temps, puis actives brièvement
 var SPIKE_TRAP_ACTIVE_DUR = 0.7;
 var SPIKE_TRAP_DMG_PER_SEC = 45;
-var TRAP_ARROW_SPEED = 380;
+var TRAP_ARROW_SPEED = 266; // -30% (était 380), cohérent avec le ralentissement global des projectiles
 var TRAP_ARROW_DMG = 22;
 var TRAP_ARROW_INTERVAL = 2.8;
 var TRAP_ARROW_TELEGRAPH = 0.6;
@@ -51,51 +59,98 @@ var METEOR_MAX_CHARGE = 2.5;
 var METEOR_MIN_DMG = 40;
 var METEOR_MAX_DMG = 220;
 var METEOR_TELEGRAPH = 0.15;
-var LASER_RANGE = 210;
-var LASER_WIDTH_PLAYER = 20;
-var LASER_DPS = 90;
-var MINE_MAX = 4;
-var MINE_RADIUS = 70;
-var MINE_DMG = 95;
-var MINE_ARM_DELAY = 0.3;
-var MINE_TRIGGER_RADIUS = 45;
-var MINE_MIN_ENEMY_DIST = CELL_SIZE * 2;
 var SWORD_RANGE = CELL_SIZE * 2;
 var SWORD_ARC = Math.PI * 0.75;
 var SWORD_DMG = 75;
-var BRASIER_SPEED = 160 * GAME_SPEED_MULT;
+var BRASIER_SPEED = 260 * GAME_SPEED_MULT;
 var BRASIER_RADIUS = 26;
 var BRASIER_DPS = 40;
-var TRAIL_INTERVAL = 0.12;
-var TRAIL_RADIUS = 38;
-var TRAIL_LIFE = 2.2;
 var SPRINT_SPEED_MULT = 1.5;
 var SPRINT_DRAIN_PER_SEC = 3;
 var SPRINT_REGEN_PER_SEC = 1;
-var SWAP_ENEMY_RADIUS = 550;
 var PULL_FORCE = 620;
 var PULL_DMG = 45;
-var DODGE_DUR = 0.16;
 
-var WEAPON1_IDS = ['dash', 'meteor', 'laser', 'mines', 'sword', 'flame'];
-var WEAPON2_IDS = ['pulse', 'dodge', 'swap', 'trail', 'sprint', 'pull'];
+// ---- Boomerang (type 1) ----
+// -20% vitesse / +20% dégâts (demandé) : un projectile plus lent mais bien plus lourd à
+// encaisser, cohérent avec sa nouvelle taille visuelle (voir createBoomerangMesh/
+// drawBoomerang) — un gros boomerang qui va vite aurait été illisible.
+var BOOMERANG_SPEED_OUT = 260 * 0.8;
+var BOOMERANG_SPEED_BACK = 220 * 0.8;
+var BOOMERANG_DMG = 30 * 1.2;
+var BOOMERANG_CATCH_RADIUS = 26;
+var BOOMERANG_R = 20; // bien plus gros (était 12), la hitbox suit le nouveau visuel
+var BOOMERANG_RECATCH_CD = 0.3; // délai avant de pouvoir relancer après rattrapage
+
+// ---- Tourelle (type 1) ----
+var TURRET_RANGE = 210; // même portée que l'ancien pistolet laser
+var TURRET_MAX = 4;
+var TURRET_FIRE_INTERVAL = 1.1;
+var TURRET_DMG = 16;
+var TURRET_PROJ_SPEED = 260;
+var TURRET_R = 16;
+
+// ---- Couteau (type 1) ----
+var KNIFE_RANGE = CELL_SIZE * 4;
+var KNIFE_SPEED = 340;
+var KNIFE_BASE_DMG = 22;
+var KNIFE_BOUNCE_BONUS_DMG = 9;
+var KNIFE_MAX_BOUNCES = 6;
+var KNIFE_R = 8;
+
+// ---- Onde de piques (type 1) ----
+var SPIKES_COUNT = 360;
+var SPIKES_DMG = 3; // divisé par 3 (était 9) : trop fort pour une attaque à 360° sans viser
+var SPIKES_SPEED = 300;
+var SPIKES_R = 4;
+
+// ---- Mimétisme (type 2) ----
+var MIMIC_RESOURCE_MAX = 50; // comme Sprint
+
+// ---- Invincibilité (type 2) ----
+var INVINCIBLE_DUR = 1.0;
+var INVINCIBLE_CD = 10.0;
+
+// ---- Piège (type 2) : transforme l'ennemi le plus proche (hors boss) en une vraie
+// tourelle hostile qui tire sur LE JOUEUR en continu (portée illimitée : elle "te tire
+// dessus toujours", peu importe où tu es dans la salle) — avant, c'était un pulse de
+// dégâts aux ennemis à proximité, invisible et sans effet apparent pour le joueur. ----
+var TRAPIFY_RADIUS = 550; // même valeur que l'ancien SWAP_ENEMY_RADIUS
+var TRAP_TURRET_FIRE_INTERVAL = 1.1; // même cadence que la tourelle posée (arme type 1)
+var TRAP_TURRET_DMG = 14;
+var TRAP_TURRET_PROJ_SPEED = 260;
+var TRAP_TURRET_VISUAL_R = 24; // petite embase nette, plus la grande zone translucide d'avant
+
+var WEAPON1_IDS = ['meteor', 'sword', 'flame', 'charge', 'boomerang', 'turret', 'knife', 'spikes360'];
+var WEAPON2_IDS = ['pulse', 'sprint', 'pull', 'mimic', 'invincible', 'trapify'];
 
 var WEAPON1_INFO = {
-  dash: { name: 'Dash', cdMax: 1.5, desc: 'Long dash, inflige des dégâts sur sa trajectoire.' },
   meteor: { name: 'Météore', cdMax: 1.8, desc: 'Maintiens (immobile) pour charger, relâche pour faire tomber un météore — dégâts proportionnels au temps de charge.' },
-  laser: { name: 'Laser', cdMax: 0, desc: 'Tire un laser en continu tant que la touche est maintenue.' },
-  mines: { name: 'Mines', cdMax: 0.4, desc: 'Pose une mine (4 max — la plus ancienne saute si tu dépasses).' },
   sword: { name: 'Épée', cdMax: 0.7, desc: 'Frappe en zone, 2 cases vers le curseur.' },
-  flame: { name: 'Brasier', cdMax: 0.15, desc: 'Dirige un brasier : vise où il doit aller.' }
+  flame: { name: 'Brasier', cdMax: 0.15, desc: 'Dirige un brasier : vise où il doit aller.' },
+  charge: { name: 'Charge', cdMax: 1.5, desc: 'Fonce vers la direction visée : inflige des dégâts et repousse ennemis et pierres.' },
+  boomerang: { name: 'Boomerang', cdMax: 0, desc: "Lance un unique boomerang à portée infinie — il revient après avoir heurté quelque chose. Se relance dès qu'il est rattrapé." },
+  turret: { name: 'Tourelle', cdMax: 0.5, desc: 'Pose une tourelle qui tire sur les ennemis à portée (4 max, espacées d\'au moins leur portée — en poser une 5e détruit la plus ancienne).' },
+  knife: { name: 'Couteau', cdMax: 0.8, desc: 'Lance un couteau qui rebondit sur murs, pierres et ennemis (4 cases de portée) — dégâts croissants à chaque rebond.' },
+  spikes360: { name: 'Onde de piques', cdMax: 2.6, desc: 'Tire 360 piques tout autour de toi.' }
 };
 var WEAPON2_INFO = {
   pulse: { name: 'Poussée', cdMax: 4.5, desc: 'Repousse tous les ennemis proches, sans dégâts.' },
-  dodge: { name: 'Esquive', cdMax: 1.0, desc: 'Petit dash sans dégâts.' },
-  swap: { name: 'Échange', cdMax: 2.0, desc: "Échange ta place avec l'ennemi le plus proche." },
-  trail: { name: 'Traînée', cdMax: 0, desc: 'Laisse une traînée de feu ou de boue derrière toi — change à chaque nouvelle vague.' },
   sprint: { name: 'Sprint', cdMax: 0, desc: '+50% de vitesse tant que maintenu, mais jauge deux fois plus courte que les autres armes de type 2.' },
-  pull: { name: 'Attraction', cdMax: 4.0, desc: 'Aspire les ennemis proches vers toi, sans dégâts.' }
+  pull: { name: 'Attraction', cdMax: 4.0, desc: 'Aspire les ennemis proches vers toi, sans dégâts.' },
+  mimic: { name: 'Mimétisme', cdMax: 0, desc: "S'attitre une arme de type 1 aléatoire à l'obtention ; tant que maintenu (jauge comme Sprint), transforme temporairement ton arme de type 1 en celle-ci." },
+  invincible: { name: 'Invincibilité', cdMax: INVINCIBLE_CD, desc: 'Devient invincible pendant 1 seconde.' },
+  trapify: { name: 'Piège', cdMax: 7.0, desc: "Transforme l'ennemi le plus proche (hors boss) en piège qui reste toute la salle." }
 };
+
+// Symbole affiché à côté du nom de l'arme (HUD, révélation d'armes, menu Armes) pour
+// identifier l'effet d'un coup d'œil — un seul jeu d'icônes, les ids type1/type2 ne se
+// recoupent jamais.
+var WEAPON_ICONS = {
+  meteor: '☄️', sword: '⚔️', flame: '🔥', charge: '💥', boomerang: '🪃', turret: '🗼', knife: '🔪', spikes360: '✴️',
+  pulse: '🌀', sprint: '👟', pull: '🧲', mimic: '🎭', invincible: '🛡️', trapify: '🪤'
+};
+function weaponLabel(id) { return (WEAPON_ICONS[id] || '') + ' ' + (WEAPON1_INFO[id] || WEAPON2_INFO[id]).name; }
 
 // Biais de tirage des armes (0 à 100% de chance relative en plus par arme), réglé depuis le
 // sous-menu Armes du menu principal (voir editor.js) et persisté d'une session à l'autre.
@@ -112,15 +167,30 @@ function pickWeightedWeapon(ids) {
   return ids[ids.length - 1];
 }
 
-function equipRandomWeapons(p) {
-  p.weapon1 = pickWeightedWeapon(WEAPON1_IDS);
-  p.weapon2 = pickWeightedWeapon(WEAPON2_IDS);
+// Séparé de equipRandomWeapons pour pouvoir équiper des armes déjà tirées au sort
+// plus tôt (voir startRunNow/editor.js, qui les révèle avant le début du combat)
+// sans les retirer une seconde fois.
+function applyWeapons(p, weapon1, weapon2) {
+  p.weapon1 = weapon1;
+  p.weapon2 = weapon2;
   p.dashCdMax = WEAPON1_INFO[p.weapon1].cdMax;
   p.pulseCdMax = WEAPON2_INFO[p.weapon2].cdMax;
-  // Sprint va 50% plus vite que les autres armes de type 2, mais sa jauge de charge
-  // ne fait que la moitié de celle des autres (contrepartie du gain de vitesse).
-  p.w2ResourceMax = p.weapon2 === 'sprint' ? 50 : 100;
+  // Sprint et Mimétisme vont/agissent tant que maintenus mais avec une jauge deux fois
+  // plus courte que les autres armes de type 2 (contrepartie de l'effet).
+  p.w2ResourceMax = (p.weapon2 === 'sprint' || p.weapon2 === 'mimic') ? MIMIC_RESOURCE_MAX : 100;
   p.w2Resource = p.w2ResourceMax;
+  p.mimicActive = false;
+  // Mimétisme : s'attitre une arme de type 1 aléatoire (différente de celle équipée) dès
+  // l'obtention, une fois pour toute la run — pas retirée à chaque activation.
+  p.mimicWeapon = null;
+  if (p.weapon2 === 'mimic') {
+    var choices = WEAPON1_IDS.filter(function (id) { return id !== p.weapon1; });
+    p.mimicWeapon = choices[Math.floor(Math.random() * choices.length)];
+  }
+}
+
+function equipRandomWeapons(p) {
+  applyWeapons(p, pickWeightedWeapon(WEAPON1_IDS), pickWeightedWeapon(WEAPON2_IDS));
 }
 
 // ---------------- Grille de cases (anti-camping) + collisions ennemi-ennemi ----------------
@@ -184,7 +254,7 @@ function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 // reste une zone. Appelé à l'init et à chaque nouveau chapitre (voir spawnWave).
 function applyZonesToArena(zones) {
   var walls = zones.filter(function (z) { return z.kind === 'wall'; })
-    .map(function (z) { return { id: nextId(), kind: 'block', x: z.x, y: z.y, r: z.r * 0.55 }; });
+    .map(function (z) { return { id: nextId(), kind: 'block', x: z.x, y: z.y, r: z.r * 0.55, isShapeCarve: !!z.isShapeCarve }; });
   CB.zones = zones.filter(function (z) { return z.kind !== 'wall'; });
   CB.blocks = walls;
 }
@@ -205,10 +275,13 @@ function initCombat(config) {
     dashTrails: [],
     grappleRopes: [],
     pulseRings: [],
-    mines: [],
+    turrets: [],
+    knives: [],
+    boomerang: null,
     brasier: null,
     swordSwings: [],
     blocks: [],
+    roomShape: null,
     player: makePlayer(pc.spawnX, pc.spawnY),
     phase: 'fighting',
     transitionTimer: 0,
@@ -223,7 +296,11 @@ function initCombat(config) {
     points: totalPoints(queue),
     difficultyMods: config.difficultyMods || DEFAULT_DIFFICULTY_MODS
   };
-  equipRandomWeapons(CB.player);
+  // Si les armes ont déjà été tirées au sort et révélées avant le combat (voir
+  // startRunNow/editor.js), on les applique telles quelles plutôt que d'en retirer
+  // d'autres — ce qui a été montré au joueur doit être ce avec quoi il commence.
+  if (config.weapons) applyWeapons(CB.player, config.weapons.weapon1, config.weapons.weapon2);
+  else equipRandomWeapons(CB.player);
   spawnWave(0);
   return CB;
 }
@@ -236,7 +313,7 @@ var WAVE_TRANSITION_DUR = 1.8; // assez long pour lire "Chapitre X — Salle Y" 
 // Un vrai combat de boss ne se laisse pas kiter à l'infini : au-delà de cette distance
 // au boss le plus proche, le joueur subit des dégâts constants et se fait ramener vers
 // le combat — CB.leashWarning (0 à 1) est lu par le rendu pour prévenir avant que ça pique.
-var BOSS_LEASH_RADIUS = 860; // proportionnel à la nouvelle hauteur d'arène (ARENA_H=1140), avec marge au démarrage d'une salle de boss
+var BOSS_LEASH_RADIUS_RATIO = 288 / 492; // proportionnel à l'arène, dont la taille varie désormais par run
 var BOSS_LEASH_PULL_FORCE = 260;
 var BOSS_LEASH_DMG_PER_SEC = 14;
 
@@ -260,37 +337,65 @@ var NECRO_SUMMON_DMG_PCT = 60;
 function spawnWave(index) {
   CB.waveIndex = index;
   CB.enemies = [];
+  // Un piège issu de l'arme "Piège" (type 2) ne dure que la salle où il a été posé —
+  // retiré explicitement ici plutôt que de lui donner un timer de vie, pour qu'il
+  // survive exactement jusqu'au changement de salle, ni plus ni moins.
+  CB.zones = (CB.zones || []).filter(function (z) { return z.kind !== 'converted_trap'; });
   // Nouveau chapitre = nouveau décor : le terrain change entièrement à chaque frontière
   // de chapitre (jamais au sein d'un même chapitre, pour ne pas déplacer le sol sous les pieds
-  // du joueur en pleine salle).
-  if (index % ROOMS_PER_CHAPTER === 0) applyZonesToArena(generateChapterTerrain(CB.player.x, CB.player.y));
+  // du joueur en pleine salle). Les bonus de relique du chapitre précédent (voir
+  // tryPlayerCollectRelic) ne survivent pas non plus au changement de chapitre.
+  if (index % ROOMS_PER_CHAPTER === 0) {
+    // Forme de salle tirée une fois par chapitre, jamais par salle (voir
+    // js/roomShapes.js) — jamais pour l'armurerie/les défis (rectangle forcé
+    // juste après leur propre applyZonesToArena, voir enterArmory/startChallenge).
+    CB.roomShape = pickRoomShapeTemplate(ARENA_W, ARENA_H);
+    applyZonesToArena(generateChapterTerrain(CB.player.x, CB.player.y, Math.floor(index / ROOMS_PER_CHAPTER), CB.roomShape));
+    CB.player.chapterDmgBonusMult = 1;
+    CB.player.chapterSpeedBonusMult = 1;
+    AudioEngine.setMusicTheme(Math.floor(index / ROOMS_PER_CHAPTER));
+  }
   var wave = CB.queue[index];
   var enemies = waveEnemies(wave);
   var p = CB.player;
   applyWaveStatsToPlayer(p, wave.playerStats);
   CB.isBossRoom = !!wave.isBossRoom;
+  // Musique : la tension (tempo/dissonance du pouls percussif, voir audio.js) monte au
+  // fil des salles d'un même chapitre et culmine à la salle de boss ; le motif rythmique
+  // change à CHAQUE salle (roomSeed), pas seulement à chaque chapitre — sans ça, la
+  // même boucle tournait identique pendant tout un chapitre.
+  var roomInChapter = index % ROOMS_PER_CHAPTER;
+  var tension = CB.isBossRoom ? 1 : roomInChapter / Math.max(1, ROOMS_PER_CHAPTER - 2);
+  AudioEngine.setMusicRoom(tension, index);
+  if (CB.isBossRoom) {
+    // Salle de boss = toujours un rectangle simple (espace de combat propre, ne
+    // perturbe pas le rayon de laisse/positionnement double-boss) — le reste du
+    // décor généré en début de chapitre reste, seuls les rochers de découpe de
+    // forme disparaissent.
+    CB.roomShape = makeRectangleRoomShape(ARENA_W, ARENA_H);
+    CB.blocks = CB.blocks.filter(function (b) { return !b.isShapeCarve; });
+  }
   CB.leashWarning = 0;
   for (var i = 0; i < enemies.length; i++) {
     var sp = enemies[i];
     var def = getEnemyDef(sp.shape, sp.tier);
-    var ex = clamp(sp.x, def.r, ARENA_W - def.r);
-    var ey = clamp(sp.y, def.r, ARENA_H - def.r);
+    var espawn = clampIntoRoom(sp.x, sp.y, def.r);
+    var ex = espawn[0], ey = espawn[1];
     // Écarte le point d'apparition s'il tombe trop près de la position actuelle
     // du joueur (les PV/la position ne sont pas réinitialisés entre les vagues).
     var dToPlayer = dist(ex, ey, p.x, p.y);
     if (dToPlayer < MIN_ENEMY_SPAWN_DIST) {
       var n = dToPlayer > 0.001 ? norm(ex - p.x, ey - p.y) : [0, -1, 1];
-      ex = clamp(p.x + n[0] * MIN_ENEMY_SPAWN_DIST, def.r, ARENA_W - def.r);
-      ey = clamp(p.y + n[1] * MIN_ENEMY_SPAWN_DIST, def.r, ARENA_H - def.r);
+      var espawn2 = clampIntoRoom(p.x + n[0] * MIN_ENEMY_SPAWN_DIST, p.y + n[1] * MIN_ENEMY_SPAWN_DIST, def.r);
+      ex = espawn2[0]; ey = espawn2[1];
     }
-    CB.enemies.push(makeEnemy(def, ex, ey, { hpPct: sp.hpPct, dmgPct: sp.dmgPct, spdPct: sp.spdPct, atkSpdPct: sp.atkSpdPct, sizePct: sp.sizePct }));
+    CB.enemies.push(makeEnemy(def, ex, ey, { hpPct: sp.hpPct, dmgPct: sp.dmgPct, spdPct: sp.spdPct, atkSpdPct: sp.atkSpdPct, sizePct: sp.sizePct, forceElite: sp.forceElite }));
   }
   // Brève invulnérabilité pour laisser au joueur le temps de réagir au nouveau décor,
   // sans jamais interrompre l'action : la vague suivante s'enchaîne immédiatement.
   p.invulnTimer = Math.max(p.invulnTimer, WAVE_START_GRACE);
   CB.phase = 'fighting';
 
-  if (p.weapon2 === 'trail') p.trailKind = Math.random() < 0.5 ? 'flame' : 'mud';
   if (p.weapon1 === 'flame' && !CB.brasier) CB.brasier = { x: p.x, y: p.y, targetX: p.x, targetY: p.y };
 }
 
@@ -305,6 +410,23 @@ function spawnBurst(x, y, color, count, speed) {
     var s = speed * (0.4 + Math.random() * 0.6);
     CB.particles.push(makeParticle(x, y, Math.cos(a) * s, Math.sin(a) * s, 0.35 + Math.random() * 0.3, color, 2 + Math.random() * 2.5));
   }
+}
+
+// Vélocité d'impulsion sur les pierres (CB.blocks) : la charge (arme type 1) est la
+// seule chose qui les repousse — décroît comme le knockback du joueur (knockVX/VY),
+// bornée à l'arène puisque les pierres n'ont sinon aucune limite de déplacement.
+function updateBlockKnockback(dt) {
+  CB.blocks.forEach(function (b) {
+    if (b.bvx || b.bvy) {
+      b.x += (b.bvx || 0) * dt; b.y += (b.bvy || 0) * dt;
+      b.bvx = (b.bvx || 0) * Math.pow(0.02, dt);
+      b.bvy = (b.bvy || 0) * Math.pow(0.02, dt);
+      if (Math.abs(b.bvx) < 4) b.bvx = 0;
+      if (Math.abs(b.bvy) < 4) b.bvy = 0;
+      var bxy = clampIntoRoom(b.x, b.y, b.r);
+      b.x = bxy[0]; b.y = bxy[1];
+    }
+  });
 }
 
 function resolveBlockCollision(e) {
@@ -324,6 +446,7 @@ function resolveBlockCollision(e) {
 
 function applyZoneEffects(entity, dt, isPlayer) {
   var speedMult = 1;
+  var nowInFlame = false;
   (CB.zones || []).forEach(function (z) {
     if (dist(entity.x, entity.y, z.x, z.y) > z.r) return;
     if (z.kind === 'slow') speedMult *= ZONE_SLOW_MULT;
@@ -340,8 +463,8 @@ function applyZoneEffects(entity, dt, isPlayer) {
         entity.hp = Math.min(entity.maxHp, entity.hp + ZONE_HEAL_PER_SEC * dt);
       }
     }
-    else if (z.kind === 'flame') { if (isPlayer) damagePlayer(ZONE_FLAME_PER_SEC * dt); else damageEnemy(entity, ZONE_FLAME_PER_SEC * dt); }
-    else if (z.kind === 'trailflame' && !isPlayer) damageEnemy(entity, ZONE_FLAME_PER_SEC * dt);
+    else if (z.kind === 'flame') { nowInFlame = true; if (isPlayer) damagePlayer(ZONE_FLAME_PER_SEC * dt); else damageEnemy(entity, ZONE_FLAME_PER_SEC * dt); }
+    else if (z.kind === 'trailflame' && !isPlayer) { nowInFlame = true; damageEnemy(entity, ZONE_FLAME_PER_SEC * dt); }
     else if (z.kind === 'trailmud' && !isPlayer) speedMult *= ZONE_SLOW_MULT;
     else if (z.kind === 'trap_spike') {
       var cyclePos = (CB.elapsed + (z.phaseOffset || 0)) % SPIKE_TRAP_CYCLE;
@@ -351,6 +474,10 @@ function applyZoneEffects(entity, dt, isPlayer) {
       }
     }
   });
+  // Bruit d'embrasement une seule fois, au moment où l'entité ENTRE dans le feu (pas à
+  // chaque frame de dégâts continus tant qu'elle y reste) — voir SFX.ignite, audio.js.
+  if (nowInFlame && !entity._inFlame) AudioEngine.sfx('ignite');
+  entity._inFlame = nowInFlame;
   return speedMult;
 }
 
@@ -377,6 +504,87 @@ function updateTraps(dt) {
   });
 }
 
+// Piège issu de l'arme type 2 "Piège" (voir tryPlayerTrapify) : tourelle hostile fixe,
+// à la position de l'ennemi transformé, qui tire sur le joueur à intervalles réguliers
+// — portée illimitée, elle vise toujours le joueur où qu'il soit dans la salle.
+function updateConvertedTraps(dt) {
+  var p = CB.player;
+  (CB.zones || []).forEach(function (z) {
+    if (z.kind !== 'converted_trap') return;
+    z.cd -= dt;
+    if (z.cd <= 0) {
+      var n = norm(p.x - z.x, p.y - z.y);
+      CB.projectiles.push(makeProjectile(z.x, z.y, n[0] * TRAP_TURRET_PROJ_SPEED, n[1] * TRAP_TURRET_PROJ_SPEED, TRAP_TURRET_DMG, 6, '#ff4fa3', false, false));
+      spawnBurst(z.x, z.y, '#ff4fa3', 6, 90);
+      AudioEngine.sfx('shoot');
+      z.cd = TRAP_TURRET_FIRE_INTERVAL;
+    }
+  });
+}
+
+// ---------------- Spécialités de chapitre : relique + failles de l'Abîme ----------------
+// Voir CHAPTER_IDENTITIES/generateChapterTerrain (waves.js) pour ce qui est généré par
+// chapitre. La relique change concrètement le personnage pour le reste du chapitre (pas
+// un simple bonus cosmétique) ; les failles remplacent le grappin dans le dernier
+// chapitre (aucun n'y est généré) par une téléportation par paires, sans viser.
+var RIFT_COOLDOWN = 1.0;
+var RIFT_DMG = 42; // même valeur que GRAPPLE_DMG : la faille remplace le grappin en chapitre 4
+var RIFT_DMG_RADIUS = 95;
+
+function tryPlayerCollectRelic(z) {
+  z.consumed = true;
+  var p = CB.player;
+  if (z.effect === 'dmg') {
+    p.chapterDmgBonusMult = RELIC_DMG_BONUS_MULT;
+    applyWaveStatsToPlayer(p, CB.queue[CB.waveIndex].playerStats);
+  } else if (z.effect === 'speed') {
+    p.chapterSpeedBonusMult = RELIC_SPEED_BONUS_MULT;
+    applyWaveStatsToPlayer(p, CB.queue[CB.waveIndex].playerStats);
+  } else if (z.effect === 'heal') {
+    CB.totalDamageTaken = Math.max(0, CB.totalDamageTaken - RELIC_HEAL_AMOUNT);
+  } else if (z.effect === 'invincible') {
+    p.invulnTimer = Math.max(p.invulnTimer, RELIC_INVINCIBLE_DUR);
+  }
+  spawnBurst(z.x, z.y, '#f2d38f', 22, 200);
+  triggerShake(5, 0.2);
+  AudioEngine.sfx('pickup');
+  CB.zones = CB.zones.filter(function (zz) { return zz !== z; });
+}
+
+function updateChapterHazards(dt) {
+  var p = CB.player;
+  if (p.riftCd > 0) p.riftCd = Math.max(0, p.riftCd - dt);
+  (CB.zones || []).forEach(function (z) {
+    if (z.kind === 'chapter_relic' && !z.consumed) {
+      if (dist(p.x, p.y, z.x, z.y) <= z.r + p.r) tryPlayerCollectRelic(z);
+    } else if (z.kind === 'abyss_rift' && p.riftCd <= 0) {
+      if (dist(p.x, p.y, z.x, z.y) <= z.r) {
+        var dest = null;
+        for (var i = 0; i < CB.zones.length; i++) {
+          var o = CB.zones[i];
+          if (o.kind === 'abyss_rift' && o.pairId === z.pairId && o !== z) { dest = o; break; }
+        }
+        if (dest) {
+          var riftOldX = p.x, riftOldY = p.y;
+          p.x = dest.x; p.y = dest.y;
+          p.riftCd = RIFT_COOLDOWN;
+          p.invulnTimer = Math.max(p.invulnTimer, 0.3);
+          spawnBurst(z.x, z.y, '#b34bf2', 14, 160);
+          spawnBurst(dest.x, dest.y, '#b34bf2', 14, 160);
+          // Dégâts sur tout le trajet, comme le grappin qu'elle remplace en chapitre 4
+          // (aucun grappin n'y est généré — voir CHAPTER_IDENTITIES).
+          CB.enemies.forEach(function (e) {
+            if (e.alive && pointNearSegment(e.x, e.y, riftOldX, riftOldY, p.x, p.y, RIFT_DMG_RADIUS * 2)) {
+              damageEnemy(e, RIFT_DMG * p.dmgMult);
+            }
+          });
+          triggerShake(6, 0.16);
+        }
+      }
+    }
+  });
+}
+
 // Laisse anti-fuite : dans une salle de boss, s'éloigner trop du combat inflige des
 // dégâts constants et ramène le joueur vers le(s) boss — comme un vrai combat de boss,
 // impossible de kiter à l'infini dans un coin de l'arène pour souffler indéfiniment.
@@ -389,15 +597,16 @@ function updateBossLeash(dt) {
     if (d < nearestD) { nearestD = d; nearest = e; }
   });
   if (!nearest) { CB.leashWarning = 0; return; }
-  var warnRadius = BOSS_LEASH_RADIUS * 0.75;
-  if (nearestD > BOSS_LEASH_RADIUS) {
+  var leashRadius = ARENA_W * BOSS_LEASH_RADIUS_RATIO;
+  var warnRadius = leashRadius * 0.75;
+  if (nearestD > leashRadius) {
     CB.leashWarning = 1;
     damagePlayer(BOSS_LEASH_DMG_PER_SEC * dt);
     var n = norm(nearest.x - p.x, nearest.y - p.y);
     p.knockVX = (p.knockVX || 0) + n[0] * BOSS_LEASH_PULL_FORCE * dt * 6;
     p.knockVY = (p.knockVY || 0) + n[1] * BOSS_LEASH_PULL_FORCE * dt * 6;
   } else if (nearestD > warnRadius) {
-    CB.leashWarning = (nearestD - warnRadius) / (BOSS_LEASH_RADIUS - warnRadius);
+    CB.leashWarning = (nearestD - warnRadius) / (leashRadius - warnRadius);
   } else {
     CB.leashWarning = 0;
   }
@@ -413,13 +622,24 @@ function updateZones(dt) {
 
 var DAMAGE_FLASH_DUR = 0.35;
 
+var PLAYER_HURT_SFX_COOLDOWN = 0.35;
+
 function damagePlayer(amount) {
   if (CB.player.invulnTimer > 0) return;
   CB.damageFlashTime = DAMAGE_FLASH_DUR;
   // PV infinis : jamais de mort, seul compte le total de dégâts subis (objectif = le minimiser).
   CB.player.hp -= amount;
   CB.totalDamageTaken += amount;
-  triggerShake(6, 0.15);
+  // Secousse volontairement discrète (voir #damageFlash pour le retour visuel principal) :
+  // une secousse trop forte à chaque coup devient vite fatigante sur un run de plusieurs minutes.
+  triggerShake(3, 0.12);
+  // Throttlé comme le SFX de coup porté (damageEnemy) : la saignée passive et les zones
+  // de dégâts continus appellent damagePlayer à chaque frame, un son à chaque appel serait
+  // un bourdonnement plutôt qu'un vrai retour "aïe".
+  if ((CB.elapsed - (CB.lastHurtSfxT != null ? CB.lastHurtSfxT : -1)) > PLAYER_HURT_SFX_COOLDOWN) {
+    AudioEngine.sfx('hurt');
+    CB.lastHurtSfxT = CB.elapsed;
+  }
 }
 
 function applyPassiveDrain(dt) {
@@ -430,34 +650,20 @@ function applyPassiveDrain(dt) {
   CB.totalDamageTaken += amount;
 }
 
-function tryPlayerDash(dirX, dirY) {
+function tryPlayerCharge(dirX, dirY, chargeFrac) {
   var p = CB.player;
   if (p.dashCd > 0 || p.isDashing) return;
   var n = norm(dirX, dirY);
   if (n[2] < 0.001) { n = [p.facingX, p.facingY, 1]; }
-  p.dashDealsDamage = true;
   p.isDashing = true;
   p.dashTimer = p.dashDurMax;
   p.dashDirX = n[0]; p.dashDirY = n[1];
   p.dashStartX = p.x; p.dashStartY = p.y;
+  p.chargeFrac = chargeFrac != null ? chargeFrac : 1;
   p.invulnTimer = Math.max(p.invulnTimer, p.dashDurMax + 0.08);
   p.dashCd = p.dashCdMax;
   spawnBurst(p.x, p.y, '#e3b968', 10, 140);
-}
-
-function tryPlayerDodge() {
-  var p = CB.player;
-  if (p.pulseCd > 0 || p.isDashing) return;
-  var n = norm(p.facingX, p.facingY);
-  if (n[2] < 0.01) n = [0, -1, 1];
-  p.dashDealsDamage = false;
-  p.isDashing = true;
-  p.dashTimer = DODGE_DUR;
-  p.dashDirX = n[0]; p.dashDirY = n[1];
-  p.dashStartX = p.x; p.dashStartY = p.y;
-  p.invulnTimer = Math.max(p.invulnTimer, DODGE_DUR + 0.06);
-  p.pulseCd = p.pulseCdMax;
-  spawnBurst(p.x, p.y, '#88d4ff', 8, 120);
+  AudioEngine.sfx('swing');
 }
 
 function pointNearSegment(px, py, x1, y1, x2, y2, width) {
@@ -468,20 +674,28 @@ function pointNearSegment(px, py, x1, y1, x2, y2, width) {
   return dist(px, py, cx, cy) <= width / 2;
 }
 
-function resolveDashDamage(p) {
+function resolveChargeDamage(p) {
   var x1 = p.dashStartX, y1 = p.dashStartY, x2 = p.x, y2 = p.y;
+  var frac = p.chargeFrac != null ? p.chargeFrac : 1;
+  var dmg = CHARGE_MIN_DMG + (CHARGE_MAX_DMG - CHARGE_MIN_DMG) * frac;
+  var knockback = CHARGE_MIN_KNOCKBACK_FORCE + (CHARGE_MAX_KNOCKBACK_FORCE - CHARGE_MIN_KNOCKBACK_FORCE) * frac;
   CB.dashTrails.push({ x1: x1, y1: y1, x2: x2, y2: y2, life: 0.3, maxLife: 0.3 });
-  if (!p.dashDealsDamage) {
-    spawnBurst((x1 + x2) / 2, (y1 + y2) / 2, '#88d4ff', 6, 90);
-    return;
-  }
   CB.enemies.forEach(function (e) {
-    if (e.alive && pointNearSegment(e.x, e.y, x1, y1, x2, y2, DASH_TRAIL_WIDTH)) {
-      damageEnemy(e, DASH_DMG * p.dmgMult);
+    if (e.alive && pointNearSegment(e.x, e.y, x1, y1, x2, y2, CHARGE_TRAIL_WIDTH)) {
+      damageEnemy(e, dmg * p.dmgMult);
       var kn = norm(e.x - x1, e.y - y1);
       if (kn[2] < 0.01) kn = [p.dashDirX, p.dashDirY, 1];
-      e.knockVX = kn[0] * DASH_KNOCKBACK_FORCE;
-      e.knockVY = kn[1] * DASH_KNOCKBACK_FORCE;
+      e.knockVX = kn[0] * knockback;
+      e.knockVY = kn[1] * knockback;
+    }
+  });
+  // Repousse aussi les pierres traversées par la charge (voir updateBlockKnockback).
+  CB.blocks.forEach(function (b) {
+    if (pointNearSegment(b.x, b.y, x1, y1, x2, y2, CHARGE_TRAIL_WIDTH + b.r)) {
+      var kn = norm(b.x - x1, b.y - y1);
+      if (kn[2] < 0.01) kn = [p.dashDirX, p.dashDirY, 1];
+      b.bvx = kn[0] * CHARGE_BLOCK_KNOCKBACK_FORCE;
+      b.bvy = kn[1] * CHARGE_BLOCK_KNOCKBACK_FORCE;
     }
   });
   spawnBurst((x1 + x2) / 2, (y1 + y2) / 2, '#e3b968', 8, 100);
@@ -509,6 +723,7 @@ function tryPlayerGrapple(mx, my) {
   p.specialCd = p.specialCdMax;
   spawnBurst(oldX, oldY, '#9b5cf0', 10, 140);
   spawnBurst(p.x, p.y, '#9b5cf0', 16, 190);
+  AudioEngine.sfx('teleport');
   // Dégâts sur tout le trajet parcouru (pas juste au point de chute) : quiconque se
   // trouve sur la corde encaisse le passage du grappin.
   CB.enemies.forEach(function (e) {
@@ -535,25 +750,7 @@ function tryPlayerPulse() {
   CB.pulseRings.push({ x: p.x, y: p.y, life: 0.45, maxLife: 0.45, radius: PULSE_RADIUS });
   spawnBurst(p.x, p.y, '#88d4ff', 26, 230);
   triggerShake(8, 0.22);
-}
-
-function tryPlayerSwap() {
-  var p = CB.player;
-  if (p.pulseCd > 0) return;
-  var best = null, bestD = SWAP_ENEMY_RADIUS;
-  CB.enemies.forEach(function (e) {
-    if (!e.alive) return;
-    var d = dist(p.x, p.y, e.x, e.y);
-    if (d < bestD) { bestD = d; best = e; }
-  });
-  if (!best) return;
-  var oldX = p.x, oldY = p.y;
-  p.x = best.x; p.y = best.y;
-  best.x = oldX; best.y = oldY;
-  p.invulnTimer = Math.max(p.invulnTimer, 0.15);
-  p.pulseCd = p.pulseCdMax;
-  spawnBurst(oldX, oldY, '#9b5cf0', 10, 140);
-  spawnBurst(p.x, p.y, '#9b5cf0', 10, 140);
+  AudioEngine.sfx('blast');
 }
 
 function tryPlayerPull() {
@@ -572,14 +769,54 @@ function tryPlayerPull() {
   CB.pulseRings.push({ x: p.x, y: p.y, life: 0.4, maxLife: 0.4, radius: PULSE_RADIUS });
   spawnBurst(p.x, p.y, '#c9a8ff', 20, 150);
   triggerShake(6, 0.18);
+  AudioEngine.sfx('blast');
 }
 
-// ---------------- Dispatch des armes équipées (type 1 = ex-dash, type 2 = ex-poussée) ----------------
+function tryPlayerInvincible() {
+  var p = CB.player;
+  if (p.pulseCd > 0) return;
+  p.invulnTimer = Math.max(p.invulnTimer, INVINCIBLE_DUR);
+  p.pulseCd = p.pulseCdMax;
+  spawnBurst(p.x, p.y, '#fff2c8', 18, 180);
+  triggerShake(4, 0.12);
+  AudioEngine.sfx('pickup');
+}
 
-function updateWeapon1(dt, p, w1, aimX, aimY, moveX, moveY) {
-  switch (p.weapon1) {
-    case 'dash':
-      if (w1.justPressed) tryPlayerDash(moveX, moveY);
+function tryPlayerTrapify() {
+  var p = CB.player;
+  if (p.pulseCd > 0) return;
+  var best = null, bestD = TRAPIFY_RADIUS;
+  CB.enemies.forEach(function (e) {
+    if (!e.alive || e.shape === 'boss') return;
+    var d = dist(p.x, p.y, e.x, e.y);
+    if (d < bestD) { bestD = d; best = e; }
+  });
+  if (!best) return;
+  var idx = CB.enemies.indexOf(best);
+  // Retiré directement (pas via killEnemy) : ce n'est pas une mise à mort, donc ni
+  // décompte de kill ni explosion de particules de mort.
+  if (idx >= 0) CB.enemies.splice(idx, 1);
+  CB.zones.push({ kind: 'converted_trap', x: best.x, y: best.y, r: TRAP_TURRET_VISUAL_R, cd: TRAP_TURRET_FIRE_INTERVAL * 0.5 });
+  p.pulseCd = p.pulseCdMax;
+  spawnBurst(best.x, best.y, '#ff4fa3', 20, 160);
+  triggerShake(5, 0.15);
+  AudioEngine.sfx('teleport');
+}
+
+// ---------------- Dispatch des armes équipées (type 1 ; type 2 = ex-poussée) ----------------
+
+function updateWeapon1(dt, p, w1, aimX, aimY, moveX, moveY, weaponKey) {
+  switch (weaponKey) {
+    case 'charge':
+      if (w1.justPressed && p.dashCd <= 0 && !p.isDashing && !p.w1Charging) { p.w1Charging = true; p.w1ChargeTime = 0; }
+      if (p.w1Charging) {
+        p.w1ChargeTime += dt;
+        if (w1.justReleased) {
+          var chargeFrac = clamp(p.w1ChargeTime / CHARGE_MAX_CHARGE_TIME, 0, 1);
+          p.w1Charging = false;
+          tryPlayerCharge(moveX, moveY, chargeFrac);
+        }
+      }
       break;
 
     case 'meteor':
@@ -592,37 +829,57 @@ function updateWeapon1(dt, p, w1, aimX, aimY, moveX, moveY) {
           var dmg = (METEOR_MIN_DMG + (METEOR_MAX_DMG - METEOR_MIN_DMG) * frac) * p.dmgMult;
           CB.blasts.push(makePendingBlast(p.w1AimX, p.w1AimY, METEOR_RADIUS, dmg, METEOR_TELEGRAPH, '#ff8a4a', true));
           spawnBurst(p.w1AimX, p.w1AimY, '#ff8a4a', 8, 70);
+          AudioEngine.sfx('blast');
           p.w1Charging = false;
           p.dashCd = p.dashCdMax;
         }
       }
       break;
 
-    case 'laser':
-      if (w1.held) {
-        var n = norm(aimX - p.x, aimY - p.y);
-        var dir = n[2] > 0.01 ? n : [p.facingX, p.facingY, 1];
-        p.laserEndX = p.x + dir[0] * LASER_RANGE;
-        p.laserEndY = p.y + dir[1] * LASER_RANGE;
-        p.laserActive = true;
-        CB.enemies.forEach(function (e) {
-          if (e.alive && pointNearSegment(e.x, e.y, p.x, p.y, p.laserEndX, p.laserEndY, LASER_WIDTH_PLAYER)) {
-            damageEnemy(e, LASER_DPS * p.dmgMult * dt);
-          }
-        });
-      } else {
-        p.laserActive = false;
+    case 'boomerang':
+      // Prêt tant qu'aucun boomerang n'est en vol (voir updateBoomerang) — pas de
+      // minuteur de recharge classique, mais un court délai (p.boomerangCd) après
+      // rattrapage avant de pouvoir le relancer.
+      if (w1.justPressed && !CB.boomerang && p.boomerangCd <= 0) {
+        var bn = norm(aimX - p.x, aimY - p.y);
+        var bdir = bn[2] > 0.01 ? bn : [p.facingX, p.facingY, 1];
+        CB.boomerang = { x: p.x, y: p.y, vx: bdir[0] * BOOMERANG_SPEED_OUT, vy: bdir[1] * BOOMERANG_SPEED_OUT, phase: 'out', hitSet: {} };
+        AudioEngine.sfx('shoot');
       }
       break;
 
-    case 'mines':
+    case 'turret':
       if (w1.justPressed && p.dashCd <= 0) {
-        var tooCloseToEnemy = CB.enemies.some(function (en) { return en.alive && dist(en.x, en.y, aimX, aimY) < MINE_MIN_ENEMY_DIST; });
-        if (!tooCloseToEnemy) {
-          CB.mines.push({ id: nextId(), x: aimX, y: aimY, r: MINE_RADIUS, armTimer: MINE_ARM_DELAY, armed: false, detonate: false, done: false });
-          if (CB.mines.length > MINE_MAX) detonateMine(CB.mines.shift());
+        var tooCloseToTurret = CB.turrets.some(function (tu) { return dist(tu.x, tu.y, aimX, aimY) < TURRET_RANGE; });
+        if (!tooCloseToTurret) {
+          CB.turrets.push({ id: nextId(), x: aimX, y: aimY, cd: TURRET_FIRE_INTERVAL * 0.5 });
+          if (CB.turrets.length > TURRET_MAX) CB.turrets.shift();
           p.dashCd = p.dashCdMax;
+          AudioEngine.sfx('ui');
         }
+      }
+      break;
+
+    case 'knife':
+      if (w1.justPressed && p.dashCd <= 0) {
+        var kn = norm(aimX - p.x, aimY - p.y);
+        var kdir = kn[2] > 0.01 ? kn : [p.facingX, p.facingY, 1];
+        CB.knives.push({ id: nextId(), x: p.x, y: p.y, vx: kdir[0] * KNIFE_SPEED, vy: kdir[1] * KNIFE_SPEED, dist: 0, bounces: 0, r: KNIFE_R, color: '#c9c9d9' });
+        p.dashCd = p.dashCdMax;
+        AudioEngine.sfx('shoot');
+      }
+      break;
+
+    case 'spikes360':
+      if (w1.justPressed && p.dashCd <= 0) {
+        for (var si = 0; si < SPIKES_COUNT; si++) {
+          var sa = (si / SPIKES_COUNT) * Math.PI * 2;
+          CB.projectiles.push(makeProjectile(p.x, p.y, Math.cos(sa) * SPIKES_SPEED, Math.sin(sa) * SPIKES_SPEED, SPIKES_DMG * p.dmgMult, SPIKES_R, '#e3b968', false, true));
+        }
+        spawnBurst(p.x, p.y, '#e3b968', 20, 160);
+        triggerShake(6, 0.2);
+        p.dashCd = p.dashCdMax;
+        AudioEngine.sfx('blast');
       }
       break;
 
@@ -640,12 +897,15 @@ function updateWeapon1(dt, p, w1, aimX, aimY, moveX, moveY) {
         });
         CB.swordSwings.push({ x: p.x, y: p.y, angle: sAngle, arc: SWORD_ARC, range: SWORD_RANGE, life: 0.18, maxLife: 0.18 });
         spawnBurst(p.x + sdir[0] * 40, p.y + sdir[1] * 40, '#fff2c8', 10, 120);
+        AudioEngine.sfx('swing');
         p.dashCd = p.dashCdMax;
       }
       break;
 
     case 'flame':
-      if (w1.justPressed && CB.brasier) { CB.brasier.targetX = aimX; CB.brasier.targetY = aimY; }
+      // Suit le curseur en continu tant que la touche est maintenue (pas juste au clic) —
+      // relâcher la touche laisse le brasier sur sa dernière position visée.
+      if (w1.held && CB.brasier) { CB.brasier.targetX = aimX; CB.brasier.targetY = aimY; }
       break;
   }
 }
@@ -656,14 +916,6 @@ function updateWeapon2(dt, p, w2) {
     case 'pulse':
       if (w2.justPressed) tryPlayerPulse();
       break;
-    case 'dodge':
-      if (w2.justPressed) tryPlayerDodge();
-      break;
-    case 'swap':
-      if (w2.justPressed) tryPlayerSwap();
-      break;
-    case 'trail':
-      break; // passif, géré directement dans updatePlayer
     case 'sprint':
       if (w2.held && p.w2Resource > 0) {
         sprintActive = true;
@@ -675,30 +927,115 @@ function updateWeapon2(dt, p, w2) {
     case 'pull':
       if (w2.justPressed) tryPlayerPull();
       break;
+    case 'mimic':
+      if (w2.held && p.w2Resource > 0 && p.mimicWeapon) {
+        p.mimicActive = true;
+        p.w2Resource = Math.max(0, p.w2Resource - SPRINT_DRAIN_PER_SEC * dt);
+      } else {
+        p.mimicActive = false;
+        p.w2Resource = Math.min(p.w2ResourceMax, p.w2Resource + SPRINT_REGEN_PER_SEC * dt);
+      }
+      break;
+    case 'invincible':
+      if (w2.justPressed) tryPlayerInvincible();
+      break;
+    case 'trapify':
+      if (w2.justPressed) tryPlayerTrapify();
+      break;
   }
   return sprintActive;
 }
 
-function detonateMine(mine) {
-  if (mine.done) return;
-  mine.done = true;
-  CB.enemies.forEach(function (e) {
-    if (e.alive && dist(e.x, e.y, mine.x, mine.y) <= mine.r) damageEnemy(e, MINE_DMG * CB.player.dmgMult);
+// ---- Tourelles (arme type 1 "turret") : posées, tirent seules sur l'ennemi le plus
+// proche à portée, comme un piège de terrain (voir updateTraps) mais côté joueur. ----
+function updateTurrets(dt) {
+  CB.turrets.forEach(function (tu) {
+    tu.cd -= dt;
+    if (tu.cd <= 0) {
+      var nearest = null, nearestD = TURRET_RANGE;
+      CB.enemies.forEach(function (e) {
+        if (!e.alive) return;
+        var d = dist(tu.x, tu.y, e.x, e.y);
+        if (d < nearestD) { nearestD = d; nearest = e; }
+      });
+      if (nearest) {
+        var n = norm(nearest.x - tu.x, nearest.y - tu.y);
+        CB.projectiles.push(makeProjectile(tu.x, tu.y, n[0] * TURRET_PROJ_SPEED, n[1] * TURRET_PROJ_SPEED, TURRET_DMG * CB.player.dmgMult, 6, '#7db4ff', false, true));
+        AudioEngine.sfx('shoot');
+      }
+      tu.cd = TURRET_FIRE_INTERVAL;
+    }
   });
-  spawnBurst(mine.x, mine.y, '#f2b84b', 20, 170);
-  triggerShake(7, 0.2);
 }
 
-function updateMines(dt) {
-  CB.mines.forEach(function (m) {
-    if (m.done) return;
-    if (!m.armed) { m.armTimer -= dt; if (m.armTimer <= 0) m.armed = true; return; }
-    for (var i = 0; i < CB.enemies.length; i++) {
-      if (CB.enemies[i].alive && dist(CB.enemies[i].x, CB.enemies[i].y, m.x, m.y) <= MINE_TRIGGER_RADIUS) { m.detonate = true; break; }
+// ---- Couteau (arme type 1 "knife") : rebondit sur pierres/murs et ennemis, dégâts
+// croissants par rebond, jusqu'à sa portée totale ou son nombre de rebonds max. ----
+function bounceKnife(k, nx, ny) {
+  var speed = Math.sqrt(k.vx * k.vx + k.vy * k.vy);
+  k.vx = nx * speed; k.vy = ny * speed;
+  k.bounces++;
+}
+
+function updateKnives(dt) {
+  CB.knives.forEach(function (k) {
+    var stepDist = Math.sqrt(k.vx * k.vx + k.vy * k.vy) * dt;
+    k.x += k.vx * dt; k.y += k.vy * dt; k.dist += stepDist;
+    for (var i = 0; i < CB.blocks.length; i++) {
+      var b = CB.blocks[i];
+      var bd = dist(k.x, k.y, b.x, b.y);
+      if (bd < KNIFE_R + b.r) { var bn = norm(k.x - b.x, k.y - b.y); bounceKnife(k, bn[0], bn[1]); break; }
     }
-    if (m.detonate) detonateMine(m);
+    CB.enemies.forEach(function (e) {
+      if (!e.alive) return;
+      if (dist(k.x, k.y, e.x, e.y) < KNIFE_R + e.hitR) {
+        damageEnemy(e, (KNIFE_BASE_DMG + k.bounces * KNIFE_BOUNCE_BONUS_DMG) * CB.player.dmgMult);
+        var en = norm(k.x - e.x, k.y - e.y);
+        bounceKnife(k, en[0], en[1]);
+      }
+    });
+    var kxy = clampIntoRoom(k.x, k.y, KNIFE_R);
+    if (kxy[0] !== k.x || kxy[1] !== k.y) {
+      var kn = norm(k.x - kxy[0], k.y - kxy[1]);
+      k.x = kxy[0]; k.y = kxy[1];
+      bounceKnife(k, kn[0], kn[1]);
+    }
   });
-  CB.mines = CB.mines.filter(function (m) { return !m.done; });
+  CB.knives = CB.knives.filter(function (k) { return k.dist < KNIFE_RANGE && k.bounces < KNIFE_MAX_BOUNCES; });
+}
+
+// ---- Boomerang (arme type 1 "boomerang") : sort en ligne droite jusqu'à heurter
+// quelque chose (ou le bord de l'arène), puis revient vers la position actuelle du
+// joueur — récupéré = prêt à relancer (voir dispatch dans updateWeapon1). ----
+function updateBoomerang(dt) {
+  var bm = CB.boomerang;
+  if (!bm) return;
+  bm.x += bm.vx * dt; bm.y += bm.vy * dt;
+  if (bm.phase === 'out') {
+    var hitSomething = false;
+    for (var i = 0; i < CB.blocks.length; i++) {
+      if (dist(bm.x, bm.y, CB.blocks[i].x, CB.blocks[i].y) < BOOMERANG_R + CB.blocks[i].r) { hitSomething = true; break; }
+    }
+    CB.enemies.forEach(function (e) {
+      if (e.alive && !bm.hitSet[e.id] && dist(bm.x, bm.y, e.x, e.y) < BOOMERANG_R + e.hitR) {
+        damageEnemy(e, BOOMERANG_DMG * CB.player.dmgMult);
+        bm.hitSet[e.id] = true;
+        hitSomething = true;
+      }
+    });
+    if (!pointInRoomShape(CB.roomShape, bm.x, bm.y, BOOMERANG_R)) hitSomething = true;
+    if (hitSomething) bm.phase = 'back';
+  } else {
+    var p = CB.player;
+    var n = norm(p.x - bm.x, p.y - bm.y);
+    bm.vx = n[0] * BOOMERANG_SPEED_BACK; bm.vy = n[1] * BOOMERANG_SPEED_BACK;
+    CB.enemies.forEach(function (e) {
+      if (e.alive && !bm.hitSet[e.id] && dist(bm.x, bm.y, e.x, e.y) < BOOMERANG_R + e.hitR) {
+        damageEnemy(e, BOOMERANG_DMG * CB.player.dmgMult);
+        bm.hitSet[e.id] = true;
+      }
+    });
+    if (dist(bm.x, bm.y, p.x, p.y) < BOOMERANG_CATCH_RADIUS) { CB.boomerang = null; p.boomerangCd = BOOMERANG_RECATCH_CD; }
+  }
 }
 
 function updateBrasier(dt) {
@@ -722,10 +1059,23 @@ function updatePlayer(dt, moveX, moveY, aimX, aimY, w1, w2) {
   if (p.dashCd > 0) p.dashCd = Math.max(0, p.dashCd - dt);
   if (p.specialCd > 0) p.specialCd = Math.max(0, p.specialCd - dt);
   if (p.pulseCd > 0) p.pulseCd = Math.max(0, p.pulseCd - dt);
+  if (p.boomerangCd > 0) p.boomerangCd = Math.max(0, p.boomerangCd - dt);
   if (p.invulnTimer > 0) p.invulnTimer = Math.max(0, p.invulnTimer - dt);
 
-  updateWeapon1(dt, p, w1, aimX, aimY, moveX, moveY);
   var sprintActive = updateWeapon2(dt, p, w2);
+
+  // Mimétisme (arme type 2) : substitue temporairement l'arme de type 1 active par
+  // celle qui lui a été attitrée, tant que maintenu — dashCdMax suit l'arme réellement
+  // en jeu à chaque instant pour que le rythme de recharge affiché reste correct.
+  var effWeapon1 = (p.weapon2 === 'mimic' && p.mimicActive && p.mimicWeapon) ? p.mimicWeapon : p.weapon1;
+  if (p._prevEffWeapon1 != null && p._prevEffWeapon1 !== effWeapon1 && p.w1Charging) {
+    p.w1Charging = false; // évite une charge météore orpheline si le mimétisme change d'arme en cours de charge
+  }
+  p._prevEffWeapon1 = effWeapon1;
+  p.dashCdMax = WEAPON1_INFO[effWeapon1].cdMax;
+  if (p.dashCd > p.dashCdMax) p.dashCd = p.dashCdMax;
+
+  updateWeapon1(dt, p, w1, aimX, aimY, moveX, moveY, effWeapon1);
 
   if (p.w1Charging) { moveX = 0; moveY = 0; }
 
@@ -738,22 +1088,13 @@ function updatePlayer(dt, moveX, moveY, aimX, aimY, w1, w2) {
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.dashTimer -= dt;
-    if (p.dashTimer <= 0) { p.isDashing = false; resolveDashDamage(p); }
+    if (p.dashTimer <= 0) { p.isDashing = false; resolveChargeDamage(p); }
   } else {
     if (moveX || moveY) { p.facingX = moveX; p.facingY = moveY; }
     p.vx = moveX * p.speed * zoneSpeedMult * sprintMult;
     p.vy = moveY * p.speed * zoneSpeedMult * sprintMult;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
-  }
-
-  if (p.weapon2 === 'trail' && (moveX || moveY) && !p.isDashing) {
-    p.trailTimer -= dt;
-    if (p.trailTimer <= 0) {
-      var trailZoneKind = p.trailKind === 'flame' ? 'trailflame' : 'trailmud';
-      CB.zones.push({ kind: trailZoneKind, x: p.x, y: p.y, r: TRAIL_RADIUS, life: TRAIL_LIFE, maxLife: TRAIL_LIFE });
-      p.trailTimer = TRAIL_INTERVAL;
-    }
   }
 
   if (p.knockVX || p.knockVY) {
@@ -765,8 +1106,8 @@ function updatePlayer(dt, moveX, moveY, aimX, aimY, w1, w2) {
     if (Math.abs(p.knockVY) < 4) p.knockVY = 0;
   }
 
-  p.x = clamp(p.x, p.r, ARENA_W - p.r);
-  p.y = clamp(p.y, p.r, ARENA_H - p.r);
+  var pxy = clampIntoRoom(p.x, p.y, p.r);
+  p.x = pxy[0]; p.y = pxy[1];
   // Le dash "téléporte" : il traverse murs et obstacles, seules les limites de l'arène l'arrêtent.
   if (!p.isDashing) resolveBlockCollision(p);
 }
@@ -785,6 +1126,19 @@ function damageEnemy(e, amount) {
   e.hp -= eff;
   CB.damageDealt += eff;
   spawnBurst(e.x, e.y, e.color, 5, 90);
+  // SFX de coup, anti-spam par ennemi : les sources de dégâts continues (drain, laser,
+  // brasier) rappellent damageEnemy à chaque frame — sans ce throttle, un bourdonnement
+  // au lieu d'un vrai retour sonore de coup.
+  if ((CB.elapsed - (e._lastHitSfxT != null ? e._lastHitSfxT : -1)) > 0.09) {
+    AudioEngine.sfx('hit');
+    e._lastHitSfxT = CB.elapsed;
+  }
+  // Nombre de dégâts flottant du mannequin d'entraînement (armurerie) : montant du coup,
+  // pas le total cumulé (déjà affiché en continu dans le HUD, voir updateHUD/render.js).
+  if (CB.isArmory && e.isArmoryDummy) {
+    CB.armoryHitNumbers = CB.armoryHitNumbers || [];
+    CB.armoryHitNumbers.push({ x: e.x, y: e.y, amount: Math.round(eff), life: 0.9, maxLife: 0.9 });
+  }
   if (e.hp <= 0) killEnemy(e);
 }
 
@@ -792,6 +1146,7 @@ function killEnemy(e) {
   e.alive = false;
   CB.killCount++;
   spawnBurst(e.x, e.y, e.color, 16, 150);
+  AudioEngine.sfx('kill');
   if (e.behavior === 'other_explode') {
     CB.blasts.push(makePendingBlast(e.x, e.y, e.def.blastRadius, e.def.blastDmg, 0.1, '#ff5a3c'));
   }
@@ -820,15 +1175,66 @@ function findBlockingObstacle(e, dirX, dirY) {
   return best;
 }
 
+// La limite de la salle (voir js/roomShapes.js — plus forcément un simple rectangle
+// depuis les formes de salle) : sans un vrai traitement dédié, un ennemi dont la
+// cible se trouve "à travers" un mur/coin de la forme relance sans arrêt la même
+// direction condamnée, et reste visiblement collé au mur (le clamp dur
+// d'updateEnemyAI le repousse chaque frame, sans jamais dévier sa vélocité — d'où
+// l'effet "coincé contre le mur"). Retourne la NORMALE du mur (vecteur unitaire
+// pointant vers l'intérieur de la salle) plutôt qu'un point — un mur n'est pas un
+// obstacle ponctuel, le traiter comme tel (calcul de côté par produit vectoriel
+// pensé pour un rocher) produisait une déviation aberrante quand le point de
+// contact tombait presque exactement sur la position de l'ennemi (mesuré : un
+// ennemi totalement figé contre l'intérieur d'un coin concave de forme en L).
+function findBlockingBoundary(e, dirX, dirY) {
+  var lookX = e.x + dirX * OBSTACLE_AVOID_LOOKAHEAD, lookY = e.y + dirY * OBSTACLE_AVOID_LOOKAHEAD;
+  if (pointInRoomShape(CB.roomShape, lookX, lookY, e.r)) return null;
+  var nearest = clampIntoRoom(lookX, lookY, e.r);
+  var n = norm(nearest[0] - lookX, nearest[1] - lookY);
+  if (n[2] < 0.01) return null;
+  return { normalX: n[0], normalY: n[1] };
+}
+
 function applySteerVelocity(e, dirX, dirY, speedMult) {
   var block = findBlockingObstacle(e, dirX, dirY);
+  var boundary = block ? null : findBlockingBoundary(e, dirX, dirY);
   if (block) {
     var toBx = block.x - e.x, toBy = block.y - e.y;
     var cross = dirX * toBy - dirY * toBx;
     var side = cross >= 0 ? -1 : 1;
     var perpX = -dirY * side, perpY = dirX * side;
-    var blend = norm(dirX * 0.5 + perpX, dirY * 0.5 + perpY);
+    // Composante directe très réduite (0.15, était 0.5) : un poids trop fort retirait
+    // l'ennemi vers l'obstacle qu'il est censé contourner, d'où le mouvement en dents
+    // de scie contre le caillou plutôt qu'un vrai contournement.
+    var blend = norm(dirX * 0.15 + perpX, dirY * 0.15 + perpY);
     if (blend[2] > 0.01) { dirX = blend[0]; dirY = blend[1]; }
+  } else if (boundary) {
+    // Glissement le long du mur : on retire la composante de la direction voulue qui
+    // pointe vers l'extérieur (le long de la normale) et on garde la composante
+    // tangente, orientée pour continuer globalement dans le sens visé plutôt que de
+    // faire demi-tour — l'ennemi longe le mur au lieu d'essayer de le traverser.
+    var tX = -boundary.normalY, tY = boundary.normalX;
+    var along = dirX * tX + dirY * tY;
+    if (along < 0) { tX = -tX; tY = -tY; }
+    var slide = norm(tX * 0.85 + boundary.normalX * 0.15, tY * 0.85 + boundary.normalY * 0.15);
+    if (slide[2] > 0.01) { dirX = slide[0]; dirY = slide[1]; }
+  }
+  if (block || boundary) {
+    // Lissage temporel de la direction de contournement (moyenne glissante avec la
+    // frame précédente) : indispensable dès qu'un amas de plusieurs rochers proches se
+    // dispute le titre de "obstacle le plus proche" d'une frame à l'autre — une
+    // hystérésis basée sur l'identité de l'obstacle ne suffit pas dans ce cas (mesuré :
+    // ~94% des frames changeaient de côté), alors que lisser directement la direction
+    // de sortie amortit l'oscillation quelle qu'en soit la cause exacte.
+    if (e._avoidDirX != null) {
+      var smoothed = norm(dirX * 0.3 + e._avoidDirX * 0.7, dirY * 0.3 + e._avoidDirY * 0.7);
+      if (smoothed[2] > 0.01) { dirX = smoothed[0]; dirY = smoothed[1]; }
+    }
+    e._avoidDirX = dirX;
+    e._avoidDirY = dirY;
+  } else {
+    e._avoidDirX = null;
+    e._avoidDirY = null;
   }
   e.vx = dirX * e.speed * (speedMult || 1) * (e.speedBuffMult || 1);
   e.vy = dirY * e.speed * (speedMult || 1) * (e.speedBuffMult || 1);
@@ -876,7 +1282,7 @@ function leadTarget(e, p, speed) {
 function fireProjectileAtLead(e, p, speed, dmg, r, color) {
   var lt = leadTarget(e, p, speed);
   var n = norm(lt[0] - e.x, lt[1] - e.y);
-  CB.projectiles.push(makeProjectile(e.x, e.y, n[0] * speed, n[1] * speed, dmg, r, color));
+  CB.projectiles.push(makeProjectile(e.x, e.y, n[0] * speed, n[1] * speed, dmg, r, color, e.shape === 'boss'));
 }
 
 // Vise la case du joueur + 2 cases voisines (au lieu d'une seule position) — force une
@@ -886,17 +1292,57 @@ function pickMortarCells(px, py) {
   var neighbors = shuffleArray([[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]);
   var cells = [[c[0], c[1]], [c[0] + neighbors[0][0], c[1] + neighbors[0][1]], [c[0] + neighbors[1][0], c[1] + neighbors[1][1]]];
   return cells.map(function (cc) {
-    return [
-      clamp(cc[0] * CELL_SIZE + CELL_SIZE / 2, 30, ARENA_W - 30),
-      clamp(cc[1] * CELL_SIZE + CELL_SIZE / 2, 30, ARENA_H - 30)
-    ];
+    return clampIntoRoom(cc[0] * CELL_SIZE + CELL_SIZE / 2, cc[1] * CELL_SIZE + CELL_SIZE / 2, 30);
   });
 }
 
 function randomArenaPointNear(x, y, minR, maxR) {
   var a = Math.random() * Math.PI * 2;
   var r = minR + Math.random() * (maxR - minR);
-  return [clamp(x + Math.cos(a) * r, 30, ARENA_W - 30), clamp(y + Math.sin(a) * r, 30, ARENA_H - 30)];
+  return clampIntoRoom(x + Math.cos(a) * r, y + Math.sin(a) * r, 30);
+}
+
+// Avance une charge (tank_charge/boss_ultimate) d'un pas, en s'arrêtant net si le pas
+// percuterait un rocher — sans ça, l'ennemi fonçait dans le mur puis resolveBlockCollision
+// (fin de updateEnemyAI) le repoussait hors du bloc à chaque frame pendant que la charge le
+// repoussait aussitôt dedans : il restait à trembler sur place contre le mur pendant toute
+// la durée de charge au lieu d'attaquer ("ne fait que rentrer dans des murs").
+var CHARGE_WALL_STUN_BONUS = 0.6;
+
+// ---------------- Filet de sécurité anti-blocage ----------------
+// L'évitement d'obstacle ci-dessus (findBlockingObstacle/findBlockingBoundary) reste un
+// steering réactif, pas un vrai pathfinding — au sommet concave d'une découpe de forme de
+// salle (L/croix/haltère), un ennemi peut tomber dans un minimum local où chaque petit pas
+// est aussitôt annulé par clampIntoRoom bien que sa vélocité désirée reste non nulle : figé
+// visiblement contre le mur/rocher (constaté empiriquement, voir combat.js). Plutôt que de
+// tenter de résoudre parfaitement la géométrie de chaque coin concave, on détecte l'absence
+// de progression réelle malgré une vélocité significative et on force une brève échappée
+// vers le centre de la salle (toujours atteignable en ligne droite pour nos formes, jamais
+// un vrai labyrinthe) — un filet de sécurité pragmatique plutôt qu'une solution générale.
+var STUCK_PROGRESS_DIST = 10; // unités parcourues en STUCK_TIME_THRESHOLD jugées "ça avance"
+var STUCK_TIME_THRESHOLD = 0.5; // secondes de non-progression avant intervention
+var STUCK_ESCAPE_DUR = 0.5; // durée de l'échappée forcée vers le centre
+
+function roomCentroid() {
+  var shape = (typeof CB !== 'undefined' && CB) ? CB.roomShape : null;
+  if (!shape) return [ARENA_W / 2, ARENA_H / 2];
+  if (shape.type === 'ring') return [shape.cx, shape.cy];
+  return [shape.w / 2, shape.h / 2];
+}
+
+function advanceCharge(e, dt) {
+  var nx = e.x + e.chargeDirX * e.def.chargeSpeed * dt;
+  var ny = e.y + e.chargeDirY * e.def.chargeSpeed * dt;
+  for (var i = 0; i < CB.blocks.length; i++) {
+    var b = CB.blocks[i];
+    if (dist(nx, ny, b.x, b.y) < e.hitR + b.r) {
+      spawnBurst(e.x, e.y, '#ffffff', 14, 160);
+      triggerShake(6, 0.15);
+      return false;
+    }
+  }
+  e.x = nx; e.y = ny;
+  return true;
 }
 
 function updateEnemyAI(e, dt, p) {
@@ -907,6 +1353,11 @@ function updateEnemyAI(e, dt, p) {
   if (e.spawnTimer > 0) e.spawnTimer = Math.max(0, e.spawnTimer - dt);
   if (e.speedBuffTimer > 0) { e.speedBuffTimer -= dt; if (e.speedBuffTimer <= 0) e.speedBuffMult = 1; }
 
+  // Mannequin d'entraînement de l'armurerie : totalement immobile, aucune IA (ni
+  // déplacement ni attaque) — juste une cible plantée au sol. Le flash de coup/stun
+  // décrémentés ci-dessus continuent de fonctionner normalement pour le retour visuel.
+  if (CB.isArmory) { e.vx = 0; e.vy = 0; return; }
+
   if (e.shape === 'boss') {
     e.fightTimer += dt;
     var enrageT = clamp((e.fightTimer - BOSS_ENRAGE_AFTER) / BOSS_ENRAGE_RAMP, 0, 1);
@@ -915,6 +1366,14 @@ function updateEnemyAI(e, dt, p) {
     e.speed = e.baseSpeed * (1 + enrageT * (BOSS_ENRAGE_MAX_MULT - 1) * 0.6);
   }
 
+  if (e._escapeTimer > 0) {
+    // Échappée anti-blocage en cours (voir le filet de sécurité plus haut) : ignore le
+    // comportement normal le temps de sortir du minimum local, plutôt que de laisser le
+    // steering réactif retenter indéfiniment la même direction condamnée.
+    e._escapeTimer -= dt;
+    var centroidEsc = roomCentroid();
+    steerToward(e, centroidEsc[0], centroidEsc[1]);
+  } else {
   switch (e.behavior) {
     case 'tank_basic':
       if (e.telegraphOn) {
@@ -929,7 +1388,7 @@ function updateEnemyAI(e, dt, p) {
         }
       } else {
         e.stateTimer -= dt;
-        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.ringTelegraph; }
+        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.ringTelegraph; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.ringTelegraph; }
         else if (!meleeContact(e, dt, p, 1, 0.7)) steerToward(e, p.x, p.y);
       }
       break;
@@ -963,18 +1422,21 @@ function updateEnemyAI(e, dt, p) {
         }
       } else {
         e.stateTimer -= dt;
-        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.slamTelegraph; }
+        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.slamTelegraph; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.slamTelegraph; }
         else if (d > e.r + p.r + 20) steerToward(e, p.x, p.y, 0.8); else { e.vx = 0; e.vy = 0; }
       }
       break;
 
     case 'tank_charge':
       if (e.charging) {
-        e.x += e.chargeDirX * e.def.chargeSpeed * dt;
-        e.y += e.chargeDirY * e.def.chargeSpeed * dt;
+        var tcOk = advanceCharge(e, dt);
         e.chargeTimer -= dt;
         if (!e.chargeHit && dist(e.x, e.y, p.x, p.y) < e.hitR + p.r + 4) { damagePlayer(e.dmg * 1.5); e.chargeHit = true; }
-        if (e.chargeTimer <= 0) { e.charging = false; e.stunTimer = 0.5; e.stateTimer = e.def.chargeEvery; }
+        if (!tcOk || e.chargeTimer <= 0) {
+          e.charging = false;
+          e.stunTimer = 0.5 + (tcOk ? 0 : CHARGE_WALL_STUN_BONUS);
+          e.stateTimer = e.def.chargeEvery;
+        }
       } else if (e.telegraphOn) {
         e.vx = 0; e.vy = 0;
         e.telegraphTimer -= dt;
@@ -987,7 +1449,7 @@ function updateEnemyAI(e, dt, p) {
         }
       } else {
         e.stateTimer -= dt;
-        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.chargeTelegraph; }
+        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.chargeTelegraph; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.chargeTelegraph; }
         else steerToward(e, p.x, p.y, 0.55);
       }
       break;
@@ -1025,7 +1487,7 @@ function updateEnemyAI(e, dt, p) {
       } else {
         steerRanged(e, p, d);
         e.stateTimer -= dt;
-        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.telegraph; }
+        if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.telegraph; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.telegraph; }
       }
       break;
 
@@ -1073,7 +1535,7 @@ function updateEnemyAI(e, dt, p) {
         e.stateTimer -= dt;
         if (d <= e.def.sweepRange) {
           e.vx = 0; e.vy = 0;
-          if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.sweepTelegraph; }
+          if (e.stateTimer <= 0) { e.telegraphOn = true; e.telegraphTimer = e.def.sweepTelegraph; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.sweepTelegraph; }
         } else {
           steerToward(e, p.x, p.y, 0.85);
         }
@@ -1139,11 +1601,13 @@ function updateEnemyAI(e, dt, p) {
 
       if (e.charging) {
         busy = true;
-        e.x += e.chargeDirX * e.def.chargeSpeed * dt;
-        e.y += e.chargeDirY * e.def.chargeSpeed * dt;
+        var buOk = advanceCharge(e, dt);
         e.chargeTimer -= dt;
         if (!e.chargeHit && dist(e.x, e.y, p.x, p.y) < e.hitR + p.r + 6) { damagePlayer(e.dmg * 1.4); e.chargeHit = true; }
-        if (e.chargeTimer <= 0) { e.charging = false; e.stunTimer = 0.4; }
+        if (!buOk || e.chargeTimer <= 0) {
+          e.charging = false;
+          e.stunTimer = 0.4 + (buOk ? 0 : CHARGE_WALL_STUN_BONUS);
+        }
       } else if (e.chargeTelegraphOn) {
         busy = true;
         e.vx = 0; e.vy = 0;
@@ -1156,7 +1620,7 @@ function updateEnemyAI(e, dt, p) {
         }
       } else {
         e.chargeCd = (e.chargeCd == null ? e.def.chargeEvery : e.chargeCd) - dt;
-        if (e.chargeCd <= 0) { e.chargeTelegraphOn = true; e.chargeTelegraphTimer = e.def.chargeTelegraph; e.chargeCd = e.def.chargeEvery; }
+        if (e.chargeCd <= 0) { e.chargeTelegraphOn = true; e.chargeTelegraphTimer = e.def.chargeTelegraph; e.chargeCd = e.def.chargeEvery; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.chargeTelegraph; }
       }
 
       if (e.slamTelegraphOn) {
@@ -1171,7 +1635,7 @@ function updateEnemyAI(e, dt, p) {
         }
       } else if (!e.charging && !e.chargeTelegraphOn) {
         e.slamCd = (e.slamCd == null ? e.def.slamEvery : e.slamCd) - dt;
-        if (e.slamCd <= 0) { e.slamTelegraphOn = true; e.slamTelegraphTimer = e.def.slamTelegraph; e.slamCd = e.def.slamEvery; }
+        if (e.slamCd <= 0) { e.slamTelegraphOn = true; e.slamTelegraphTimer = e.def.slamTelegraph; e.slamCd = e.def.slamEvery; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.slamTelegraph; }
       }
 
       e.laserCd = (e.laserCd == null ? e.def.laserEvery : e.laserCd) - dt;
@@ -1185,7 +1649,7 @@ function updateEnemyAI(e, dt, p) {
       if (e.volleyCd <= 0) {
         for (var vi = 0; vi < e.def.volleyCount; vi++) {
           var vAng = (Math.PI * 2 / e.def.volleyCount) * vi;
-          CB.projectiles.push(makeProjectile(e.x, e.y, Math.cos(vAng) * e.def.volleySpeed, Math.sin(vAng) * e.def.volleySpeed, e.def.volleyDmg, 7, '#ff2d55'));
+          CB.projectiles.push(makeProjectile(e.x, e.y, Math.cos(vAng) * e.def.volleySpeed, Math.sin(vAng) * e.def.volleySpeed, e.def.volleyDmg, 7, '#ff2d55', true));
         }
         e.volleyCd = e.def.volleyEvery;
       }
@@ -1212,7 +1676,7 @@ function updateEnemyAI(e, dt, p) {
         }
       } else {
         e.slamCd = (e.slamCd == null ? e.def.slamEvery : e.slamCd) - dt;
-        if (e.slamCd <= 0) { e.slamTelegraphOn = true; e.slamTelegraphTimer = e.def.slamTelegraph; e.slamCd = e.def.slamEvery; }
+        if (e.slamCd <= 0) { e.slamTelegraphOn = true; e.slamTelegraphTimer = e.def.slamTelegraph; e.slamCd = e.def.slamEvery; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.slamTelegraph; }
       }
 
       if (!busyGd) {
@@ -1240,7 +1704,7 @@ function updateEnemyAI(e, dt, p) {
         }
       } else {
         e.snipeCd = (e.snipeCd == null ? e.def.snipeEvery : e.snipeCd) - dt;
-        if (e.snipeCd <= 0) { e.oracleTelegraphOn = true; e.oracleTelegraphTimer = e.def.snipeTelegraph; e.snipeCd = e.def.snipeEvery; }
+        if (e.snipeCd <= 0) { e.oracleTelegraphOn = true; e.oracleTelegraphTimer = e.def.snipeTelegraph; e.snipeCd = e.def.snipeEvery; e._telegraphStartT = CB.elapsed; e._telegraphDurTotal = e.def.snipeTelegraph; }
       }
 
       e.mortarCd = (e.mortarCd == null ? e.def.mortarEvery : e.mortarCd) - dt;
@@ -1273,7 +1737,7 @@ function updateEnemyAI(e, dt, p) {
       if (e.shamanVolleyCd <= 0) {
         for (var svi = 0; svi < e.def.volleyCount; svi++) {
           var svAng = (Math.PI * 2 / e.def.volleyCount) * svi;
-          CB.projectiles.push(makeProjectile(e.x, e.y, Math.cos(svAng) * e.def.volleySpeed, Math.sin(svAng) * e.def.volleySpeed, e.def.volleyDmg, 6, e.color));
+          CB.projectiles.push(makeProjectile(e.x, e.y, Math.cos(svAng) * e.def.volleySpeed, Math.sin(svAng) * e.def.volleySpeed, e.def.volleyDmg, 6, e.color, true));
         }
         e.shamanVolleyCd = e.def.volleyEvery;
       }
@@ -1325,6 +1789,7 @@ function updateEnemyAI(e, dt, p) {
       }
       break;
   }
+  }
 
   var zMult = applyZoneEffects(e, dt, false);
   var moveX = e.vx * dt * zMult, moveY = e.vy * dt * zMult;
@@ -1335,6 +1800,13 @@ function updateEnemyAI(e, dt, p) {
       var cellOnlyY = cellOf(e.x, e.y + moveY);
       if (!isCellForbidden(e, cellOnlyX[0], cellOnlyX[1])) e.x += moveX;
       else if (!isCellForbidden(e, cellOnlyY[0], cellOnlyY[1])) e.y += moveY;
+      // Les 3 cases candidates (diagonale + les 2 axes) sont TOUTES interdites (zone
+      // exiguë déjà entièrement visitée dans les 15 dernières secondes, ex. corridor
+      // étroit d'une salle en haltère) : mieux vaut avancer quand même que geler
+      // complètement l'ennemi — signalé explicitement ("des ennemis se déplacent sans
+      // avancer") : la vélocité désirée restait non nulle mais la position ne bougeait
+      // plus jamais tant qu'aucune case voisine ne redevenait autorisée.
+      else { e.x += moveX; e.y += moveY; }
     } else {
       e.x += moveX; e.y += moveY;
     }
@@ -1348,15 +1820,30 @@ function updateEnemyAI(e, dt, p) {
     if (Math.abs(e.knockVY) < 4) e.knockVY = 0;
   }
 
-  e.x = clamp(e.x, e.r, ARENA_W - e.r);
-  e.y = clamp(e.y, e.r, ARENA_H - e.r);
+  var exy2 = clampIntoRoom(e.x, e.y, e.r);
+  e.x = exy2[0]; e.y = exy2[1];
+
+  // Filet de sécurité anti-blocage (voir le commentaire au-dessus d'updateEnemyAI) :
+  // vélocité désirée notable mais quasi aucune progression réelle depuis un moment ->
+  // minimum local (coin concave), on programme une échappée pour la frame suivante.
+  var speedNow = Math.sqrt(e.vx * e.vx + e.vy * e.vy);
+  if (speedNow > 20 && !CB.isArmory && e.shape !== 'boss') {
+    if (e._stuckAnchorX == null || dist(e.x, e.y, e._stuckAnchorX, e._stuckAnchorY) > STUCK_PROGRESS_DIST) {
+      e._stuckAnchorX = e.x; e._stuckAnchorY = e.y; e._stuckSinceT = CB.elapsed;
+    } else if (CB.elapsed - e._stuckSinceT > STUCK_TIME_THRESHOLD) {
+      e._escapeTimer = STUCK_ESCAPE_DUR;
+      e._stuckAnchorX = e.x; e._stuckAnchorY = e.y; e._stuckSinceT = CB.elapsed;
+    }
+  } else {
+    e._stuckAnchorX = null;
+  }
 
   var knockSpeed = Math.sqrt(e.knockVX * e.knockVX + e.knockVY * e.knockVY);
   var preBlockX = e.x, preBlockY = e.y;
   resolveBlockCollision(e);
   if (knockSpeed > 60 && dist(preBlockX, preBlockY, e.x, e.y) > 2) {
-    // Percuté contre un obstacle en plein repoussage de dash : gros dégâts bonus.
-    damageEnemy(e, DASH_SLAM_BONUS_DMG * CB.player.dmgMult);
+    // Percuté contre un obstacle en plein repoussage (dash/pulse/pull/etc.) : gros dégâts bonus.
+    damageEnemy(e, WALL_SLAM_BONUS_DMG * CB.player.dmgMult);
     spawnBurst(e.x, e.y, '#ffffff', 16, 180);
     triggerShake(7, 0.16);
     e.knockVX = 0; e.knockVY = 0;
@@ -1378,11 +1865,18 @@ function updateProjectiles(dt) {
   CB.projectiles.forEach(function (pr) {
     pr.x += pr.vx * dt; pr.y += pr.vy * dt; pr.life -= dt;
     if (pr.life <= 0) return;
-    if (pr.x < 0 || pr.x > ARENA_W || pr.y < 0 || pr.y > ARENA_H) { pr.life = 0; return; }
-    for (var i = 0; i < CB.blocks.length; i++) {
-      if (dist(pr.x, pr.y, CB.blocks[i].x, CB.blocks[i].y) < pr.r + CB.blocks[i].r) { pr.life = 0; return; }
+    if (outsideRoomShape(pr.x, pr.y)) { pr.life = 0; return; }
+    if (!pr.pierceBlocks) {
+      for (var i = 0; i < CB.blocks.length; i++) {
+        if (dist(pr.x, pr.y, CB.blocks[i].x, CB.blocks[i].y) < pr.r + CB.blocks[i].r) { pr.life = 0; return; }
+      }
     }
-    if (dist(pr.x, pr.y, p.x, p.y) < pr.r + p.r) { damagePlayer(pr.dmg); pr.life = 0; }
+    if (pr.fromPlayer) {
+      for (var j = 0; j < CB.enemies.length; j++) {
+        var e = CB.enemies[j];
+        if (e.alive && dist(pr.x, pr.y, e.x, e.y) < pr.r + e.hitR) { damageEnemy(e, pr.dmg); pr.life = 0; return; }
+      }
+    } else if (dist(pr.x, pr.y, p.x, p.y) < pr.r + p.r) { damagePlayer(pr.dmg); pr.life = 0; }
   });
   CB.projectiles = CB.projectiles.filter(function (pr) { return pr.life > 0; });
 }
@@ -1462,6 +1956,46 @@ function endCombat(won) {
   CB.phase = 'ended';
 }
 
+var ARMORY_INTERACT_MARGIN = 14;
+
+// Présentoirs d'armes de l'armurerie (voir enterArmory, js/game.js) : la proximité +
+// la touche d'interaction équipe l'arme dans le bon emplacement (type 1 ou type 2, sans
+// toucher à l'autre) et ouvre le panneau de description/biais (openArmoryPanel, editor.js).
+function updateArmoryPedestals(dt) {
+  var p = CB.player;
+  var near = null, nearD = Infinity;
+  (CB.armoryPedestals || []).forEach(function (ped) {
+    var d = dist(p.x, p.y, ped.x, ped.y);
+    if (d <= ped.r + ARMORY_INTERACT_MARGIN && d < nearD) { nearD = d; near = ped; }
+  });
+  CB.armoryNearPedestal = near;
+  var interactHeld = isDown('KeyE');
+  if (interactHeld && !CB.armoryPrevInteract && near) {
+    if (near.type === 1) applyWeapons(p, near.id, p.weapon2);
+    else applyWeapons(p, p.weapon1, near.id);
+    // Le brasier (arme 'flame') a besoin d'un état compagnon dédié (CB.brasier), normalement
+    // créé une seule fois en tout début de run (spawnWave) — ici l'arme peut être équipée à
+    // tout moment via un présentoir, donc on le crée/détruit à l'équipement pour le rendre
+    // testable (et éviter qu'il continue de brûler après avoir changé d'arme).
+    if (p.weapon1 === 'flame' && !CB.brasier) CB.brasier = { x: p.x, y: p.y, targetX: p.x, targetY: p.y };
+    else if (p.weapon1 !== 'flame') CB.brasier = null;
+    CB.armoryPanelWeapon = near.id;
+    applyWeaponHUDLabels();
+    openArmoryPanel(near.id);
+    AudioEngine.sfx('pickup');
+  }
+  CB.armoryPrevInteract = interactHeld;
+}
+
+// Nombres de dégâts flottants du mannequin d'entraînement — un par coup (voir
+// damageEnemy), montent légèrement puis s'effacent. Rendu 2D : drawArmoryHitNumbers
+// (render.js). Rendu 3D : pool de sprites texte, js3d/combat3d.js.
+var ARMORY_HIT_NUMBER_RISE = 34; // pixels/unités de jeu parcourus sur toute la durée de vie
+function updateArmoryHitNumbers(dt) {
+  (CB.armoryHitNumbers || []).forEach(function (n) { n.life -= dt; });
+  CB.armoryHitNumbers = (CB.armoryHitNumbers || []).filter(function (n) { return n.life > 0; });
+}
+
 var EMPTY_WEAPON_INPUT = { held: false, justPressed: false, justReleased: false };
 
 function updateCombat(dt, moveX, moveY, mouseX, mouseY, w1, w2) {
@@ -1481,20 +2015,30 @@ function updateCombat(dt, moveX, moveY, mouseX, mouseY, w1, w2) {
   updateSwordSwings(dt);
   updateZones(dt);
 
+  if (CB.isArmory) { updateArmoryPedestals(dt); updateArmoryHitNumbers(dt); }
+
   if (CB.phase === 'fighting') {
-    applyPassiveDrain(dt);
+    if (!CB.isArmory) applyPassiveDrain(dt);
     CB.enemies.forEach(function (e) { if (e.alive) updateEnemyAI(e, dt, CB.player); });
     CB.enemies = CB.enemies.filter(function (e) { return e.alive; });
     resolveEnemyCollisions();
+    updateBlockKnockback(dt);
     updateProjectiles(dt);
     updateBlasts(dt);
     updateLasers(dt);
-    updateMines(dt);
+    updateTurrets(dt);
+    updateKnives(dt);
+    updateBoomerang(dt);
     updateBrasier(dt);
     updateTraps(dt);
+    updateConvertedTraps(dt);
+    updateChapterHazards(dt);
     if (CB.isBossRoom) updateBossLeash(dt);
 
-    if (CB.enemies.length === 0) {
+    // L'armurerie n'a pas de condition de victoire (les mannequins ne meurent jamais,
+    // hp/dmg neutralisés à la création — voir enterArmory dans js/game.js) : garde
+    // explicite malgré tout, au cas où.
+    if (!CB.isArmory && CB.enemies.length === 0) {
       if (CB.waveIndex + 1 < CB.totalWaves) {
         CB.phase = 'transition';
         CB.transitionTimer = WAVE_TRANSITION_DUR;
@@ -1503,8 +2047,9 @@ function updateCombat(dt, moveX, moveY, mouseX, mouseY, w1, w2) {
       }
     }
   } else if (CB.phase === 'transition') {
+    updateBlockKnockback(dt);
     updateProjectiles(dt); updateBlasts(dt); updateLasers(dt);
-    updateMines(dt); updateBrasier(dt);
+    updateKnives(dt); updateBoomerang(dt); updateBrasier(dt);
     CB.transitionTimer -= dt;
     if (CB.transitionTimer <= 0) spawnWave(CB.waveIndex + 1);
   }

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bestiaire</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>🐾 Bestiaire</h1>
+  <div class="hud">
+    <span class="stat" title="Argent disponible.">💰 <b id="hud-argent">0</b> €</span>
+    <span class="stat" title="Revenu total de toutes les zones, par seconde.">📈 <b id="hud-revenu">0</b> €/s</span>
+    <span class="stat" title="Jetons doubleurs disponibles — utilisables sur la zone de ton choix.">🎟️ <b id="hud-doubleurs">0</b></span>
+    <span class="stat" title="Temps avant le prochain doubleur gratuit.">⏳ <b id="hud-prochain-doubleur">60s</b></span>
+    <button id="resetBtn" class="ghost-btn" title="Efface la sauvegarde et recommence">↺ Reset</button>
+  </div>
+</header>
+
+<div class="mainCol">
+  <section id="ameliorations" class="panel"></section>
+  <main id="zones"></main>
+</div>
+
+<aside id="journal">
+  <h2>📜 Journal</h2>
+  <ul id="journal-list"></ul>
+</aside>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/creatureArt.js"></script>
+<script src="js/data.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

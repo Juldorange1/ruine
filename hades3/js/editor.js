@@ -31,20 +31,6 @@ var DIFFICULTY_MOD_FIELDS = [
   { rangeId: 'modAtkSpdRange', valId: 'modAtkSpdVal', field: 'enemyAtkSpdPct' }
 ];
 
-// Tant qu'aucun run n'a été complété, les curseurs de défi et de biais d'armes restent
-// bloqués à leurs valeurs par défaut : le premier run se joue toujours "vanille".
-function isProgressLocked() { return loadRunsCompleted() === 0; }
-
-function applyDifficultyLock() {
-  var locked = isProgressLocked();
-  var hint = document.getElementById('prerunLockHint');
-  if (hint) hint.hidden = !locked;
-  DIFFICULTY_MOD_FIELDS.forEach(function (f) {
-    document.getElementById(f.rangeId).disabled = locked;
-    document.getElementById(f.valId).disabled = locked;
-  });
-}
-
 function syncDifficultyModsUI() {
   DIFFICULTY_MOD_FIELDS.forEach(function (f) {
     var v = DIFFICULTY_MODS[f.field];
@@ -52,7 +38,6 @@ function syncDifficultyModsUI() {
     document.getElementById(f.valId).value = v;
   });
   updateGoldMultDisplay();
-  applyDifficultyLock();
 }
 
 function buildDifficultyModsPanel() {
@@ -67,7 +52,7 @@ function buildDifficultyModsPanel() {
     numInput.addEventListener('input', function () {
       var v = parseInt(this.value, 10);
       if (isNaN(v)) return;
-      DIFFICULTY_MODS[f.field] = Math.min(300, Math.max(100, v));
+      DIFFICULTY_MODS[f.field] = Math.min(200, Math.max(100, v));
       document.getElementById(f.rangeId).value = DIFFICULTY_MODS[f.field];
       updateGoldMultDisplay();
       saveDifficultyMods(DIFFICULTY_MODS);
@@ -79,14 +64,18 @@ function buildDifficultyModsPanel() {
 function showMenuView() {
   document.getElementById('menuView').hidden = false;
   document.getElementById('prerunView').hidden = true;
-  document.getElementById('weaponsView').hidden = true;
+  document.getElementById('challengesView').hidden = true;
+  VIEW = 'menu';
+  if (!(window.Hub3D && window.Hub3D.available)) {
+    if (!HUB) initHub();
+    resizeHubCanvas();
+  }
   updateMenuStats();
 }
 
 function showPrerunView() {
   document.getElementById('menuView').hidden = true;
   document.getElementById('prerunView').hidden = false;
-  applyDifficultyLock();
 }
 
 // ---------------- Sous-menu Armes (biais de tirage, 0 à 100% par arme) ----------------
@@ -97,7 +86,7 @@ function buildWeaponBiasRow(id, info) {
 
   var nameEl = document.createElement('div');
   nameEl.className = 'weapon-bias-name';
-  nameEl.textContent = info.name;
+  nameEl.textContent = weaponLabel(id);
 
   var descEl = document.createElement('div');
   descEl.className = 'weapon-bias-desc';
@@ -107,7 +96,6 @@ function buildWeaponBiasRow(id, info) {
   controls.className = 'weapon-bias-controls';
   var range = document.createElement('input');
   range.type = 'range'; range.min = 0; range.max = 100; range.value = WEAPON_BIAS[id] || 0;
-  range.disabled = isProgressLocked();
   var valEl = document.createElement('span');
   valEl.className = 'weapon-bias-val';
   valEl.textContent = '+' + (WEAPON_BIAS[id] || 0) + '%';
@@ -126,43 +114,83 @@ function buildWeaponBiasRow(id, info) {
   return row;
 }
 
-function buildWeaponsView() {
-  var list1 = document.getElementById('weapon1List');
-  var list2 = document.getElementById('weapon2List');
-  list1.innerHTML = '';
-  list2.innerHTML = '';
-  WEAPON1_IDS.forEach(function (id) { list1.appendChild(buildWeaponBiasRow(id, WEAPON1_INFO[id])); });
-  WEAPON2_IDS.forEach(function (id) { list2.appendChild(buildWeaponBiasRow(id, WEAPON2_INFO[id])); });
-  document.getElementById('weaponsLockHint').hidden = !isProgressLocked();
+// ---------------- Panneau flottant de l'armurerie (voir enterArmory, js/game.js) ----------------
+// S'approcher d'un présentoir et appuyer sur E équipe l'arme ET ouvre ce panneau — même
+// ligne de biais que l'ancien menu Armes en page pleine (buildWeaponBiasRow ci-dessus),
+// affichée ici en surimpression du combat au lieu d'un écran séparé.
+function openArmoryPanel(weaponId) {
+  var info = WEAPON1_INFO[weaponId] || WEAPON2_INFO[weaponId];
+  var body = document.getElementById('armoryPanelBody');
+  body.innerHTML = '';
+  body.appendChild(buildWeaponBiasRow(weaponId, info));
+  // Le record d'or n'existe que pour les armes de type 1 (weapon1), tirées au sort en
+  // début de run — les armes de type 2 n'ont pas de "run avec cette arme" équivalent.
+  if (WEAPON1_INFO[weaponId]) {
+    var recordEl = document.createElement('div');
+    recordEl.className = 'weapon-bias-desc';
+    var rec = loadBestGoldRunByWeapon(weaponId);
+    recordEl.textContent = '🪙 Record en un run avec cette arme : ' + (rec != null ? rec : '—');
+    body.appendChild(recordEl);
+  }
+  document.getElementById('armoryPanel').hidden = false;
 }
 
-function showWeaponsView() {
-  document.getElementById('menuView').hidden = true;
-  document.getElementById('weaponsView').hidden = false;
-  buildWeaponsView();
+function closeArmoryPanel() {
+  if (CB) CB.armoryPanelWeapon = null;
+  var panel = document.getElementById('armoryPanel');
+  if (panel) panel.hidden = true;
 }
+
+// Le run est entièrement préparé (vague ET armes tirées au sort) avant que le combat
+// ne démarre réellement — les armes sont révélées sur un écran dédié (voir
+// showWeaponRevealView) que le joueur doit valider pour entrer dans la salle 1.
+var PENDING_RUN = null;
 
 function startRunNow() {
-  var queue = buildRunQueue(DIFFICULTY_MODS);
-  goToCombat({
-    queue: queue,
-    playerConfig: { spawnX: ARENA_W / 2, spawnY: ARENA_H - 90 },
+  randomizeArenaSize();
+  PENDING_RUN = {
+    queue: buildRunQueue(DIFFICULTY_MODS),
+    weapons: { weapon1: pickWeightedWeapon(WEAPON1_IDS), weapon2: pickWeightedWeapon(WEAPON2_IDS) },
     difficultyMods: {
       enemyDmgPct: DIFFICULTY_MODS.enemyDmgPct,
       enemyCountPct: DIFFICULTY_MODS.enemyCountPct, enemySpdPct: DIFFICULTY_MODS.enemySpdPct,
       enemyAtkSpdPct: DIFFICULTY_MODS.enemyAtkSpdPct
     }
+  };
+  showWeaponRevealView();
+}
+
+function showWeaponRevealView() {
+  document.getElementById('menuView').hidden = true;
+  document.getElementById('prerunView').hidden = true;
+  document.getElementById('weaponRevealView').hidden = false;
+  var w1 = PENDING_RUN.weapons.weapon1, w2 = PENDING_RUN.weapons.weapon2;
+  document.getElementById('revealWeapon1Name').textContent = weaponLabel(w1);
+  document.getElementById('revealWeapon1Desc').textContent = WEAPON1_INFO[w1].desc;
+  document.getElementById('revealWeapon2Name').textContent = weaponLabel(w2);
+  document.getElementById('revealWeapon2Desc').textContent = WEAPON2_INFO[w2].desc;
+}
+
+function confirmWeaponRevealAndFight() {
+  document.getElementById('weaponRevealView').hidden = true;
+  goToCombat({
+    queue: PENDING_RUN.queue,
+    playerConfig: { spawnX: ARENA_W / 2, spawnY: ARENA_H - 90 },
+    weapons: PENDING_RUN.weapons,
+    difficultyMods: PENDING_RUN.difficultyMods
   });
 }
 
 function initEditor() {
   var saved = loadDifficultyMods();
   if (saved) {
+    // Reclampe au cas où une valeur sauvegardée dépasserait l'ancien plafond (300%).
+    var clampDiff = function (v) { return Math.min(200, Math.max(100, v != null ? v : 100)); };
     DIFFICULTY_MODS = {
-      enemyDmgPct: saved.enemyDmgPct != null ? saved.enemyDmgPct : 100,
-      enemyCountPct: saved.enemyCountPct != null ? saved.enemyCountPct : 100,
-      enemySpdPct: saved.enemySpdPct != null ? saved.enemySpdPct : 100,
-      enemyAtkSpdPct: saved.enemyAtkSpdPct != null ? saved.enemyAtkSpdPct : 100
+      enemyDmgPct: clampDiff(saved.enemyDmgPct),
+      enemyCountPct: clampDiff(saved.enemyCountPct),
+      enemySpdPct: clampDiff(saved.enemySpdPct),
+      enemyAtkSpdPct: clampDiff(saved.enemyAtkSpdPct)
     };
   }
   buildDifficultyModsPanel();
@@ -173,11 +201,74 @@ function initEditor() {
     WEAPON_BIAS[id] = (savedBias && savedBias[id] != null) ? savedBias[id] : 0;
   });
 
-  document.getElementById('goToPrerunBtn').addEventListener('click', showPrerunView);
   document.getElementById('backToMenuFromPrerunBtn').addEventListener('click', showMenuView);
   document.getElementById('confirmRunBtn').addEventListener('click', startRunNow);
-  document.getElementById('weaponsBtn').addEventListener('click', showWeaponsView);
-  document.getElementById('backToMenuFromWeaponsBtn').addEventListener('click', showMenuView);
+  document.getElementById('confirmWeaponRevealBtn').addEventListener('click', confirmWeaponRevealAndFight);
+  document.getElementById('backToMenuFromChallengesBtn').addEventListener('click', showMenuView);
+  document.getElementById('armoryExitBtn').addEventListener('click', exitArmory);
+  document.getElementById('armoryPanelCloseBtn').addEventListener('click', closeArmoryPanel);
 
-  updateMenuStats();
+  showMenuView();
+}
+
+// ---------------- Défis (second portail du hub, voir js/challenges.js) ----------------
+
+// Scores totaux : simple somme des records individuels déjà obtenus (les défis pas
+// encore complétés comptent pour 0) — un défi peut battre son record de temps et son
+// record de dégâts indépendamment l'un de l'autre.
+function totalChallengeTime() {
+  var total = 0;
+  CHALLENGES.forEach(function (c) { total += loadChallengeBestTime(c.id) || 0; });
+  return total;
+}
+function totalChallengeDamage() {
+  var total = 0;
+  CHALLENGES.forEach(function (c) { total += loadChallengeBest(c.id) || 0; });
+  return total;
+}
+function challengesCompletedCount() {
+  return CHALLENGES.filter(function (c) { return loadChallengeBest(c.id) != null; }).length;
+}
+
+function buildChallengesView() {
+  var completed = challengesCompletedCount();
+  document.getElementById('challengesTotals').innerHTML =
+    '<span>' + completed + ' / ' + CHALLENGES.length + ' défis complétés</span>' +
+    '<span>⏱ Score total temps : <b>' + formatTime(totalChallengeTime()) + '</b></span>' +
+    '<span>🩸 Score total dégâts : <b>' + Math.round(totalChallengeDamage()) + '</b></span>';
+
+  var grid = document.getElementById('challengesGrid');
+  grid.innerHTML = '';
+  CHALLENGES.forEach(function (c) {
+    var card = document.createElement('div');
+    card.className = 'challenge-card';
+    var bestDmg = loadChallengeBest(c.id);
+    var bestTime = loadChallengeBestTime(c.id);
+    card.innerHTML =
+      '<div class="challenge-icon">' + c.icon + '</div>' +
+      '<h3>' + c.name + '</h3>' +
+      '<p class="challenge-desc">' + c.desc + '</p>' +
+      '<div class="challenge-record">⏱ Meilleur temps : <b>' + (bestTime != null ? formatTime(bestTime) : '—') + '</b></div>' +
+      '<div class="challenge-record">🩸 Moins de dégâts subis : <b>' + (bestDmg != null ? Math.round(bestDmg) : '—') + '</b></div>';
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-start';
+    btn.textContent = 'Combattre';
+    btn.addEventListener('click', function () { startChallenge(c.id); });
+    card.appendChild(btn);
+    grid.appendChild(card);
+  });
+}
+
+function showChallengesView() {
+  // Rejoignable depuis le hub (VIEW déjà 'menu', combatView déjà masquée) ET depuis le
+  // bouton "Retour" de l'écran de résultat d'un défi (VIEW encore 'combat', CB encore la
+  // session terminée) — on nettoie les deux sans condition pour ne jamais laisser le
+  // combat tourner en arrière-plan sous cet écran.
+  CB = null;
+  document.getElementById('combatView').hidden = true;
+  document.getElementById('menuView').hidden = true;
+  document.getElementById('challengesView').hidden = false;
+  VIEW = 'menu';
+  AudioEngine.stopMusic();
+  buildChallengesView();
 }

@@ -45,6 +45,53 @@ function chapterTintedColor(baseColor) {
 
 // ---------------- 2. Corps de base ----------------
 
+// Mannequin d'entraînement de l'armurerie (voir CB.isArmory, js/game.js) : un personnage
+// immobile en paille/bois, pas une créature — silhouette volontairement neutre et
+// reconnaissable comme "cible d'entraînement", jamais confondue avec un vrai ennemi.
+function drawDummyCreature(ctx, x, y, r, opts) {
+  opts = opts || {};
+  var color = opts.flashOnly ? '#ffffff' : '#c9b285';
+  var trim = opts.flashOnly ? '#ffffff' : '#6b5334';
+  ctx.save();
+  ctx.globalAlpha = opts.alpha != null ? opts.alpha : 1;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = opts.glow ? 10 : 0;
+
+  ctx.strokeStyle = trim;
+  ctx.lineWidth = r * 0.14;
+  ctx.beginPath();
+  ctx.moveTo(x, y + r * 0.85);
+  ctx.lineTo(x, y + r * 1.5);
+  ctx.stroke();
+
+  ctx.lineWidth = r * 0.22;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.85, y - r * 0.15);
+  ctx.lineTo(x + r * 0.85, y - r * 0.15);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.15, r * 0.5, r * 0.75, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shapeGradient(ctx, x, y + r * 0.15, r * 0.6, color);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y - r * 0.72, r * 0.4, 0, Math.PI * 2);
+  ctx.fillStyle = shapeGradient(ctx, x, y - r * 0.72, r * 0.4, color);
+  ctx.fill();
+
+  if (opts.ring) {
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = opts.ring;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 1.15, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function drawCreatureBody(ctx, shape, x, y, r, color, opts) {
   opts = opts || {};
   ctx.save();
@@ -78,22 +125,6 @@ function drawCreatureBody(ctx, shape, x, y, r, color, opts) {
   }
   ctx.fillStyle = shapeGradient(ctx, gradCx, gradCy, r, color);
   ctx.fill();
-
-  // Occlusion ambiante en bas à droite (à l'opposé de la lumière de shapeGradient,
-  // en haut à gauche) : renforce le volume 3D du corps sans avoir à redessiner sa
-  // silhouette exacte par forme — 'multiply' n'assombrit que les pixels déjà remplis.
-  if (!opts.flashOnly) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'multiply';
-    var ao = ctx.createRadialGradient(x + r * 0.3, y + r * 0.55, r * 0.05, x + r * 0.2, y + r * 0.4, r * 1.1);
-    ao.addColorStop(0, 'rgba(0,0,0,0.4)');
-    ao.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = ao;
-    ctx.beginPath();
-    ctx.arc(x, y, r * 1.35, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
 
   if (opts.ring) {
     ctx.shadowBlur = 0;
@@ -542,6 +573,56 @@ function drawBossSpectreAncien(ctx, e, x, y, r, color, opts, t) {
   partGhostRibbons(ctx, x, y, r * 1.3, color, t);
 }
 
+// ---------------- Télégraphe d'attaque (lever d'arme avant le coup) ----------------
+// Générique, superposé PAR-DESSUS n'importe quel renderer plutôt que codé dans chacun
+// des 20 (demande explicite : on doit VOIR l'ennemi se préparer à frapper, surtout les
+// boss) — une lame lumineuse se lève derrière la créature puis s'abat en rythme avec le
+// minuteur de télégraphe réel (e._telegraphStartT/e._telegraphDurTotal, posés à chaque
+// déclenchement dans combat.js), et un anneau d'alerte se resserre en même temps.
+function isEnemyTelegraphing(e) {
+  return !!(e.telegraphOn || e.chargeTelegraphOn || e.slamTelegraphOn || e.oracleTelegraphOn);
+}
+
+function enemyTelegraphFrac(e, t) {
+  if (!e._telegraphDurTotal) return 0;
+  return clamp((t - (e._telegraphStartT || 0)) / e._telegraphDurTotal, 0, 1);
+}
+
+function partTelegraphRaise(ctx, x, y, r, frac, isBoss) {
+  var reach = r * (isBoss ? 2.1 : 1.45);
+  // Lame "levée" en arrière au début (frac=0), qui s'abat vers l'avant/le bas à
+  // l'approche du coup (frac=1) — lecture immédiate d'un geste qui se prépare puis part.
+  var liftAngle = -1.1 + frac * 1.7;
+  ctx.save();
+  ctx.translate(x, y - r * 0.55);
+  ctx.rotate(liftAngle);
+  ctx.shadowColor = '#ff5a3c';
+  ctx.shadowBlur = 8 + frac * 16;
+  ctx.globalAlpha = 0.5 + frac * 0.5;
+  ctx.fillStyle = '#fff2c0';
+  ctx.strokeStyle = '#ff5a3cc0';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-reach * 0.09, 0);
+  ctx.lineTo(reach * 0.09, 0);
+  ctx.lineTo(reach * 0.045, -reach);
+  ctx.lineTo(0, -reach * 1.14);
+  ctx.lineTo(-reach * 0.045, -reach);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(255,90,60,' + (0.22 + frac * 0.55).toFixed(2) + ')';
+  ctx.lineWidth = 2 + frac * 2.5;
+  ctx.beginPath();
+  ctx.arc(x, y, r * (1.45 - frac * 0.35), 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ---------------- 5. Registre + dispatcher ----------------
 
 var ENEMY_RENDERERS = {
@@ -552,9 +633,13 @@ var ENEMY_RENDERERS = {
 };
 
 function drawEnemyCreature(ctx, e, x, y, r, opts) {
+  if (e.isArmoryDummy) { drawDummyCreature(ctx, x, y, r, opts); return; }
   var t = (typeof CB !== 'undefined' && CB) ? CB.elapsed || 0 : 0;
   var color = opts.flashOnly ? '#ffffff' : chapterTintedColor(e.color);
   var renderer = ENEMY_RENDERERS[e.def && e.def.id] || ENEMY_RENDERERS[e.shape + e.tier];
   if (renderer) renderer(ctx, e, x, y, r, color, opts, t);
   else drawCreatureBody(ctx, e.shape, x, y, r, color, opts); // filet de sécurité si un id est inconnu
+  if (!opts.flashOnly && isEnemyTelegraphing(e)) {
+    partTelegraphRaise(ctx, x, y, r, enemyTelegraphFrac(e, t), e.shape === 'boss');
+  }
 }

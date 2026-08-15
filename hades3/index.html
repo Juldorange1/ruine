@@ -8,52 +8,46 @@
 </head>
 <body>
 
-<!-- ================= MENU PRINCIPAL ================= -->
+<!-- ================= MENU PRINCIPAL : hub explorable ================= -->
 <div class="view" id="menuView">
-  <div class="bg-ambient" aria-hidden="true">
-    <div class="stars"></div>
-    <div class="vignette"></div>
-  </div>
-  <div class="menu-center">
-    <h1><span class="brand-glow">HADES 3</span></h1>
-    <p class="subtitle">Un run, quatre chapitres, aucune récompense — juste le combat.</p>
-    <div class="menu-stats">
+  <canvas id="hubCanvas"></canvas>
+  <div class="hub-title"><span class="brand-glow">HADES III</span></div>
+  <div class="hub-prompt" id="hubPrompt" hidden></div>
+</div>
+
+<!-- ================= Bulle de dialogue du PNJ statistiques ================= -->
+<div class="result-modal" id="hubStatsDialog" hidden>
+  <div class="result-card settings-card">
+    <div class="settings-header">
+      <h2>Statistiques</h2>
+      <button class="modal-close-x" id="hubStatsCloseX" title="Fermer" aria-label="Fermer">✕</button>
+    </div>
+    <div class="hub-stats-list">
       <span class="pill">🪙 Or : <b id="goldTotal">0</b></span>
       <span class="pill">Runs complétés : <b id="runsCompleted">0</b></span>
       <span class="pill">🪙 Plus gros gain d'or (1 run) : <b id="bestGoldRun">0</b></span>
       <span class="pill">Meilleur temps : <b id="bestTime">—</b></span>
       <span class="pill">Moins de dégâts subis : <b id="leastHpLost">—</b></span>
     </div>
-    <div class="menu-actions">
-      <button class="btn btn-start" id="goToPrerunBtn">🏃 Lancer un run</button>
-      <button class="btn" id="weaponsBtn">⚔️ Armes</button>
-      <button class="btn" id="settingsBtn">⚙️ Paramètres</button>
+    <div class="result-actions">
+      <button class="btn btn-start" id="hubStatsCloseBtn">Fermer</button>
     </div>
   </div>
 </div>
 
-<!-- ================= ARMES (biais de tirage) ================= -->
-<div class="view" id="weaponsView" hidden>
+<!-- ================= DÉFIS (8 salles fixes, une par arme de type 1) ================= -->
+<div class="view" id="challengesView" hidden>
   <div class="bg-ambient" aria-hidden="true">
     <div class="stars"></div>
     <div class="vignette"></div>
   </div>
   <div class="menu-center">
-    <h1><span class="brand-glow">ARMES</span></h1>
-    <p class="subtitle">Chaque run tire une arme de type 1 et une de type 2 au hasard. Augmente la chance relative d'obtenir tes préférées (jusqu'à +100%).</p>
-    <p class="lock-hint" id="weaponsLockHint" hidden>🔒 Termine un premier run pour pouvoir régler ces biais.</p>
-    <div class="weapons-columns">
-      <div class="weapons-col">
-        <h3>Armes de type 1</h3>
-        <div id="weapon1List" class="weapon-bias-list"></div>
-      </div>
-      <div class="weapons-col">
-        <h3>Armes de type 2</h3>
-        <div id="weapon2List" class="weapon-bias-list"></div>
-      </div>
-    </div>
+    <h1><span class="brand-glow">DÉFIS</span></h1>
+    <p class="subtitle">8 salles uniques, une par arme de type 1, sans aucun aléatoire — armes, ennemis et décor fixes. Deux records par défi (temps et moins de dégâts subis).</p>
+    <div class="challenges-totals" id="challengesTotals"></div>
+    <div class="challenges-grid" id="challengesGrid"></div>
     <div class="menu-actions">
-      <button class="btn" id="backToMenuFromWeaponsBtn">← Retour</button>
+      <button class="btn" id="backToMenuFromChallengesBtn">← Retour</button>
     </div>
   </div>
 </div>
@@ -65,21 +59,20 @@
     <div class="vignette"></div>
   </div>
   <div class="menu-center">
-    <h1><span class="brand-glow">DÉFIS</span></h1>
+    <h1><span class="brand-glow">MODIFICATEURS</span></h1>
     <p class="subtitle">Optionnel — augmente la difficulté, augmente l'or gagné en fin de run. L'or ne sert à rien d'autre.</p>
-    <p class="lock-hint" id="prerunLockHint" hidden>🔒 Termine un premier run pour pouvoir régler ces défis.</p>
     <div class="palette-group prerun-panel">
-      <label class="stat-slider">Dégâts ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modDmgVal" min="100" max="300" value="100">%</span>
-        <input type="range" id="modDmgRange" min="100" max="300" value="100">
+      <label class="stat-slider">Dégâts ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modDmgVal" min="100" max="200" value="100">%</span>
+        <input type="range" id="modDmgRange" min="100" max="200" value="100">
       </label>
-      <label class="stat-slider">Nombre d'ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modCountVal" min="100" max="300" value="100">%</span>
-        <input type="range" id="modCountRange" min="100" max="300" value="100">
+      <label class="stat-slider">Nombre d'ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modCountVal" min="100" max="200" value="100">%</span>
+        <input type="range" id="modCountRange" min="100" max="200" value="100">
       </label>
-      <label class="stat-slider">Vitesse de déplacement ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modSpdVal" min="100" max="300" value="100">%</span>
-        <input type="range" id="modSpdRange" min="100" max="300" value="100">
+      <label class="stat-slider">Vitesse de déplacement ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modSpdVal" min="100" max="200" value="100">%</span>
+        <input type="range" id="modSpdRange" min="100" max="200" value="100">
       </label>
-      <label class="stat-slider">Vitesse d'attaque ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modAtkSpdVal" min="100" max="300" value="100">%</span>
-        <input type="range" id="modAtkSpdRange" min="100" max="300" value="100">
+      <label class="stat-slider">Vitesse d'attaque ennemis <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="modAtkSpdVal" min="100" max="200" value="100">%</span>
+        <input type="range" id="modAtkSpdRange" min="100" max="200" value="100">
       </label>
     </div>
     <div class="gold-mult-indicator">🪙 Multiplicateur d'or potentiel : <b id="goldMultVal">×1</b></div>
@@ -90,9 +83,47 @@
   </div>
 </div>
 
+<!-- ================= ARMES DU RUN (révélées avant le combat) ================= -->
+<div class="view" id="weaponRevealView" hidden>
+  <div class="bg-ambient" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="vignette"></div>
+  </div>
+  <div class="menu-center">
+    <h1><span class="brand-glow">TES ARMES</span></h1>
+    <p class="subtitle">Tirées au hasard pour ce run.</p>
+    <div class="weapons-columns">
+      <div class="weapons-col">
+        <h3>Type 1</h3>
+        <div class="weapon-bias-row">
+          <div class="weapon-bias-name" id="revealWeapon1Name"></div>
+          <div class="weapon-bias-desc" id="revealWeapon1Desc"></div>
+        </div>
+      </div>
+      <div class="weapons-col">
+        <h3>Type 2</h3>
+        <div class="weapon-bias-row">
+          <div class="weapon-bias-name" id="revealWeapon2Name"></div>
+          <div class="weapon-bias-desc" id="revealWeapon2Desc"></div>
+        </div>
+      </div>
+    </div>
+    <div class="menu-actions">
+      <button class="btn btn-start" id="confirmWeaponRevealBtn">⚔️ Commencer</button>
+    </div>
+  </div>
+</div>
+
 <!-- ================= COMBAT ================= -->
 <div class="view" id="combatView" hidden>
   <canvas id="combatCanvas"></canvas>
+  <canvas id="combatCanvas3D"></canvas>
+  <div class="damage-flash" id="damageFlash"></div>
+  <div class="hub-prompt" id="armoryPrompt" hidden></div>
+  <div class="armory-panel" id="armoryPanel" hidden>
+    <button class="modal-close-x" id="armoryPanelCloseBtn" title="Fermer" aria-label="Fermer">✕</button>
+    <div id="armoryPanelBody"></div>
+  </div>
 
   <div class="hud">
     <div class="hud-top">
@@ -124,6 +155,7 @@
     </div>
 
     <div class="btn-corner-group">
+      <button class="btn btn-quit" id="armoryExitBtn" hidden>🚪 Quitter</button>
       <button class="btn btn-quit" id="pauseCombatBtn">⏸ Pause</button>
       <button class="btn btn-quit" id="combatSettingsBtn">⚙️</button>
     </div>
@@ -134,7 +166,6 @@
       <h2 id="resultTitle">Victoire</h2>
       <p id="resultText">Tu as survécu à toutes les vagues.</p>
       <div class="result-stats" id="resultStats"></div>
-      <div class="result-points" id="resultPoints">+0 points</div>
       <div class="result-actions">
         <button class="btn btn-start" id="rematchBtn">Relancer</button>
         <button class="btn" id="backToMenuBtn">Retour au menu</button>
@@ -151,6 +182,15 @@
       <button class="modal-close-x" id="settingsCloseX" title="Fermer" aria-label="Fermer">✕</button>
     </div>
     <div class="settings-scroll">
+      <div class="palette-group audio-settings">
+        <h2>🔊 Audio</h2>
+        <label class="stat-slider">Musique <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="musicVolVal" min="0" max="100" value="50">%</span>
+          <input type="range" id="musicVolRange" min="0" max="100" value="50">
+        </label>
+        <label class="stat-slider">Effets sonores <span class="stat-num-wrap"><input type="number" class="stat-num-input" id="sfxVolVal" min="0" max="100" value="70">%</span>
+          <input type="range" id="sfxVolRange" min="0" max="100" value="70">
+        </label>
+      </div>
       <div id="keybindRows" class="bind-rows"></div>
     </div>
     <div class="result-actions">
@@ -162,13 +202,28 @@
 
 <script src="js/enemies.js"></script>
 <script src="js/storage.js"></script>
+<script src="js/audio.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/roomShapes.js"></script>
 <script src="js/waves.js"></script>
 <script src="js/entities.js"></script>
 <script src="js/combat.js"></script>
+<script src="js/challenges.js"></script>
 <script src="js/render.js"></script>
 <script src="js/enemyRender.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/game.js"></script>
+
+<!-- Three.js embarqué localement (js3d/vendor/) en script CLASSIQUE (pas un module,
+     pas d'importmap) — PAS un CDN : un lien publié en Artifact bloque tout chargement
+     réseau externe (CSP stricte). Un import ES + importmap s'est aussi avéré peu
+     fiable sous cette même CSP ; charger Three.js comme un script classique qui pose
+     un THREE global (exactement comme le reste du code ci-dessus) est la méthode qui
+     fonctionne de façon fiable, aussi bien en dev qu'une fois publié. -->
+<script src="js3d/vendor/three.min.js"></script>
+<script src="js3d/shared3d.js"></script>
+<script src="js3d/assets_monsters.js"></script>
+<script src="js3d/hub3d.js"></script>
+<script src="js3d/combat3d.js"></script>
 </body>
 </html>

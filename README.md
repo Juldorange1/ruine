@@ -8,15 +8,13 @@ entre les jeux, sauf mention contraire).
 
 | Dossier | Jeu | Description |
 |---|---|---|
-| [`ruine/`](ruine/) | **Ruine** | Top-down desert/ruine, grille 12×12, modes Solo / Coop / PvP |
+| [`ruines/`](ruines/) | **Ruine** | Top-down desert/ruine, grille 12×12, modes Solo / Coop / PvP |
 | [`hexdefense/`](hexdefense/) | **Hex Défense** | Tower defense hexagonal, plusieurs héros, Mode Infini (prestige, cristaux, Choses aléatoires) |
 | [`wave/`](wave/) | **Wave** | Jeu de rythme/esquive façon Geometry Dash |
 | [`hades3/`](hades3/) | **Hades 3** | Combat par vagues façon Hades, dash/échange/mine |
 | [`avidite/`](avidite/) | **Avidité** | Dés push-your-luck, thème horloge du jugement |
 | [`ecosysteme/`](ecosysteme/) | **Écosystème (SYLVA)** | Stratégie solo, chaîne trophique |
-| [`enclave/`](enclave/) | **Enclave** | Jeu de territoire |
-| [`hexcristal/`](hexcristal/) | **Crystal** | Jeu sur grille hexagonale |
-| [`mammoths/`](mammoths/) | **Mammoths** | Puzzle inspiré des jeux SmartGames |
+| [`pokedex/`](pokedex/) | **Pokédex — Apprentissage** | Appli perso d'apprentissage du Pokédex (quiz, révision espacée, 100 % hors-ligne) |
 
 ## Lancer un jeu
 
@@ -24,7 +22,7 @@ Chaque jeu peut s'ouvrir directement en local (`file://<dossier>/index.html`), o
 petit serveur HTTP (voir `.claude/launch.json` pour les configurations existantes) :
 
 ```bash
-python -m http.server 5500 --directory ruine
+python -m http.server 5500 --directory ruines
 ```
 
 La page [`index.html`](index.html) à la racine est un simple sommaire qui pointe vers
@@ -37,13 +35,11 @@ ruine/                  (dépôt = "JulGame")
 ├── index.html          Page d'accueil (liste des jeux)
 ├── README.md           Ce fichier
 ├── CLAUDE.md           Instructions générales du dépôt
-├── ruine/              Jeu "Ruine"
+├── ruines/              Jeu "Ruine"
 ├── hexdefense/         Jeu "Hex Défense"
 ├── wave/                Jeu "Wave"
 ├── hades3/              Jeu "Hades 3"
 ├── avidite/             Jeu "Avidité"
 ├── ecosysteme/          Jeu "Écosystème"
-├── enclave/             Jeu "Enclave"
-├── hexcristal/          Jeu "Crystal"
-└── mammoths/            Jeu "Mammoths"
+└── pokedex/             Jeu "Pokédex"
 ```
