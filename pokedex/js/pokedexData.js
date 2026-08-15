@@ -11,9 +11,8 @@ const PokedexData = (() => {
   let cachedLines = null;
 
   async function load() {
-    const res = await fetch('data/pokedex.json');
-    if (!res.ok) throw new Error('Impossible de charger data/pokedex.json');
-    const json = await res.json();
+    if (!window.POKEDEX_JSON) throw new Error('Impossible de charger data/pokedex.js');
+    const json = window.POKEDEX_JSON;
     all = json.pokemon;
     byId = new Map(all.map((p) => [p.id, p]));
     formsById = new Map();

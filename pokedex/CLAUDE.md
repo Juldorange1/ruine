@@ -35,6 +35,7 @@ tout retélécharger) et ne retélécharge pas une image déjà présente sur di
 - `js/app.js` — bootstrap.
 
 100 % local : aucune requête réseau après le premier chargement (données et images sont sur
-disque). Servir via un petit serveur HTTP local (`.claude/launch.json` → config `pokedex`,
-port 5571) plutôt qu'en `file://` pour que `fetch('data/pokedex.json')` fonctionne dans tous
-les navigateurs.
+disque). Les données sont chargées via `data/pokedex.js` (`window.POKEDEX_JSON = {...}`, généré
+en même temps que `data/pokedex.json` par `fetch_pokedex.py`) et non via `fetch()`, pour que
+l'appli fonctionne aussi bien en `file://` que via le serveur local (`.claude/launch.json` →
+config `pokedex`, port 5571).

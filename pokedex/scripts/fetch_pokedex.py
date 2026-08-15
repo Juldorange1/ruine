@@ -27,6 +27,7 @@ CACHE_DIR = os.path.join(ROOT, "data", "_cache")
 IMAGES_DIR = os.path.join(ROOT, "images", "pokemon")
 FORMS_DIR = os.path.join(IMAGES_DIR, "forms")
 OUT_JSON = os.path.join(ROOT, "data", "pokedex.json")
+OUT_JS = os.path.join(ROOT, "data", "pokedex.js")
 
 HEADERS = {"User-Agent": "JulGame-Pokedex-Perso/1.0 (usage prive hors-ligne)"}
 
@@ -382,10 +383,20 @@ def main():
             "flavor_text": extract_flavor_text_fr(sp),
         })
 
-    with open(OUT_JSON, "w", encoding="utf-8") as f:
-        json.dump({"generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "count": len(entries), "pokemon": entries}, f, ensure_ascii=False, indent=1)
+    payload = {"generated_at": time.strftime("%Y-%m-%dT%H:%M:%S"), "count": len(entries), "pokemon": entries}
 
-    log(f"Terminé: {len(entries)} Pokémon écrits dans {OUT_JSON}")
+    with open(OUT_JSON, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=1)
+
+    # Doublon en .js (window.POKEDEX_JSON = {...}) : permet à l'appli de charger les
+    # données via une balise <script> plutôt qu'un fetch(), qui échoue en file:// dans
+    # la plupart des navigateurs (CORS sur les requêtes locales).
+    with open(OUT_JS, "w", encoding="utf-8") as f:
+        f.write("window.POKEDEX_JSON = ")
+        json.dump(payload, f, ensure_ascii=False)
+        f.write(";\n")
+
+    log(f"Terminé: {len(entries)} Pokémon écrits dans {OUT_JSON} et {OUT_JS}")
 
 
 def roman_to_int(s):
