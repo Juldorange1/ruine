@@ -12,9 +12,16 @@ entre les jeux, sauf mention contraire).
 | [`hexdefense/`](hexdefense/) | **Hex Défense** | Tower defense hexagonal, plusieurs héros, Mode Infini (prestige, cristaux, Choses aléatoires) |
 | [`wave/`](wave/) | **Wave** | Jeu de rythme/esquive façon Geometry Dash |
 | [`hades3/`](hades3/) | **Hades 3** | Combat par vagues façon Hades, dash/échange/mine |
-| [`avidite/`](avidite/) | **Avidité** | Dés push-your-luck, thème horloge du jugement |
 | [`ecosysteme/`](ecosysteme/) | **Écosystème (SYLVA)** | Stratégie solo, chaîne trophique |
 | [`pokedex/`](pokedex/) | **Pokédex — Apprentissage** | Appli perso d'apprentissage du Pokédex (quiz, révision espacée, 100 % hors-ligne) |
+| [`geodash/`](geodash/) | **GeoDash** | Éditeur de niveaux façon Geometry Dash (piques, blocs, portails) + mode test/jeu |
+| [`mineur/`](mineur/) | **Mineur** | Mine voxel en vraie 3D, vue première personne, 20×20×30, bâtiments à cooldown |
+
+> **Avidité** a été déplacé dans son propre dépôt indépendant
+> (`C:\Users\juldorange\avidite`, hors de ce monorepo) le 2026-08-29, pour
+> pouvoir sortir de la contrainte "scripts classiques / compatible file://"
+> commune aux autres jeux ici et explorer un rendu 3D plus poussé (modules ES,
+> chargement de modèles, post-traitement).
 
 ## Lancer un jeu
 
@@ -39,7 +46,8 @@ ruine/                  (dépôt = "JulGame")
 ├── hexdefense/         Jeu "Hex Défense"
 ├── wave/                Jeu "Wave"
 ├── hades3/              Jeu "Hades 3"
-├── avidite/             Jeu "Avidité"
 ├── ecosysteme/          Jeu "Écosystème"
-└── pokedex/             Jeu "Pokédex"
+├── pokedex/             Jeu "Pokédex"
+├── geodash/             Jeu "GeoDash"
+└── mineur/              Jeu "Mineur"
 ```
