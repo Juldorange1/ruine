@@ -10,12 +10,12 @@ const Storage = (() => {
     SESSION_STATS: 'pokedex_sessionstats_v1',
   };
 
-  const DEFAULT_SETTINGS = {};
+  const DEFAULT_SETTINGS = {
+    pokedexShowAllImages: true, // false = cache l'image des Pokémon jamais vus dans le Pokédex
+  };
 
   const DEFAULT_SESSION_STATS = {
-    marathon: { bestScore: 0, bestStreak: 0 },
-    timeAttack: {}, // { "30": {bestScore}, "60": {...}, ... }
-    totals: { questionsAnswered: 0, correct: 0, incorrect: 0 },
+    totals: { questionsAnswered: 0, correct: 0, incorrect: 0, currentStreak: 0, bestStreak: 0 },
   };
 
   function defaultProgressEntry(id) {
@@ -29,6 +29,7 @@ const Storage = (() => {
       nextReview: null,
       currentStreak: 0,
       bestStreak: 0,
+      facets: {}, // { [mode]: {correct, incorrect} } — mémoire fine par sujet (nom, type, numéro...)
     };
   }
 

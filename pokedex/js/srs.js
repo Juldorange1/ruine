@@ -45,6 +45,16 @@ const SRS = (() => {
     return e;
   }
 
+  // Enregistre le résultat d'une question pour un sujet précis (nom, type,
+  // évolution...) sans toucher au niveau de maîtrise global : c'est la
+  // mémoire fine "de quoi tu te souviens sur quel pokémon".
+  function recordFacet(entry, mode, correct) {
+    const facets = { ...(entry.facets || {}) };
+    const f = facets[mode] || { correct: 0, incorrect: 0 };
+    facets[mode] = { correct: f.correct + (correct ? 1 : 0), incorrect: f.incorrect + (correct ? 0 : 1) };
+    return { ...entry, facets };
+  }
+
   function accuracy(entry) {
     const total = entry.correct + entry.incorrect;
     return total ? entry.correct / total : null;
@@ -77,12 +87,38 @@ const SRS = (() => {
       .map((x) => x.entry.id);
   }
 
+  // Pokémon déjà rencontrés (Apprendre/Jeu) où tu es faible sur au moins
+  // un des sujets choisis (`facetKeys`) — jamais testé sur ce sujet compte
+  // comme "faible" (accuracy 0). Triés du plus faible au moins faible.
+  function buildFacetWeaknessQueue(progressMap, ids, facetKeys, limit = 30) {
+    const scored = ids
+      .map((id) => progressMap[id])
+      .filter((e) => e && e.timesSeen > 0)
+      .map((e) => {
+        let worst = 1;
+        let matched = false;
+        for (const key of facetKeys) {
+          const f = e.facets?.[key];
+          const total = f ? f.correct + f.incorrect : 0;
+          const acc = total > 0 ? f.correct / total : 0;
+          if (acc < 0.7) matched = true;
+          worst = Math.min(worst, acc);
+        }
+        return { id: e.id, worst, matched };
+      })
+      .filter((x) => x.matched)
+      .sort((a, b) => a.worst - b.worst);
+    return scored.slice(0, limit).map((x) => x.id);
+  }
+
   return {
     LEVELS,
     levelLabel,
     applyAnswer,
+    recordFacet,
     accuracy,
     buildDueQueue,
     buildWeaknessList,
+    buildFacetWeaknessQueue,
   };
 })();

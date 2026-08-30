@@ -2,16 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "geodash",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5572", "--bind", "127.0.0.1", "--directory", "geodash"],
+      "port": 5572
+    },
+    {
       "name": "pokedex",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5571", "--bind", "127.0.0.1", "--directory", "pokedex"],
       "port": 5571
-    },
-    {
-      "name": "wave",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5503", "--bind", "127.0.0.1", "--directory", "wave"],
-      "port": 5503
     },
     {
       "name": "hexdefense",
@@ -30,18 +30,6 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5599", "--bind", "127.0.0.1"],
       "port": 5599
-    },
-    {
-      "name": "ecosysteme",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5506", "--bind", "127.0.0.1", "--directory", "ecosysteme"],
-      "port": 5506
-    },
-    {
-      "name": "avidite",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "5507", "--bind", "127.0.0.1", "--directory", "avidite"],
-      "port": 5507
     },
     {
       "name": "bestiaire",

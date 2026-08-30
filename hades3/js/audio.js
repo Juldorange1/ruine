@@ -24,8 +24,7 @@ var AudioEngine = (function () {
   var musicPlaying = false;
   var musicTimer = null;
   var currentTheme = 0;
-  var padOsc1 = null, padOsc2 = null, padGain = null, padFilter = null;
-  var musicTension = 0; // 0 (salle calme) .. 1 (salle de boss) — pilote densité/dissonance de l'arpège et éclat du filtre du pad
+  var musicTension = 0; // 0 (salle calme) .. 1 (salle de boss) — pilote densité/dissonance de l'arpège et des respirations d'ambiance
   var roomSeed = 0; // change à chaque salle (pas juste à chaque chapitre) — réservé pour de futures variations
 
   var saved = (typeof loadAudioSettings === 'function') ? loadAudioSettings() : null;
@@ -34,12 +33,41 @@ var AudioEngine = (function () {
     if (saved.sfx != null) sfxVolume = saved.sfx;
   }
 
+  // Petit réverbérateur algorithmique (ligne à retard + contre-réaction filtrée, pas
+  // de fichier de réponse impulsionnelle — cohérent avec la contrainte zéro-asset) :
+  // donne un peu d'espace/de corps à TOUS les sons plutôt que de sonner strictement
+  // secs, sans machinerie lourde. Mix discret (voir wetGain) pour ne jamais noyer les
+  // sons répétés en plein combat (hit...) dans une traîne boueuse.
+  var reverbSend = null;
+  function makeReverbSend() {
+    var input = ctx.createGain();
+    var delay = ctx.createDelay(1.0);
+    delay.delayTime.value = 0.05;
+    var damp = ctx.createBiquadFilter();
+    damp.type = 'lowpass';
+    damp.frequency.value = 3200;
+    var feedback = ctx.createGain();
+    feedback.gain.value = 0.32;
+    var wetGain = ctx.createGain();
+    wetGain.gain.value = 0.16;
+    input.connect(delay);
+    delay.connect(damp);
+    damp.connect(feedback);
+    feedback.connect(delay);
+    damp.connect(wetGain);
+    wetGain.connect(ctx.destination);
+    return input;
+  }
+
   function ensureCtx() {
     if (ctx) return ctx;
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       musicGain = ctx.createGain(); musicGain.gain.value = musicVolume; musicGain.connect(ctx.destination);
       sfxGain = ctx.createGain(); sfxGain.gain.value = sfxVolume; sfxGain.connect(ctx.destination);
+      reverbSend = makeReverbSend();
+      musicGain.connect(reverbSend);
+      sfxGain.connect(reverbSend);
       noiseBuffer = makeNoiseBuffer();
     } catch (e) { ctx = null; }
     return ctx;
@@ -61,7 +89,7 @@ var AudioEngine = (function () {
   // ---- Enveloppe attaque/déclin exponentiel, commune à tous les sons — "hold" (option-
   // nel) insère un plateau au pic avant le déclin, pour un impact plus franc/plus "dur"
   // qu'un simple triangle attaque→déclin sur les sons percussifs. ----
-  function envGain(dest, attack, decay, peak, hold) {
+  function envGain(dest, attack, decay, peak, hold, pan) {
     var g = ctx.createGain();
     var t = ctx.currentTime;
     var h = hold || 0;
@@ -69,30 +97,40 @@ var AudioEngine = (function () {
     g.gain.linearRampToValueAtTime(peak, t + attack);
     if (h > 0) g.gain.setValueAtTime(peak, t + attack + h);
     g.gain.exponentialRampToValueAtTime(0.0001, t + attack + h + decay);
-    g.connect(dest);
+    // Léger panoramique optionnel (voir jitterPan) : un mixage strictement mono pour
+    // tout finissait par sonner plat/artificiel malgré des sons individuellement plus
+    // riches — un soupçon de mouvement stéréo donne une vraie sensation d'espace.
+    if (pan != null && ctx.createStereoPanner) {
+      var p = ctx.createStereoPanner();
+      p.pan.value = Math.max(-1, Math.min(1, pan));
+      g.connect(p);
+      p.connect(dest);
+    } else {
+      g.connect(dest);
+    }
     return g;
   }
 
-  function tone(freq, type, attack, decay, peak, dest, detune, freqEnd, hold) {
+  function tone(freq, type, attack, decay, peak, dest, detune, freqEnd, hold, pan) {
     var osc = ctx.createOscillator();
     osc.type = type || 'sine';
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
     if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, ctx.currentTime + attack + decay);
     if (detune) osc.detune.value = detune;
-    var g = envGain(dest, attack, decay, peak, hold);
+    var g = envGain(dest, attack, decay, peak, hold, pan);
     osc.connect(g);
     osc.start();
     osc.stop(ctx.currentTime + attack + (hold || 0) + decay + 0.06);
   }
 
-  function noiseHit(dest, attack, decay, peak, filterFreq, filterType, q) {
+  function noiseHit(dest, attack, decay, peak, filterFreq, filterType, q, pan) {
     var src = ctx.createBufferSource();
     src.buffer = noiseBuffer;
     var filt = ctx.createBiquadFilter();
     filt.type = filterType || 'bandpass';
     filt.frequency.value = filterFreq || 1200;
     if (q != null) filt.Q.value = q;
-    var g = envGain(dest, attack, decay, peak);
+    var g = envGain(dest, attack, decay, peak, 0, pan);
     src.connect(filt); filt.connect(g);
     src.start();
     src.stop(ctx.currentTime + attack + decay + 0.06);
@@ -102,6 +140,8 @@ var AudioEngine = (function () {
   // de fois par seconde en plein combat (hit, swing...) finit par sonner comme un
   // sample unique qui boucle au lieu d'un vrai impact à chaque coup.
   function jitter(v, pct) { return v * (1 + (Math.random() * 2 - 1) * pct); }
+  // Panoramique aléatoire léger — voir envGain.
+  function jitterPan(spread) { return (Math.random() * 2 - 1) * (spread != null ? spread : 0.35); }
 
   // ---- Bibliothèque d'effets sonores — un son par FAMILLE d'action (pas une par arme :
   // 8+6 sons distincts aurait été une cacophonie illisible). Chaque son superpose
@@ -114,8 +154,9 @@ var AudioEngine = (function () {
     // reste bref pour ne jamais fatiguer, mais un tic aigu SEUL sonnait creux : un souffle
     // de bruit clair + un petit corps grave en dessous donnent un vrai sentiment d'impact.
     hit: function () {
-      noiseHit(sfxGain, 0.001, jitter(0.055, 0.2), 0.4, jitter(1900, 0.15), 'bandpass', 3.5);
-      tone(jitter(210, 0.12), 'triangle', 0.001, 0.05, 0.22, sfxGain, 0, jitter(140, 0.1));
+      var pan = jitterPan(0.5);
+      noiseHit(sfxGain, 0.001, jitter(0.055, 0.2), 0.4, jitter(1900, 0.15), 'bandpass', 3.5, pan);
+      tone(jitter(210, 0.12), 'triangle', 0.001, 0.05, 0.22, sfxGain, 0, jitter(140, 0.1), 0, pan);
     },
     // Joueur touché — deux tons descendants dissonants + un grain de bruit qui donne du
     // "corps" à l'impact plutôt que deux sinusoïdes propres et froides.
@@ -129,19 +170,21 @@ var AudioEngine = (function () {
     // au geste, puis un "thock" d'impact plus marqué à la fin — un simple souffle ne
     // rendait pas justice à un coup d'épée/de charge.
     swing: function () {
-      noiseHit(sfxGain, 0.001, jitter(0.11, 0.2), 0.42, jitter(2700, 0.15), 'highpass');
-      tone(jitter(300, 0.1), 'sawtooth', 0.001, 0.13, 0.24, sfxGain, -8, jitter(120, 0.15));
-      tone(jitter(160, 0.15), 'sine', 0.001, 0.09, 0.22, sfxGain, 0, 80, 0.01);
+      var pan = jitterPan(0.4);
+      noiseHit(sfxGain, 0.001, jitter(0.11, 0.2), 0.42, jitter(2700, 0.15), 'highpass', null, pan);
+      tone(jitter(300, 0.1), 'sawtooth', 0.001, 0.13, 0.24, sfxGain, -8, jitter(120, 0.15), 0, pan);
+      tone(jitter(160, 0.15), 'sine', 0.001, 0.09, 0.22, sfxGain, 0, 80, 0.01, pan);
     },
     // Armes à distance (tourelle, boomerang, onde de piques) — le duo carré+triangle qui
     // chute + le tic de bruit du "snap" restent, mais avec un coup de poing sub-grave en
     // dessous (façon recul d'arme) pour un tir qui claque au lieu de bipper.
     shoot: function () {
       var f = jitter(720, 0.1);
-      tone(f, 'square', 0.001, 0.07, 0.22, sfxGain, -6, f * 0.65);
-      tone(f * 1.5, 'triangle', 0.001, 0.05, 0.14, sfxGain, 6, f * 0.9);
-      noiseHit(sfxGain, 0.001, 0.02, 0.14, 4000, 'highpass');
-      tone(jitter(95, 0.1), 'sine', 0.001, 0.09, 0.2, sfxGain, 0, 55);
+      var pan = jitterPan(0.45);
+      tone(f, 'square', 0.001, 0.07, 0.22, sfxGain, -6, f * 0.65, 0, pan);
+      tone(f * 1.5, 'triangle', 0.001, 0.05, 0.14, sfxGain, 6, f * 0.9, 0, pan);
+      noiseHit(sfxGain, 0.001, 0.02, 0.14, 4000, 'highpass', null, pan);
+      tone(jitter(95, 0.1), 'sine', 0.001, 0.09, 0.2, sfxGain, 0, 55, 0, pan);
     },
     // Effets de zone (météore, poussée, attraction) — souffle grave + sub-bass renforcés,
     // un crack aigu au tout début, et une queue de bruit grave RETARDÉE (écho court) qui
@@ -183,8 +226,9 @@ var AudioEngine = (function () {
     // Mort d'un ennemi — pop grave étouffé + un thud descendant en dessous, pour une
     // vraie sensation de "chute" plutôt qu'un simple pop isolé.
     kill: function () {
-      noiseHit(sfxGain, 0.001, 0.18, 0.34, 650, 'lowpass');
-      tone(180, 'sine', 0.001, 0.16, 0.22, sfxGain, 0, 70);
+      var pan = jitterPan(0.4);
+      noiseHit(sfxGain, 0.001, 0.18, 0.34, 650, 'lowpass', null, pan);
+      tone(180, 'sine', 0.001, 0.16, 0.22, sfxGain, 0, 70, 0, pan);
     },
     // Clic d'interface générique (boutons de menu) — reste discret (utilisé à chaque
     // clic), juste un soupçon de deuxième harmonique pour ne pas sonner complètement plat.
@@ -219,21 +263,21 @@ var AudioEngine = (function () {
   }
 
   // ---- Musique de combat générative, sous tension ----
-  // Deux couches qui tournent en continu, toutes deux pilotées par `musicTension`
-  // (0 salle calme .. 1 salle de boss) et `roomSeed` (change à CHAQUE salle, pas
-  // juste à chaque chapitre — voir setMusicRoom) pour qu'aucune salle ne sonne pareil :
-  //   1. Nappe (2 scies légèrement désaccordées), dont le filtre s'éclaircit avec la
-  //      tension pour un son plus "tendu"/moins feutré en fin de chapitre.
-  //   2. Des notes éparses (l'ancien "arpège") dont la densité et la dissonance (chance
-  //      de piocher un intervalle de seconde mineure au lieu de la gamme) montent aussi
-  //      avec la tension.
-  // (Deux couches supplémentaires ont été essayées ici et retirées : un pouls percussif
-  // rythmique, puis une 3e voix de nappe à un DEMI-TON de la fondamentale — les deux
-  // signalés comme un bruit continu agaçant façon "mv mv mv". Une voix quasi-unisson
-  // avec les 2 scies existantes bat contre elles (interférence audible en continu, pas
-  // juste un détail de dissonance) : c'était la vraie source du bruit, pas le pouls
-  // rythmique retiré au tour précédent — d'où sa suppression complète ici plutôt qu'un
-  // simple réglage de volume.)
+  // AUCUN oscillateur ne joue plus en continu — signalé À TROIS REPRISES comme un
+  // "mmmmmm"/bourdonnement permanent agaçant malgré plusieurs tentatives de le
+  // localiser (pouls rythmique retiré, puis 3e voix de nappe quasi-unisson retirée) :
+  // la vraie cause était plus simple et plus ancienne que ces deux ajouts récents —
+  // la nappe de fond ELLE-MÊME (2 scies légèrement désaccordées) jouait sans
+  // interruption du début à la fin de chaque session, ce qui EST par construction un
+  // bourdonnement permanent, quel que soit le soin apporté à son timbre. Remplacée
+  // par des "respirations" ponctuelles (scheduleAmbientSwell) : chaque note d'ambiance
+  // monte, tient un court instant, puis s'éteint complètement — silence réel entre
+  // deux, jamais un son qui reste ouvert indéfiniment. Deux couches :
+  //   1. scheduleAmbientSwell — souffle doux (triangle, pas de scie bruyante) qui
+  //      apparaît et disparaît toutes les quelques secondes, plus fréquent/plus
+  //      lumineux (filtre) quand `musicTension` monte.
+  //   2. scheduleArpNote — notes éparses ponctuelles, densité/dissonance croissantes
+  //      avec la tension (inchangé).
   // Une gamme par thème de chapitre (voir CHAPTER_THEMES/CHAPTER_GROUND_PALETTES, même
   // index) pour que l'ambiance sonore suive le changement de décor.
   var SCALE_BY_THEME = [
@@ -242,35 +286,37 @@ var AudioEngine = (function () {
     [246.9, 277.2, 329.6, 370, 415.3],   // Braise
     [207.7, 246.9, 277.2, 311.1, 370]    // Abîme
   ];
+  var swellTimer = null;
 
-  function startPad(theme) {
-    stopPad();
-    var scale = SCALE_BY_THEME[theme % SCALE_BY_THEME.length];
-    var root = scale[0] / 2;
-    padFilter = ctx.createBiquadFilter();
-    padFilter.type = 'lowpass';
-    padFilter.frequency.value = 420 + musicTension * 260;
-    padFilter.connect(musicGain);
-    padGain = ctx.createGain();
-    padGain.gain.value = 0.15;
-    padGain.connect(padFilter);
-    padOsc1 = ctx.createOscillator(); padOsc1.type = 'sawtooth'; padOsc1.frequency.value = root; padOsc1.detune.value = -6;
-    padOsc2 = ctx.createOscillator(); padOsc2.type = 'sawtooth'; padOsc2.frequency.value = root; padOsc2.detune.value = 6;
-    padOsc1.connect(padGain); padOsc2.connect(padGain);
-    padOsc1.start(); padOsc2.start();
-    applyTensionToPad();
-  }
-
-  function stopPad() {
-    if (padOsc1) { try { padOsc1.stop(); } catch (e) {} padOsc1 = null; }
-    if (padOsc2) { try { padOsc2.stop(); } catch (e) {} padOsc2 = null; }
-  }
-
-  // Reprojette musicTension sur la nappe déjà en cours (éclat du filtre) sans
-  // redémarrer les oscillateurs — appelé au changement de salle ET au démarrage.
-  function applyTensionToPad() {
-    if (!ctx) return;
-    if (padFilter) padFilter.frequency.linearRampToValueAtTime(420 + musicTension * 260, ctx.currentTime + 1.2);
+  function scheduleAmbientSwell() {
+    if (!musicPlaying || !ctx) return;
+    var scale = SCALE_BY_THEME[currentTheme % SCALE_BY_THEME.length];
+    var root = scale[Math.floor(Math.random() * scale.length)] / 2;
+    var dur = 2.6 + Math.random() * 2.2;
+    var peak = 0.09 + musicTension * 0.06;
+    var g = ctx.createGain();
+    var filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass';
+    filt.frequency.value = 800 + musicTension * 500;
+    filt.connect(musicGain);
+    g.connect(filt);
+    var t0 = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + dur * 0.45);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    [-4, 4].forEach(function (det) {
+      var o = ctx.createOscillator();
+      o.type = 'triangle';
+      o.frequency.value = root;
+      o.detune.value = det;
+      o.connect(g);
+      o.start();
+      o.stop(t0 + dur + 0.1);
+    });
+    // Silence RÉEL entre deux respirations (jamais chaînées bout à bout) — plus
+    // rapproché quand la tension monte, mais toujours un vrai creux de silence.
+    var gapMin = 1800 - musicTension * 900, gapMax = 4200 - musicTension * 2000;
+    swellTimer = setTimeout(scheduleAmbientSwell, dur * 1000 + gapMin + Math.random() * (gapMax - gapMin));
   }
 
   function scheduleArpNote() {
@@ -290,33 +336,29 @@ var AudioEngine = (function () {
     if (!ensureCtx()) return;
     unlock();
     currentTheme = theme || 0;
-    if (musicPlaying) { startPad(currentTheme); return; }
+    if (musicPlaying) return;
     musicPlaying = true;
-    startPad(currentTheme);
+    scheduleAmbientSwell();
     scheduleArpNote();
   }
 
   function setMusicTheme(theme) {
     theme = theme || 0;
-    if (currentTheme === theme) return;
     currentTheme = theme;
-    if (musicPlaying && ctx) startPad(currentTheme);
   }
 
   // Appelé à CHAQUE salle (pas juste à chaque chapitre, voir spawnWave dans combat.js) :
   // `tension` 0..1 (0 = salle normale en début de chapitre, 1 = salle de boss) et
-  // `seed` un entier qui change à chaque salle, pour varier le motif rythmique du pouls
-  // même entre deux salles de tension comparable.
+  // `seed` un entier qui change à chaque salle (réservé pour de futures variations).
   function setMusicRoom(tension, seed) {
     musicTension = Math.max(0, Math.min(1, tension || 0));
     roomSeed = seed || 0;
-    applyTensionToPad();
   }
 
   function stopMusic() {
     musicPlaying = false;
     if (musicTimer) clearTimeout(musicTimer);
-    stopPad();
+    if (swellTimer) clearTimeout(swellTimer);
   }
 
   // Pause/reprise (bouton Pause, ouverture des réglages en combat, alt-tab...) : coupe le

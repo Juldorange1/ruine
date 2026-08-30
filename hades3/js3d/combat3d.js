@@ -1157,9 +1157,17 @@ function createEnemyMesh(e) {
   ring.visible = false;
   group.add(ring);
 
-  var light = new THREE.PointLight(e.color, isBoss ? 3 : 0, isBoss ? 260 : 0, 2);
-  light.name = 'light';
-  group.add(light);
+  // Une PointLight coûte cher (chaque lumière de la scène est évaluée pour CHAQUE
+  // pixel de CHAQUE objet à matériau éclairé, intensité 0 ou pas — Three.js ne les
+  // exclut pas automatiquement du calcul) : en donner une à CHAQUE ennemi, même
+  // éteinte, empilait potentiellement 5 à 10+ lumières inutiles par salle en plus des
+  // torches/décor/tourelles — signalé comme "très peu d'images par seconde" + lag.
+  // Seuls les boss (peu nombreux, un vrai halo dramatique) en ont une désormais.
+  if (isBoss) {
+    var light = new THREE.PointLight(e.color, 3, 260, 2);
+    light.name = 'light';
+    group.add(light);
+  }
 
   // Lame de télégraphe (voir isEnemyTelegraphing/enemyTelegraphFrac, js/enemyRender.js,
   // partagées avec le rendu 2D) : cachée par défaut, la même géométrie sert pour tous
@@ -1835,9 +1843,11 @@ function buildPedestalMesh(ped) {
     icon.position.y = PEDESTAL_R * 1.9;
     group.add(icon);
   }
-  var light = new THREE.PointLight(color, 2.2, PEDESTAL_R * 6, 2);
-  light.position.y = PEDESTAL_R * 1.5;
-  group.add(light);
+  // Pas de PointLight par présentoir : l'armurerie en aligne jusqu'à 14 (8 armes de
+  // type 1 + 6 de type 2), et chaque lumière de la scène coûte cher pour CHAQUE pixel
+  // de CHAQUE objet éclairé, intensité ou pas — 14 lumières simultanées rien que pour
+  // le décor était une cause majeure du lag signalé. L'anneau déjà émissif suffit à
+  // lire le présentoir comme "actif" sans avoir besoin d'une vraie source de lumière.
   return group;
 }
 function updatePedestalMesh(group, ped, t) {

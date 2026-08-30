@@ -64,6 +64,7 @@ const PokedexData = (() => {
       .toString()
       .normalize('NFD')
       .replace(/[̀-ͯ]/g, '')
+      .replace(/[♂♀]/g, '') // Nidoran♂/♀ etc. : le symbole ne doit pas être requis pour valider la réponse
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ')

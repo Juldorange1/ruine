@@ -1,0 +1,2816 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GeoDash — Éditeur</title>
+<script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
+<style>
+  :root{
+    --bg:#1b1b1b; --panel:#232323; --panel2:#2a2a2a; --border:#444;
+    --text:#eee; --sub:#aaa; --accent:#ffd23f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);
+    font-family:'Segoe UI',sans-serif;display:flex;flex-direction:column;align-items:center;
+    padding:16px;gap:12px;}
+  h1{font-size:1.6em;margin:0;}
+  a.back{color:var(--sub);text-decoration:none;font-size:.85em;}
+  a.back:hover{color:var(--accent);}
+  .wrap{width:100%;max-width:980px;display:flex;flex-direction:column;gap:10px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+
+  #fsWrap{width:100%;}
+  #fsWrap:fullscreen{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:#000;}
+  #fsWrap:-webkit-full-screen{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:#000;}
+  #stage{position:relative;width:960px;max-width:100%;background:#141414;border:1px solid var(--border);
+    border-radius:8px;overflow:hidden;touch-action:none;}
+  canvas{display:block;width:100%;height:auto;background:#101018;cursor:crosshair;}
+
+  #playControls{position:absolute;top:6px;right:8px;display:none;gap:6px;z-index:6;}
+  #playControls button{padding:4px 9px;font-size:.95em;background:rgba(0,0,0,.55);color:#fff;
+    border:1px solid rgba(255,255,255,.35);border-radius:6px;}
+  #playControls button:hover{background:rgba(0,0,0,.8);border-color:var(--accent);}
+  #playHint{position:absolute;bottom:6px;left:8px;font-size:.72em;color:#ddd;text-shadow:0 1px 2px #000;
+    display:none;pointer-events:none;}
+  #pauseMenu{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;
+    justify-content:center;background:rgba(0,0,0,.72);color:#fff;font-size:1.3em;gap:12px;z-index:7;}
+  #pauseMenu button{font-size:.65em;}
+  #musicSlotPlay{position:absolute;bottom:6px;right:8px;width:200px;z-index:5;}
+  #musicSlotPlay:empty{display:none;}
+  #spotifyPreview iframe{width:100%;height:80px;border:0;border-radius:8px;display:block;}
+
+  .toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--panel);
+    border:1px solid var(--border);border-radius:8px;padding:8px;}
+  .toolbar .grp{display:flex;gap:4px;align-items:center;border-right:1px solid var(--border);
+    padding-right:8px;margin-right:2px;flex-wrap:wrap;}
+  .toolbar .grp:last-child{border-right:none;}
+  .toolbar label{font-size:.75em;color:var(--sub);margin-right:2px;}
+
+  button, select, input[type=text], input[type=number]{
+    background:var(--panel2);color:var(--text);border:1px solid var(--border);
+    border-radius:6px;padding:6px 10px;font-size:.85em;cursor:pointer;
+  }
+  button:hover{border-color:var(--accent);}
+  button.active{background:var(--accent);color:#1b1b1b;border-color:var(--accent);font-weight:bold;}
+  button.primary{background:var(--accent);color:#1b1b1b;font-weight:bold;}
+  select{cursor:pointer;}
+  input[type=text],input[type=number]{cursor:text;}
+  input[type=number]{width:56px;}
+
+  #hud{position:absolute;top:6px;left:8px;font-size:.8em;color:#fff;text-shadow:0 1px 2px #000;
+    pointer-events:none;line-height:1.5;}
+  #msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    flex-direction:column;background:rgba(0,0,0,.55);color:#fff;font-size:1.4em;text-align:center;gap:10px;}
+  #msg button{font-size:.6em;}
+
+  #levelsList{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow:auto;
+    background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px;}
+  #levelsList .row{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.85em;}
+  #levelsList .row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #levelsList .row .btns{display:flex;gap:4px;}
+  #levelsList .row .btns button{padding:2px 8px;font-size:.8em;}
+  small.hint{color:var(--sub);}
+  #fileImport{display:none;}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+    align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:18px 20px;max-width:440px;width:100%;max-height:82vh;overflow:auto;}
+  .modal-box h2{margin:0 0 4px;font-size:1.15em;}
+  .modal-box p.desc{color:var(--sub);font-size:.8em;margin:0 0 14px;}
+  .kb-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;
+    border-bottom:1px solid var(--border);font-size:.88em;gap:10px;}
+  .kb-row:last-child{border-bottom:none;}
+  .kb-row button{min-width:150px;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
+
+  #analyzeResult{padding:8px 12px;border-radius:8px;font-size:.85em;display:none;line-height:1.4;
+    align-items:center;gap:12px;}
+  #analyzeResult.ok{background:rgba(57,255,106,.12);border:1px solid #39ff6a;color:#a9ffc0;}
+  #analyzeResult.bad{background:rgba(255,140,0,.14);border:1px solid #ff8c00;color:#ffd199;}
+  #analyzeResultText{flex:1;}
+  #analyzeCloseBtn{flex:none;background:transparent;border:1px solid currentColor;color:inherit;
+    border-radius:6px;padding:2px 8px;cursor:pointer;font-size:1em;}
+  .insp-range{width:120px;}
+</style>
+</head>
+<body>
+  <a class="back" href="../index.html">&larr; JulGame</a>
+  <h1>🚩 GeoDash — Éditeur &amp; Jeu</h1>
+
+  <div class="wrap">
+    <div class="toolbar" id="editTools">
+      <div class="grp">
+        <button id="toolBlock" class="tool active" data-tool="block">🟫 Bloc</button>
+        <button id="toolSpike" class="tool" data-tool="spike">🔺 Pique</button>
+        <button id="toolRotate" class="tool" data-tool="rotate" title="Cliquez sur un pique déjà posé pour le faire pivoter de 90°">↻ Rotation</button>
+        <button id="toolErase" class="tool" data-tool="erase">🧹 Effacer</button>
+        <button id="toolSelect" class="tool" data-tool="select" title="Cliquez sur un élément posé pour le modifier ; une fois sélectionné, glissez-le pour le repositionner. Ou tracez un cadre sur une zone vide pour sélectionner plusieurs éléments à la fois (couleur commune, suppression groupée, duplication)">🖉 Sélection</button>
+        <button id="toolCheckpoint" class="tool" data-tool="checkpoint" title="Point de sauvegarde : permet de tester le niveau en partant d'ici (numéroté automatiquement de gauche à droite)">🚩 Point de sauvegarde</button>
+      </div>
+      <div class="grp">
+        <label>Portail</label>
+        <select id="portalType">
+          <optgroup label="Forme du joueur">
+            <option value="mode_cube">Cube</option>
+            <option value="mode_ship">Vaisseau</option>
+            <option value="mode_ball">Balle</option>
+            <option value="mode_ufo">UFO</option>
+            <option value="mode_wave">Vague</option>
+            <option value="mode_robot">Robot</option>
+            <option value="mode_spider">Araignée</option>
+            <option value="mode_swing">Swing</option>
+          </optgroup>
+          <optgroup label="Gravité">
+            <option value="grav_normal">Gravité normale</option>
+            <option value="grav_reverse">Gravité inversée</option>
+          </optgroup>
+          <optgroup label="Vitesse">
+            <option value="speed_0.5">Vitesse x0.5</option>
+            <option value="speed_1">Vitesse x1</option>
+            <option value="speed_2">Vitesse x2</option>
+            <option value="speed_3">Vitesse x3</option>
+            <option value="speed_4">Vitesse x4</option>
+          </optgroup>
+          <optgroup label="Taille">
+            <option value="size_mini">Taille mini</option>
+            <option value="size_normal">Taille normale</option>
+          </optgroup>
+        </select>
+        <button id="toolPortal" class="tool" data-tool="portal">🌀 Placer</button>
+      </div>
+      <div class="grp">
+        <label>Pad</label>
+        <select id="padType">
+          <option value="jumpHigh">Saut haut</option>
+          <option value="jumpLow">Saut bas</option>
+          <option value="gravity">Inverse gravité</option>
+        </select>
+        <button id="toolPad" class="tool" data-tool="pad" title="Se déclenche automatiquement au contact, sans appui">⬆ Placer</button>
+      </div>
+      <div class="grp">
+        <label>Orbe</label>
+        <select id="orbType">
+          <option value="jumpHigh">Saut haut</option>
+          <option value="jumpLow">Saut bas</option>
+          <option value="gravity">Inverse gravité</option>
+          <option value="swing">Inversion progressive (vert)</option>
+        </select>
+        <button id="toolOrb" class="tool" data-tool="orb" title="Se déclenche seulement si on appuie (touche/clic) en le touchant">⬤ Placer</button>
+      </div>
+      <div class="grp">
+        <button id="fillGround" title="Remplit toute la ligne du sol (en bas) de blocs">Sol plein</button>
+        <button id="fillCeiling" title="Remplit le plafond (en haut) sur la hauteur choisie, comme pour le sol">Plafond plein</button>
+        <label title="Nombre de cases de hauteur remplies par 'Plafond plein' (le plafond reste modifiable case par case ensuite, comme le sol)">Hauteur plafond</label>
+        <input type="number" id="ceilingHeightInput" min="1" max="4" value="1">
+        <label title="Longueur totale du niveau (nombre de cases horizontales que le joueur doit parcourir)">Longueur</label>
+        <span id="lenDisplay" style="min-width:76px;text-align:center;font-size:.85em;">150 cases</span>
+        <label title="Durée totale estimée pour parcourir le niveau (tient compte des portails de vitesse)">Durée</label>
+        <span id="durationDisplay" style="min-width:50px;text-align:center;font-size:.85em;">—</span>
+        <button id="extendLevel" title="Ajoute 20 cases VIDES à la fin du niveau, pour avoir plus de place pour construire (n'affecte pas ce qui existe déjà)">+20 cases</button>
+        <button id="shrinkLevel" title="Retire les 20 dernières cases du niveau : tout ce qui y est posé sera supprimé">-20 cases</button>
+        <button id="clearLevel">🗑 Vider</button>
+      </div>
+      <div class="grp">
+        <label title="Zoom d'affichage de l'éditeur uniquement (n'affecte pas le jeu)">Zoom</label>
+        <button id="zoomOut">−</button>
+        <span id="zoomLabel" style="min-width:42px;text-align:center;font-size:.85em;">100%</span>
+        <button id="zoomIn">+</button>
+      </div>
+      <div class="grp">
+        <button id="scrollLeft">◀</button>
+        <button id="scrollRight">▶</button>
+      </div>
+      <div class="grp">
+        <label title="Choisissez un point de sauvegarde pour tester le niveau à partir de là plutôt que depuis le début">Départ</label>
+        <select id="startCheckpointSelect"><option value="0">Début</option></select>
+      </div>
+      <div class="grp">
+        <button id="playBtn" class="primary">▶ Tester</button>
+      </div>
+      <div class="grp">
+        <button id="analyzeBtn" title="Fait essayer le niveau à une IA (plusieurs styles de jeu) pour repérer les passages qui semblent impossibles à passer">🔍 Analyser</button>
+      </div>
+    </div>
+
+    <div id="analyzeResult">
+      <span id="analyzeResultText"></span>
+      <button id="analyzeCloseBtn" title="Revenir à l'affichage normal de l'éditeur (efface le chemin et les points affichés)" style="display:none;">✕ Fermer</button>
+    </div>
+
+    <div class="toolbar" id="inspector" style="display:none;">
+      <div class="grp"><b id="inspType">—</b></div>
+      <div class="grp" id="inspColorGrp">
+        <label>Couleur</label>
+        <input type="color" id="inspColor" value="#ffffff">
+        <button id="inspColorReset">Couleur par défaut</button>
+      </div>
+      <div class="grp">
+        <label title="Ajoute une seconde couleur : l'objet est alors rempli d'un dégradé entre les deux">
+          <input type="checkbox" id="inspUseColor2" style="width:auto;"> Dégradé
+        </label>
+        <input type="color" id="inspColor2" value="#ffffff" disabled>
+      </div>
+      <div class="grp" id="inspRotGrp" style="display:none;">
+        <label>Rotation</label>
+        <button id="inspRotL">↺</button>
+        <button id="inspRotR">↻</button>
+      </div>
+      <div class="grp" id="inspKindGrp" style="display:none;">
+        <label>Effet</label>
+        <select id="inspKind"></select>
+      </div>
+      <div class="grp" id="inspPowerGrp" style="display:none;">
+        <label title="Multiplicateur précis de la force de saut appliquée par ce pad/orbe">Puissance</label>
+        <input type="range" class="insp-range" id="inspPower" min="0.3" max="3" step="0.1" value="1">
+        <span id="inspPowerVal">1.0x</span>
+      </div>
+      <div class="grp" id="inspSwingGrp" style="display:none;">
+        <label title="Vitesse à laquelle cette orbe inverse progressivement la gravité (plus court = plus rapide)">Vitesse d'inversion</label>
+        <input type="range" class="insp-range" id="inspSwingSpeed" min="4" max="40" step="1" value="12">
+        <span id="inspSwingSpeedVal">12</span>
+      </div>
+      <div class="grp">
+        <label title="Distance parcourue à chaque pression sur une flèche du clavier">Pas (flèches)</label>
+        <input type="number" id="nudgeStepInput" min="1" max="80" value="4" style="width:50px;">
+        <span style="font-size:.75em;color:var(--sub);">px</span>
+      </div>
+      <div class="grp">
+        <button id="inspRecenter" title="Remet l'objet exactement sur sa case (annule le déplacement libre)">↺ Recentrer</button>
+      </div>
+      <div class="grp">
+        <button id="inspDelete">🗑 Supprimer</button>
+        <button id="inspClose">Fermer</button>
+      </div>
+    </div>
+
+    <div class="toolbar" id="multiInspector" style="display:none;">
+      <div class="grp"><b id="multiCount">—</b></div>
+      <div class="grp">
+        <label>Couleur</label>
+        <input type="color" id="multiColor" value="#ffffff">
+        <button id="multiColorReset">Couleur par défaut</button>
+      </div>
+      <div class="grp">
+        <label title="Ajoute une seconde couleur à tous les éléments sélectionnés">
+          <input type="checkbox" id="multiUseColor2" style="width:auto;"> Dégradé
+        </label>
+        <input type="color" id="multiColor2" value="#ffffff" disabled>
+      </div>
+      <div class="grp">
+        <button id="multiDuplicate" title="Duplique tous les éléments sélectionnés, décalés de 2 cases vers la droite">⧉ Dupliquer</button>
+        <button id="multiDelete">🗑 Supprimer tout</button>
+        <button id="multiClose">Fermer</button>
+      </div>
+    </div>
+
+    <div id="fsWrap">
+      <div id="stage">
+        <canvas id="cv" width="960" height="400"></canvas>
+        <div id="hud"></div>
+        <div id="playHint">N'importe quelle touche / clic / tap = sauter — Échap ou ⏸ = pause</div>
+        <div id="musicSlotPlay"></div>
+        <div id="playControls">
+          <button id="pauseBtn" title="Mettre en pause (Échap)">⏸</button>
+          <button id="restartBtn" title="Recommencer">⟲</button>
+          <button id="quitBtn" title="Quitter le niveau">✖ Quitter</button>
+        </div>
+        <div id="pauseMenu">
+          <div>⏸ Pause</div>
+          <button id="resumeBtn2">▶ Reprendre</button>
+          <button id="quitFromPause">✖ Quitter le niveau</button>
+        </div>
+        <div id="msg"><div id="msgText"></div><div><button id="msgBtn"></button></div></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="grp">
+        <input type="text" id="levelName" placeholder="Nom du niveau" style="width:160px;">
+        <button id="saveBtn">💾 Enregistrer</button>
+        <button id="newBtn">🆕 Nouveau</button>
+      </div>
+      <div class="grp">
+        <button id="exportBtn">⬇ Exporter JSON</button>
+        <button id="importBtn">⬆ Importer JSON</button>
+        <input type="file" id="fileImport" accept="application/json">
+      </div>
+      <div class="grp">
+        <label title="Collez un lien de partage Spotify (morceau, album ou playlist) à associer à ce niveau">🎵 Spotify</label>
+        <input type="text" id="spotifyUrl" placeholder="Lien morceau / playlist Spotify" style="width:220px;">
+        <button id="attachMusic">Associer</button>
+        <button id="removeMusic">Retirer</button>
+      </div>
+      <div class="grp">
+        <label title="Couleur du ciel en haut de l'écran">Décor (haut)</label>
+        <input type="color" id="bgTopInput" value="#1a1a2e">
+        <label title="Couleur du ciel en bas de l'écran">(bas)</label>
+        <input type="color" id="bgBottomInput" value="#0e0e16">
+        <button id="bgReset" title="Revient au décor par défaut">Réinitialiser</button>
+      </div>
+      <div class="grp">
+        <button id="openSettings">⚙ Paramètres</button>
+      </div>
+    </div>
+
+    <div id="musicEditSlot"><div id="spotifyPreview" style="display:none;"></div></div>
+
+    <div>
+      <label style="font-size:.85em;color:var(--sub);">Mes niveaux :</label>
+      <div id="levelsList"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-box">
+      <h2>⚙ Paramètres — Raccourcis clavier</h2>
+      <p class="desc">Raccourcis actifs dans l'éditeur (pas pendant une partie : là, n'importe quelle touche fait sauter). Cliquez sur un raccourci puis appuyez sur la nouvelle touche.</p>
+      <div id="keybindRows"></div>
+      <div class="modal-actions">
+        <button id="resetKeybinds">Réinitialiser</button>
+      </div>
+
+      <h2 style="margin-top:20px;">🏆 Difficultés Geometry Dash — équivalence en points</h2>
+      <p class="desc">Quand vous cliquez sur "🔍 Analyser", l'IA donne une note de difficulté en points (0 à 100). Voici à quoi ça correspond dans l'échelle officielle de Geometry Dash.</p>
+      <div id="difficultyTable"></div>
+
+      <div class="modal-actions">
+        <button id="closeSettings" class="primary">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+"use strict";
+
+// ---------- Constantes ----------
+const CELL = 40, ROWS = 10, PLAYH = ROWS*CELL;
+const GROUND_ROW = ROWS-1;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const stageEl = document.getElementById('stage');
+const fsWrap = document.getElementById('fsWrap');
+const STORE_KEY = 'geodash_levels_v1';
+const KEYBIND_STORE_KEY = 'geodash_keybinds_v1';
+
+const PORTAL_INFO = {
+  mode_cube:   {label:'CUBE',  color:'#7bd4ff', kind:'mode', value:'cube'},
+  mode_ship:   {label:'VAISS', color:'#ffb37b', kind:'mode', value:'ship'},
+  mode_ball:   {label:'BALLE', color:'#c17bff', kind:'mode', value:'ball'},
+  mode_ufo:    {label:'UFO',   color:'#7bffb0', kind:'mode', value:'ufo'},
+  mode_wave:   {label:'VAGUE', color:'#ff7bd0', kind:'mode', value:'wave'},
+  mode_robot:  {label:'ROBOT', color:'#ffe37b', kind:'mode', value:'robot'},
+  mode_spider: {label:'ARAIG', color:'#b0b0b0', kind:'mode', value:'spider'},
+  mode_swing:  {label:'SWING', color:'#38e8d1', kind:'mode', value:'swing'},
+  grav_normal: {label:'G ↓',   color:'#4da6ff', kind:'grav', value:1},
+  grav_reverse:{label:'G ↑',   color:'#ff5c8a', kind:'grav', value:-1},
+  'speed_0.5': {label:'x0.5',  color:'#66ff66', kind:'speed', value:0.5},
+  speed_1:     {label:'x1',    color:'#ffee66', kind:'speed', value:1},
+  speed_2:     {label:'x2',    color:'#ff9d66', kind:'speed', value:2},
+  speed_3:     {label:'x3',    color:'#ff6666', kind:'speed', value:3},
+  speed_4:     {label:'x4',    color:'#ff66d9', kind:'speed', value:4},
+  size_mini:   {label:'mini',  color:'#9d9dff', kind:'size', value:0.6},
+  size_normal: {label:'normal',color:'#c9c9ff', kind:'size', value:1},
+};
+
+// Pads (déclenchement automatique au contact) et Orbes (déclenchement sur appui)
+const PAD_INFO = {
+  jumpHigh: {label:'▲▲', color:'#ffd23f'},
+  jumpLow:  {label:'▲',  color:'#ff9d4d'},
+  gravity:  {label:'⇅',  color:'#4da6ff'},
+};
+const ORB_INFO = {
+  jumpHigh: {label:'●●', color:'#fff066'},
+  jumpLow:  {label:'●',  color:'#ff7bd0'},
+  gravity:  {label:'◐',  color:'#7bd4ff'},
+  swing:    {label:'∿',  color:'#39ff6a'},
+};
+const KIND_LABELS = { jumpHigh:'Saut haut', jumpLow:'Saut bas', gravity:'Inverse gravité', swing:'Inversion progressive (vert)' };
+const PAD_KINDS = ['jumpHigh','jumpLow','gravity'];
+const ORB_KINDS = ['jumpHigh','jumpLow','gravity','swing'];
+
+// ---------- État niveau ----------
+function newLevel(){
+  const objs = new Map();
+  for(let c=0;c<150;c++){
+    objs.set(c+','+GROUND_ROW, [{type:'block'}]);
+    objs.set(c+',0', [{type:'block'}]);
+  }
+  return { name:'', length:150, objects:objs, musicUrl:'', ceilingHeight:1, bgTop:'#1a1a2e', bgBottom:'#0e0e16' };
+}
+let level = newLevel();
+let scrollX = 0; // en px (coordonnées monde)
+let lastRunPath = []; // chemin parcouru lors du dernier test (ou par l'IA), affiché dans l'éditeur
+let analyzeMarkerX = null; // position (px monde) du blocage détecté par l'analyse, si trouvé
+let analysisMarks = []; // marqueurs "+x point" de l'analyse IA, affichés le long du niveau
+// n'efface que le bandeau de résultat (texte/marqueur orange/points) : appelé à chaque
+// modification du niveau, car ce résultat ne serait plus exact. Le tracé rouge des hitboxes
+// (lastRunPath), lui, reste affiché tel quel tant qu'on ne ferme pas explicitement l'analyse ou
+// qu'on ne charge pas un autre niveau — l'utilisateur veut pouvoir continuer à s'en servir de
+// repère visuel pendant qu'il modifie le niveau autour.
+function clearAnalysisMarkers(){
+  analyzeMarkerX = null;
+  analysisMarks = [];
+  document.getElementById('analyzeResult').style.display = 'none';
+}
+function clearAnalysis(){
+  clearAnalysisMarkers();
+  lastRunPath = [];
+}
+
+function objKey(c,r){ return c+','+r; }
+// ---------- Plusieurs objets peuvent coexister sur une même case (empilés) ----------
+// level.objects : Map<"c,r", Array<objet>> — un pique posé sur un mur ne détruit plus le mur.
+function addObjectAt(c,r,obj){
+  const k = objKey(c,r);
+  let arr = level.objects.get(k);
+  if(!arr){ arr=[]; level.objects.set(k,arr); }
+  // remplace un éventuel objet du MÊME TYPE déjà présent (évite les doublons absurdes),
+  // mais laisse coexister des types différents (bloc + pique + portail + pad + orbe…)
+  const idx = arr.findIndex(o=>o.type===obj.type);
+  if(idx>=0) arr[idx] = obj; else arr.push(obj);
+  return obj;
+}
+function removeObjectAt(c,r,obj){
+  const k = objKey(c,r);
+  const arr = level.objects.get(k);
+  if(!arr) return;
+  const idx = arr.indexOf(obj);
+  if(idx>=0) arr.splice(idx,1);
+  if(arr.length===0) level.objects.delete(k);
+}
+function removeTopObjectAt(c,r){
+  const k = objKey(c,r);
+  const arr = level.objects.get(k);
+  if(!arr || !arr.length) return;
+  arr.pop();
+  if(arr.length===0) level.objects.delete(k);
+}
+function findObjectOfType(c,r,type){
+  const arr = level.objects.get(objKey(c,r));
+  if(!arr) return null;
+  return arr.find(o=>o.type===type) || null;
+}
+
+// ---------- Zoom (éditeur uniquement) ----------
+let editZoom = 1;
+function currentZoom(){ return mode==='edit' ? editZoom : 1; }
+function maxScrollX(){
+  const visW = cv.width/currentZoom();
+  return Math.max(0, level.length*CELL - visW);
+}
+function setZoom(z){
+  editZoom = Math.max(0.4, Math.min(1.5, Math.round(z*100)/100));
+  document.getElementById('zoomLabel').textContent = Math.round(editZoom*100)+'%';
+  scrollX = Math.max(0, Math.min(scrollX, maxScrollX()));
+}
+document.getElementById('zoomOut').addEventListener('click', ()=> setZoom(editZoom-0.1));
+document.getElementById('zoomIn').addEventListener('click', ()=> setZoom(editZoom+0.1));
+
+// ---------- Éditeur : outils ----------
+let currentTool = 'block';
+let currentPortal = 'mode_cube';
+let currentPad = 'jumpHigh';
+let currentOrb = 'jumpHigh';
+
+document.querySelectorAll('#editTools .tool').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#editTools .tool').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTool = btn.dataset.tool;
+    if(currentTool!=='select') deselectObject();
+  });
+});
+document.getElementById('portalType').addEventListener('change', e=>{
+  currentPortal = e.target.value;
+});
+document.getElementById('padType').addEventListener('change', e=>{
+  currentPad = e.target.value;
+});
+document.getElementById('orbType').addEventListener('change', e=>{
+  currentOrb = e.target.value;
+});
+
+// ---------- Sélection / inspecteur d'objet ----------
+let selectedKey = null;
+let nudgeStep = 4;
+document.getElementById('nudgeStepInput').addEventListener('change', e=>{
+  let v = parseInt(e.target.value,10);
+  if(!Number.isFinite(v)) v = 4;
+  v = Math.max(1, Math.min(80, v));
+  e.target.value = v;
+  nudgeStep = v;
+});
+const OBJ_TYPE_LABELS = { block:'Bloc', spike:'Pique', portal:'Portail', pad:'Pad', orb:'Orbe', checkpoint:'Point de sauvegarde' };
+function defaultColorFor(o){
+  if(o.type==='block') return '#8a6d4f';
+  if(o.type==='spike') return '#e04b4b';
+  if(o.type==='pad') return PAD_INFO[o.kind].color;
+  if(o.type==='orb') return ORB_INFO[o.kind].color;
+  if(o.type==='portal') return PORTAL_INFO[o.portal].color;
+  if(o.type==='checkpoint') return '#ffd23f';
+  return '#ffffff';
+}
+let selectedObj = null;
+let multiSelection = []; // [{key,obj}, ...] quand un cadre de sélection englobe plusieurs objets
+let marqueeStart = null, marqueeCurrent = null; // cadre de sélection en cours de tracé
+function hideMultiInspector(){
+  document.getElementById('multiInspector').style.display = 'none';
+  multiSelection = [];
+}
+function showMultiInspector(){
+  document.getElementById('inspector').style.display = 'none';
+  selectedKey = null; selectedObj = null;
+  document.getElementById('multiInspector').style.display = 'flex';
+  document.getElementById('multiCount').textContent = multiSelection.length+' éléments sélectionnés';
+}
+// sélectionne tous les objets dont le centre tombe dans le rectangle monde [a,b] : un seul
+// objet trouvé retombe sur la sélection simple habituelle, plusieurs déclenchent le mode
+// d'édition groupée (couleur commune, suppression groupée, duplication)
+function selectObjectsInRect(a,b){
+  const x0=Math.min(a.x,b.x), x1=Math.max(a.x,b.x);
+  const y0=Math.min(a.y,b.y), y1=Math.max(a.y,b.y);
+  const c0=Math.max(0,Math.floor(x0/CELL)), c1=Math.min(level.length-1,Math.floor(x1/CELL));
+  const r0=Math.max(0,Math.floor(y0/CELL)), r1=Math.min(ROWS-1,Math.floor(y1/CELL));
+  const found = [];
+  for(let c=c0;c<=c1;c++) for(let r=r0;r<=r1;r++){
+    const arr = level.objects.get(objKey(c,r));
+    if(!arr) continue;
+    for(const o of arr){
+      const ocx = c*CELL+CELL/2+(o.ox||0), ocy = r*CELL+CELL/2+(o.oy||0);
+      if(ocx>=x0 && ocx<=x1 && ocy>=y0 && ocy<=y1) found.push({key:objKey(c,r), obj:o});
+    }
+  }
+  if(found.length===0){ deselectObject(); return; }
+  if(found.length===1){
+    hideMultiInspector();
+    selectedKey = found[0].key; selectedObj = found[0].obj;
+    showInspector(selectedObj);
+    return;
+  }
+  multiSelection = found;
+  showMultiInspector();
+}
+// cherche l'objet le plus proche d'un point monde, dans un rayon donné (plutôt que
+// d'exiger de tomber pile dans sa case d'origine — plus tolérant pour les petits éléments)
+function findNearestObject(worldX, worldY, maxDist){
+  const c0 = Math.floor((worldX-maxDist)/CELL), c1 = Math.floor((worldX+maxDist)/CELL);
+  const r0 = Math.max(0,Math.floor((worldY-maxDist)/CELL)), r1 = Math.min(ROWS-1,Math.floor((worldY+maxDist)/CELL));
+  let best=null, bestKey=null, bestDist=Infinity;
+  for(let c=c0;c<=c1;c++) for(let r=r0;r<=r1;r++){
+    const arr = level.objects.get(objKey(c,r));
+    if(!arr) continue;
+    for(const o of arr){
+      const cx = c*CELL+CELL/2+(o.ox||0), cy = r*CELL+CELL/2+(o.oy||0);
+      const d = Math.hypot(worldX-cx, worldY-cy);
+      if(d<=maxDist && d<bestDist){ bestDist=d; best=o; bestKey=objKey(c,r); }
+    }
+  }
+  return best ? {obj:best, key:bestKey} : null;
+}
+function selectObjectAt(worldX, worldY){
+  const found = findNearestObject(worldX, worldY, SELECT_TOLERANCE);
+  if(!found){ deselectObject(); return; }
+  const arr = level.objects.get(found.key);
+  if(selectedKey===found.key && selectedObj && arr && arr.includes(selectedObj)){
+    // re-cliquer près d'une case déjà sélectionnée fait défiler vers l'objet suivant
+    // de la pile (utile quand plusieurs choses sont superposées sur la même case)
+    selectedObj = arr[(arr.indexOf(selectedObj)+1)%arr.length];
+  } else {
+    selectedObj = found.obj;
+  }
+  selectedKey = found.key;
+  showInspector(selectedObj);
+}
+function deselectObject(){
+  selectedKey = null;
+  selectedObj = null;
+  document.getElementById('inspector').style.display = 'none';
+  hideMultiInspector();
+}
+function updatePowerVisibility(o){
+  const show = (o.type==='pad' || o.type==='orb') && (o.kind==='jumpHigh' || o.kind==='jumpLow');
+  document.getElementById('inspPowerGrp').style.display = show ? 'flex' : 'none';
+  if(show){
+    const p = (typeof o.power==='number') ? o.power : (o.kind==='jumpHigh' ? 1.6 : 0.7);
+    document.getElementById('inspPower').value = p;
+    document.getElementById('inspPowerVal').textContent = p.toFixed(1)+'x';
+  }
+  const showSwing = (o.type==='orb') && (o.kind==='swing');
+  document.getElementById('inspSwingGrp').style.display = showSwing ? 'flex' : 'none';
+  if(showSwing){
+    const f = (typeof o.swingFrames==='number') ? o.swingFrames : SWING_ORB_DEFAULT_FRAMES;
+    document.getElementById('inspSwingSpeed').value = f;
+    document.getElementById('inspSwingSpeedVal').textContent = f;
+  }
+}
+function showInspector(o){
+  document.getElementById('inspector').style.display = 'flex';
+  document.getElementById('inspType').textContent = OBJ_TYPE_LABELS[o.type] || o.type;
+  document.getElementById('inspColor').value = o.color || defaultColorFor(o);
+  document.getElementById('inspUseColor2').checked = !!o.color2;
+  document.getElementById('inspColor2').disabled = !o.color2;
+  document.getElementById('inspColor2').value = o.color2 || '#ffffff';
+  document.getElementById('inspRotGrp').style.display = (o.type==='spike') ? 'flex' : 'none';
+  const kindGrp = document.getElementById('inspKindGrp');
+  const kindSelect = document.getElementById('inspKind');
+  if(o.type==='pad' || o.type==='orb'){
+    kindGrp.style.display = 'flex';
+    const kinds = o.type==='pad' ? PAD_KINDS : ORB_KINDS;
+    kindSelect.innerHTML = kinds.map(k=>'<option value="'+k+'">'+KIND_LABELS[k]+'</option>').join('');
+    kindSelect.value = o.kind;
+  } else if(o.type==='portal'){
+    kindGrp.style.display = 'flex';
+    kindSelect.innerHTML = document.getElementById('portalType').innerHTML;
+    kindSelect.value = o.portal;
+  } else {
+    kindGrp.style.display = 'none';
+  }
+  updatePowerVisibility(o);
+}
+document.getElementById('inspColor').addEventListener('input', e=>{
+  if(selectedObj) selectedObj.color = e.target.value;
+});
+document.getElementById('inspColorReset').addEventListener('click', ()=>{
+  if(!selectedObj) return;
+  delete selectedObj.color;
+  document.getElementById('inspColor').value = defaultColorFor(selectedObj);
+});
+document.getElementById('inspRotL').addEventListener('click', ()=>{
+  if(selectedObj && selectedObj.type==='spike') selectedObj.rot = (selectedObj.rot+3)%4;
+});
+document.getElementById('inspRotR').addEventListener('click', ()=>{
+  if(selectedObj && selectedObj.type==='spike') selectedObj.rot = (selectedObj.rot+1)%4;
+});
+document.getElementById('inspUseColor2').addEventListener('change', e=>{
+  if(!selectedObj) return;
+  document.getElementById('inspColor2').disabled = !e.target.checked;
+  if(e.target.checked) selectedObj.color2 = document.getElementById('inspColor2').value;
+  else delete selectedObj.color2;
+});
+document.getElementById('inspColor2').addEventListener('input', e=>{
+  if(!selectedObj || !document.getElementById('inspUseColor2').checked) return;
+  selectedObj.color2 = e.target.value;
+});
+document.getElementById('inspPower').addEventListener('input', e=>{
+  if(!selectedObj) return;
+  selectedObj.power = parseFloat(e.target.value);
+  document.getElementById('inspPowerVal').textContent = selectedObj.power.toFixed(1)+'x';
+});
+document.getElementById('inspSwingSpeed').addEventListener('input', e=>{
+  if(!selectedObj) return;
+  selectedObj.swingFrames = parseInt(e.target.value, 10);
+  document.getElementById('inspSwingSpeedVal').textContent = selectedObj.swingFrames;
+});
+document.getElementById('inspKind').addEventListener('change', e=>{
+  if(!selectedObj) return;
+  if(selectedObj.type==='pad' || selectedObj.type==='orb') selectedObj.kind = e.target.value;
+  else if(selectedObj.type==='portal') selectedObj.portal = e.target.value;
+  updatePowerVisibility(selectedObj);
+});
+document.getElementById('inspRecenter').addEventListener('click', ()=>{
+  if(!selectedObj) return;
+  delete selectedObj.ox; delete selectedObj.oy;
+});
+document.getElementById('inspDelete').addEventListener('click', ()=>{
+  if(selectedKey && selectedObj){
+    const [sc,sr] = selectedKey.split(',').map(Number);
+    removeObjectAt(sc,sr,selectedObj);
+    refreshCheckpointSelect();
+  }
+  deselectObject();
+});
+document.getElementById('inspClose').addEventListener('click', deselectObject);
+
+// ---------- Édition groupée (cadre de sélection multiple) ----------
+document.getElementById('multiColor').addEventListener('input', e=>{
+  multiSelection.forEach(({obj})=>{ obj.color = e.target.value; });
+});
+document.getElementById('multiColorReset').addEventListener('click', ()=>{
+  multiSelection.forEach(({obj})=>{ delete obj.color; });
+});
+document.getElementById('multiUseColor2').addEventListener('change', e=>{
+  document.getElementById('multiColor2').disabled = !e.target.checked;
+  const v = document.getElementById('multiColor2').value;
+  multiSelection.forEach(({obj})=>{ if(e.target.checked) obj.color2=v; else delete obj.color2; });
+});
+document.getElementById('multiColor2').addEventListener('input', e=>{
+  if(!document.getElementById('multiUseColor2').checked) return;
+  multiSelection.forEach(({obj})=>{ obj.color2 = e.target.value; });
+});
+document.getElementById('multiDelete').addEventListener('click', ()=>{
+  multiSelection.forEach(({key,obj})=>{
+    const [c,r] = key.split(',').map(Number);
+    removeObjectAt(c,r,obj);
+  });
+  hideMultiInspector();
+  refreshCheckpointSelect();
+});
+document.getElementById('multiDuplicate').addEventListener('click', ()=>{
+  const DUP_OFFSET = CELL*2; // décale la copie de 2 cases vers la droite, pour bien la distinguer de l'originale
+  const copies = [];
+  multiSelection.forEach(({key,obj})=>{
+    const [c,r] = key.split(',').map(Number);
+    const worldX = c*CELL+(obj.ox||0)+DUP_OFFSET, worldY = r*CELL+(obj.oy||0);
+    const nc = Math.max(0,Math.min(level.length-1,Math.floor(worldX/CELL)));
+    const nr = Math.max(0,Math.min(ROWS-1,Math.floor(worldY/CELL)));
+    const clone = JSON.parse(JSON.stringify(obj));
+    clone.ox = worldX - nc*CELL;
+    clone.oy = worldY - nr*CELL;
+    if(clone.type==='portal') clearOtherPortalsInColumn(nc, nr);
+    addObjectAt(nc,nr,clone);
+    copies.push({key:objKey(nc,nr), obj:clone});
+  });
+  multiSelection = copies; // sélectionne directement les nouvelles copies
+  showMultiInspector();
+  clearAnalysisMarkers();
+  refreshCheckpointSelect();
+});
+document.getElementById('multiClose').addEventListener('click', hideMultiInspector);
+
+document.getElementById('fillGround').addEventListener('click', ()=>{
+  for(let c=0;c<level.length;c++) addObjectAt(c,GROUND_ROW,{type:'block'});
+});
+document.getElementById('fillCeiling').addEventListener('click', ()=>{
+  const h = level.ceilingHeight||1;
+  for(let c=0;c<level.length;c++) for(let r=0;r<h;r++) addObjectAt(c,r,{type:'block'});
+});
+document.getElementById('ceilingHeightInput').addEventListener('change', e=>{
+  let v = parseInt(e.target.value,10);
+  if(!Number.isFinite(v)) v = 1;
+  v = Math.max(1, Math.min(4, v));
+  e.target.value = v;
+  level.ceilingHeight = v;
+});
+document.getElementById('extendLevel').addEventListener('click', ()=>{
+  level.length += 20;
+});
+document.getElementById('shrinkLevel').addEventListener('click', ()=>{
+  const newLen = Math.max(20, level.length-20);
+  const hasObjectsBeyond = [...level.objects.keys()].some(k=>parseInt(k.split(',')[0],10) >= newLen);
+  if(hasObjectsBeyond && !confirm('Réduire la longueur va supprimer définitivement tout ce qui est posé dans les 20 dernières cases. Continuer ?')) return;
+  level.length = newLen;
+  for(const k of [...level.objects.keys()]){
+    const c = parseInt(k.split(',')[0],10);
+    if(c >= level.length) level.objects.delete(k);
+  }
+  scrollX = Math.min(scrollX, maxScrollX());
+});
+document.getElementById('clearLevel').addEventListener('click', ()=>{
+  if(confirm('Vider tout le niveau ?')){ level.objects.clear(); }
+});
+document.getElementById('scrollLeft').addEventListener('click', ()=>{ scrollX = Math.max(0, scrollX-200); });
+document.getElementById('scrollRight').addEventListener('click', ()=>{ scrollX = Math.min(maxScrollX(), scrollX+200); });
+
+// ---------- Placement souris/tactile (mode édition) ----------
+let painting = false, paintErase = false;
+function vOffset(){ return cv.height*(1-currentZoom())/2; }
+function worldPosFromEvent(e){
+  const rect = cv.getBoundingClientRect();
+  const cssToCanvas = cv.width/rect.width;
+  const zoom = currentZoom();
+  const px = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+  const py = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+  const canvasX = (px-rect.left)*cssToCanvas;
+  const canvasY = (py-rect.top)*cssToCanvas;
+  return { x: canvasX/zoom + scrollX, y: (canvasY - vOffset())/zoom };
+}
+function cellFromEvent(e){
+  const w = worldPosFromEvent(e);
+  return { c: Math.floor(w.x/CELL), r: Math.floor(w.y/CELL) };
+}
+// déplace l'objet sélectionné vers une position MONDE (px) absolue et libre, sans aucune
+// limite de distance : la case "propriétaire" (utilisée pour l'indexation/collision) est
+// recalculée à la volée dès qu'on franchit une frontière de case, mais le décalage visuel
+// reste toujours minime (< 1 case) — l'objet peut donc voyager aussi loin qu'on veut.
+// un portail s'applique sur TOUTE la hauteur de sa colonne (peu importe la ligne où on
+// l'a posé) : en garder plusieurs dans la même colonne à des lignes différentes ne sert à
+// rien et créait l'ambiguïté "icône affichée ≠ effet déclenché". On retire donc tout autre
+// portail déjà présent ailleurs dans la colonne avant d'en (re)poser un.
+function clearOtherPortalsInColumn(c, exceptR){
+  for(let rr=0; rr<ROWS; rr++){
+    if(rr===exceptR) continue;
+    const existing = findObjectOfType(c,rr,'portal');
+    if(existing) removeObjectAt(c,rr,existing);
+  }
+}
+function moveSelectedTo(worldX, worldY){
+  if(!selectedKey || !selectedObj) return;
+  worldX = Math.max(0, Math.min(level.length*CELL-1, worldX));
+  worldY = Math.max(0, Math.min(PLAYH-1, worldY));
+  const nc = Math.floor(worldX/CELL), nr = Math.floor(worldY/CELL);
+  const [sc,sr] = selectedKey.split(',').map(Number);
+  if(nc!==sc || nr!==sr){
+    removeObjectAt(sc,sr,selectedObj);
+    if(selectedObj.type==='portal') clearOtherPortalsInColumn(nc, nr);
+    addObjectAt(nc,nr,selectedObj);
+    selectedKey = objKey(nc,nr);
+  }
+  selectedObj.ox = worldX - nc*CELL;
+  selectedObj.oy = worldY - nr*CELL;
+  clearAnalysisMarkers();
+  refreshCheckpointSelect();
+}
+function placeAt(c,r,erase){
+  if(c<0 || c>=level.length || r<0 || r>=ROWS) return;
+  clearAnalysisMarkers();
+  if(erase){ removeTopObjectAt(c,r); refreshCheckpointSelect(); return; }
+  if(currentTool==='block') addObjectAt(c,r,{type:'block'});
+  else if(currentTool==='spike') addObjectAt(c,r,{type:'spike', rot:0});
+  else if(currentTool==='rotate'){
+    const o = findObjectOfType(c,r,'spike');
+    if(o) o.rot = (o.rot+1)%4;
+  }
+  else if(currentTool==='portal'){
+    clearOtherPortalsInColumn(c, r);
+    addObjectAt(c,r,{type:'portal', portal:currentPortal});
+  }
+  else if(currentTool==='pad') addObjectAt(c,r,{type:'pad', kind:currentPad});
+  else if(currentTool==='orb') addObjectAt(c,r,{type:'orb', kind:currentOrb});
+  else if(currentTool==='checkpoint') addObjectAt(c,r,{type:'checkpoint'});
+  if(currentTool==='checkpoint') refreshCheckpointSelect();
+}
+let dragging = false, dragStartWorld = null, dragStartAbs = null;
+let multiDragging = false, multiDragStartWorld = null, multiDragEntries = null;
+const SELECT_TOLERANCE = CELL*0.85; // clic généreux : pas besoin d'être pixel-parfait,
+  // surtout utile pour les petits éléments comme les piques
+// déplace TOUS les objets d'une sélection groupée ensemble, en gardant leurs positions
+// relatives — chacun est re-casé dans sa propre case si besoin, indépendamment des autres
+function startMultiDragEntries(){
+  return multiSelection.map(({key,obj})=>{
+    const [c,r] = key.split(',').map(Number);
+    return { obj, startX: c*CELL+(obj.ox||0), startY: r*CELL+(obj.oy||0), curKey: key };
+  });
+}
+function applyMultiDragTo(world){
+  const dx = world.x - multiDragStartWorld.x, dy = world.y - multiDragStartWorld.y;
+  for(const entry of multiDragEntries){
+    const worldX = Math.max(0, Math.min(level.length*CELL-1, entry.startX+dx));
+    const worldY = Math.max(0, Math.min(PLAYH-1, entry.startY+dy));
+    const nc = Math.floor(worldX/CELL), nr = Math.floor(worldY/CELL);
+    const [oc,orr] = entry.curKey.split(',').map(Number);
+    if(nc!==oc || nr!==orr){
+      removeObjectAt(oc,orr,entry.obj);
+      if(entry.obj.type==='portal') clearOtherPortalsInColumn(nc,nr);
+      addObjectAt(nc,nr,entry.obj);
+      entry.curKey = objKey(nc,nr);
+    }
+    entry.obj.ox = worldX-nc*CELL;
+    entry.obj.oy = worldY-nr*CELL;
+  }
+  multiSelection = multiDragEntries.map(e=>({key:e.curKey, obj:e.obj}));
+  clearAnalysisMarkers();
+}
+// version "en un coup" pour les flèches du clavier (pas de glissement continu)
+function moveMultiSelectionBy(dx, dy){
+  multiDragStartWorld = {x:0,y:0};
+  multiDragEntries = startMultiDragEntries();
+  applyMultiDragTo({x:dx,y:dy});
+  multiDragEntries = null; multiDragStartWorld = null;
+  refreshCheckpointSelect();
+}
+cv.addEventListener('mousedown', e=>{
+  if(mode!=='edit') return;
+  const world = worldPosFromEvent(e);
+  const {c,r} = cellFromEvent(e);
+  if(currentTool==='select'){
+    if(multiSelection.length>0){
+      for(const {key,obj} of multiSelection){
+        const [sc,sr] = key.split(',').map(Number);
+        const ocx = sc*CELL+CELL/2+(obj.ox||0), ocy = sr*CELL+CELL/2+(obj.oy||0);
+        if(Math.hypot(world.x-ocx, world.y-ocy) <= SELECT_TOLERANCE){
+          multiDragging = true;
+          multiDragStartWorld = world;
+          multiDragEntries = startMultiDragEntries();
+          return;
+        }
+      }
+    }
+    if(selectedKey && selectedObj && multiSelection.length===0){
+      const [sc,sr] = selectedKey.split(',').map(Number);
+      const ocx = sc*CELL+CELL/2+(selectedObj.ox||0), ocy = sr*CELL+CELL/2+(selectedObj.oy||0);
+      if(Math.hypot(world.x-ocx, world.y-ocy) <= SELECT_TOLERANCE){
+        dragging = true;
+        dragStartWorld = world;
+        dragStartAbs = { x: sc*CELL+(selectedObj.ox||0), y: sr*CELL+(selectedObj.oy||0) };
+        return;
+      }
+    }
+    // pas de déplacement d'un objet déjà sélectionné : démarre un cadre de sélection (marquee)
+    // — un simple clic (sans vrai glissement) retombera sur la sélection habituelle au relâchement
+    marqueeStart = world;
+    marqueeCurrent = world;
+    return;
+  }
+  painting = true; paintErase = (currentTool==='erase');
+  placeAt(c,r,paintErase);
+});
+cv.addEventListener('mousemove', e=>{
+  if(mode!=='edit') return;
+  if(multiDragging){
+    applyMultiDragTo(worldPosFromEvent(e));
+    return;
+  }
+  if(dragging && selectedKey){
+    const world = worldPosFromEvent(e);
+    // aucune limite de distance : on suit la souris librement, à autant de cases qu'on veut
+    moveSelectedTo(dragStartAbs.x + (world.x-dragStartWorld.x), dragStartAbs.y + (world.y-dragStartWorld.y));
+    return;
+  }
+  if(marqueeStart){
+    marqueeCurrent = worldPosFromEvent(e);
+    return;
+  }
+  if(!painting) return;
+  if(currentTool==='portal' || currentTool==='rotate' || currentTool==='checkpoint') return; // un seul déclenchement par clic
+  const {c,r} = cellFromEvent(e);
+  placeAt(c,r,paintErase);
+});
+window.addEventListener('mouseup', ()=>{
+  painting=false; dragging=false;
+  if(multiDragging){
+    multiDragging = false; multiDragEntries = null; multiDragStartWorld = null;
+    refreshCheckpointSelect();
+  }
+  if(marqueeStart){
+    const dist = Math.hypot(marqueeCurrent.x-marqueeStart.x, marqueeCurrent.y-marqueeStart.y);
+    if(dist > 6){
+      selectObjectsInRect(marqueeStart, marqueeCurrent);
+    } else {
+      selectObjectAt(marqueeStart.x, marqueeStart.y);
+    }
+    marqueeStart = null; marqueeCurrent = null;
+  }
+});
+cv.addEventListener('touchstart', e=>{
+  if(mode!=='edit') return;
+  e.preventDefault();
+  const {c,r} = cellFromEvent(e);
+  if(currentTool==='select'){ const w=worldPosFromEvent(e); selectObjectAt(w.x, w.y); return; }
+  placeAt(c,r, currentTool==='erase');
+}, {passive:false});
+cv.addEventListener('touchmove', e=>{
+  if(mode!=='edit') return;
+  e.preventDefault();
+  if(currentTool==='portal' || currentTool==='rotate' || currentTool==='select' || currentTool==='checkpoint') return;
+  const {c,r} = cellFromEvent(e);
+  placeAt(c,r, currentTool==='erase');
+}, {passive:false});
+cv.addEventListener('wheel', e=>{
+  if(mode!=='edit') return;
+  e.preventDefault();
+  scrollX = Math.max(0, Math.min(maxScrollX(), scrollX + e.deltaY));
+}, {passive:false});
+
+// ---------- Rendu ----------
+function drawGrid(){
+  const zoom = currentZoom();
+  const visW = cv.width/zoom;
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1/zoom;
+  const startC = Math.floor(scrollX/CELL);
+  const endCol = Math.ceil((scrollX+visW)/CELL);
+  for(let c=startC; c<=endCol; c++){
+    const x = c*CELL;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,PLAYH); ctx.stroke();
+  }
+  for(let r=0;r<=ROWS;r++){
+    const y = r*CELL;
+    ctx.beginPath(); ctx.moveTo(scrollX,y); ctx.lineTo(scrollX+visW,y); ctx.stroke();
+  }
+}
+
+// dégradé à 2 couleurs (personnalisation libre) ou couleur unie / valeur par défaut
+function fillStyleFor(x,y,w,h,color,color2,fallback){
+  if(color2){
+    const g = ctx.createLinearGradient(x,y,x+w,y+h);
+    g.addColorStop(0, color||fallback);
+    g.addColorStop(1, color2);
+    return g;
+  }
+  return color || fallback;
+}
+function drawBlock(x,y,color,color2){
+  ctx.fillStyle = fillStyleFor(x,y,CELL,CELL,color,color2,'#8a6d4f');
+  ctx.fillRect(x+1,y+1,CELL-2,CELL-2);
+  ctx.strokeStyle = '#5c4a36';
+  ctx.strokeRect(x+1,y+1,CELL-2,CELL-2);
+  ctx.fillStyle = (color||color2) ? ((color||color2)+'cc') : '#a98b66';
+  ctx.fillRect(x+4,y+4,CELL-8,6);
+}
+// plafond : même apparence qu'un bloc (alignement de blocs), juste le reflet en bas
+// plutôt qu'en haut, pour se distinguer subtilement d'un bloc posé au sol
+function drawCeiling(x,y,color,color2){
+  ctx.fillStyle = fillStyleFor(x,y,CELL,CELL,color,color2,'#8a6d4f');
+  ctx.fillRect(x+1,y+1,CELL-2,CELL-2);
+  ctx.strokeStyle = '#5c4a36';
+  ctx.strokeRect(x+1,y+1,CELL-2,CELL-2);
+  ctx.fillStyle = (color||color2) ? ((color||color2)+'cc') : '#a98b66';
+  ctx.fillRect(x+4,y+CELL-10,CELL-8,6);
+}
+// points locaux (centrés sur la case) d'un pique pointant vers le haut, avant rotation
+const SPIKE_LOCAL = [{x:0,y:-CELL/2+2},{x:CELL/2-3,y:CELL/2-2},{x:-CELL/2+3,y:CELL/2-2}];
+function drawSpike(x,y,rot,color,color2){
+  ctx.save();
+  ctx.translate(x+CELL/2,y+CELL/2);
+  ctx.rotate(rot*Math.PI/2);
+  ctx.beginPath();
+  ctx.moveTo(SPIKE_LOCAL[0].x,SPIKE_LOCAL[0].y);
+  ctx.lineTo(SPIKE_LOCAL[1].x,SPIKE_LOCAL[1].y);
+  ctx.lineTo(SPIKE_LOCAL[2].x,SPIKE_LOCAL[2].y);
+  ctx.closePath();
+  ctx.fillStyle = fillStyleFor(-CELL/2,-CELL/2,CELL,CELL,color,color2,'#e04b4b');
+  ctx.fill();
+  ctx.strokeStyle = '#8f1f1f';
+  ctx.stroke();
+  ctx.restore();
+}
+// points locaux d'un pad (trapèze posé au sol de la case)
+const PAD_LOCAL = [{x:-14,y:CELL/2-2},{x:14,y:CELL/2-2},{x:8,y:CELL/2-14},{x:-8,y:CELL/2-14}];
+function drawPad(x,y,kind,color,color2){
+  const info = PAD_INFO[kind];
+  ctx.save();
+  ctx.translate(x+CELL/2,y+CELL/2);
+  ctx.beginPath();
+  ctx.moveTo(PAD_LOCAL[0].x,PAD_LOCAL[0].y);
+  ctx.lineTo(PAD_LOCAL[1].x,PAD_LOCAL[1].y);
+  ctx.lineTo(PAD_LOCAL[2].x,PAD_LOCAL[2].y);
+  ctx.lineTo(PAD_LOCAL[3].x,PAD_LOCAL[3].y);
+  ctx.closePath();
+  ctx.fillStyle = fillStyleFor(-CELL/2,-CELL/2,CELL,CELL,color,color2,info.color);
+  ctx.fill();
+  ctx.strokeStyle = '#1b1b1b';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.fillStyle = '#1b1b1b';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(info.label, 0, PAD_LOCAL[2].y+9);
+  ctx.restore();
+}
+function drawOrb(x,y,kind,color,color2){
+  const info = ORB_INFO[kind];
+  const cx=x+CELL/2, cy=y+CELL/2, r=CELL/2-6;
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.fillStyle = color2 ? fillStyleFor(cx-r,cy-r,r*2,r*2,color,color2,info.color)
+    : ((color || info.color) + '33');
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = color || info.color;
+  ctx.stroke();
+  ctx.fillStyle = color || info.color;
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(info.label, cx, cy+3);
+}
+function drawPortal(x,y,portalKey,color,color2){
+  const info = PORTAL_INFO[portalKey];
+  ctx.fillStyle = color2 ? fillStyleFor(x+6,0,CELL-12,PLAYH,color,color2,info.color)
+    : ((color||info.color) + 'cc');
+  ctx.fillRect(x+6, 0, CELL-12, PLAYH);
+  ctx.strokeStyle = info.color;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x+6, 0, CELL-12, PLAYH);
+  ctx.save();
+  ctx.translate(x+CELL/2, y+CELL/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillStyle = '#111';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(info.label, 0, 3);
+  ctx.restore();
+}
+
+// point de sauvegarde : petit drapeau numéroté, purement un repère d'éditeur (aucune
+// collision : ne tue pas, ne pousse pas — juste un point de départ possible pour "Tester")
+function drawCheckpoint(x,y,color,color2,num){
+  ctx.save();
+  ctx.translate(x+CELL/2, y+CELL/2);
+  ctx.strokeStyle = color || '#ffd23f';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(-10,17); ctx.lineTo(-10,-16); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-10,-16); ctx.lineTo(11,-9); ctx.lineTo(-10,-2); ctx.closePath();
+  ctx.fillStyle = fillStyleFor(-10,-16,21,14,color,color2,'#ffd23f');
+  ctx.fill();
+  ctx.strokeStyle = '#1b1b1b'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#1b1b1b';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(String(num), 0, 15);
+  ctx.restore();
+}
+// numéro d'ordre (gauche → droite) d'un point de sauvegarde parmi tous ceux du niveau
+function allCheckpoints(){
+  const list = [];
+  for(const [k,arr] of level.objects.entries()){
+    const [c] = k.split(',').map(Number);
+    for(const o of arr) if(o.type==='checkpoint') list.push({o, x:c*CELL+(o.ox||0)});
+  }
+  list.sort((a,b)=>a.x-b.x);
+  return list;
+}
+function checkpointNumberFor(o){
+  const list = allCheckpoints();
+  const idx = list.findIndex(e=>e.o===o);
+  return idx>=0 ? idx+1 : '?';
+}
+function refreshCheckpointSelect(){
+  const sel = document.getElementById('startCheckpointSelect');
+  if(!sel) return;
+  const current = sel.value;
+  const list = allCheckpoints();
+  sel.innerHTML = '<option value="0">Début</option>' +
+    list.map((e,i)=>'<option value="'+(i+1)+'">Point #'+(i+1)+'</option>').join('');
+  if([...sel.options].some(o=>o.value===current)) sel.value = current;
+}
+
+function playerColor(){
+  const m = PORTAL_INFO['mode_'+player.mode];
+  return m ? m.color : '#fff';
+}
+function drawPlayer(){
+  const cx = player.x+player.w/2, cy = player.y+player.h/2;
+  const w = player.w, h = player.h;
+  ctx.save();
+  ctx.translate(cx, cy);
+  const col = playerColor();
+  ctx.fillStyle = col;
+  ctx.strokeStyle = '#111';
+  ctx.lineWidth = 2;
+  if(player.mode==='cube' || player.mode==='robot'){
+    ctx.scale(1, player.gravDir);
+    ctx.fillRect(-w/2,-h/2,w,h);
+    ctx.strokeRect(-w/2,-h/2,w,h);
+  } else if(player.mode==='ball'){
+    ctx.beginPath(); ctx.arc(0,0,w/2,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  } else if(player.mode==='swing'){
+    ctx.beginPath(); ctx.moveTo(0,-h/2-5); ctx.lineTo(0,-h/2+2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,w/2,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  } else if(player.mode==='ship'){
+    ctx.beginPath();
+    ctx.moveTo(-w/2,-h/3); ctx.lineTo(w/2,0); ctx.lineTo(-w/2,h/3); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  } else if(player.mode==='ufo'){
+    ctx.beginPath(); ctx.ellipse(0,0,w/2,h/3,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,-h/4,w/4,0,Math.PI*2); ctx.fill();
+  } else if(player.mode==='wave'){
+    const sw=w*0.65, sh=h*0.65; // 35% plus petite, comme la hitbox (hitboxShapeAt)
+    ctx.beginPath();
+    ctx.moveTo(0,-sh/2); ctx.lineTo(sw/2,0); ctx.lineTo(0,sh/2); ctx.lineTo(-sw/2,0); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  } else if(player.mode==='spider'){
+    ctx.beginPath();
+    ctx.moveTo(0,-h/2); ctx.lineTo(w/2,0); ctx.lineTo(0,h/2); ctx.lineTo(-w/2,0); ctx.closePath();
+    ctx.fillStyle = '#222';
+    ctx.fill(); ctx.strokeStyle = col; ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function render(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  // ciel (espace écran, non affecté par le zoom/défilement)
+  const grad = ctx.createLinearGradient(0,0,0,cv.height);
+  grad.addColorStop(0, level.bgTop||'#1a1a2e'); grad.addColorStop(1, level.bgBottom||'#0e0e16');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,cv.width,cv.height);
+
+  const zoom = currentZoom();
+  const offsetY = vOffset();
+  ctx.save();
+  ctx.translate(0, offsetY);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-scrollX, 0);
+
+  if(mode==='edit') drawGrid();
+
+  const visW = cv.width/zoom;
+  const startC = Math.max(0, Math.floor(scrollX/CELL)-1);
+  const endC = Math.min(level.length, Math.ceil((scrollX+visW)/CELL)+1);
+
+  for(let c=startC;c<endC;c++){
+    for(let r=0;r<ROWS;r++){
+      const arr = level.objects.get(objKey(c,r));
+      if(!arr) continue;
+      for(const o of arr){
+        const x = c*CELL+(o.ox||0), y = r*CELL+(o.oy||0);
+        if(o.type==='block'){
+          if(r < (level.ceilingHeight||1)) drawCeiling(x,y,o.color,o.color2);
+          else drawBlock(x,y,o.color,o.color2);
+        }
+        else if(o.type==='spike') drawSpike(x,y,o.rot,o.color,o.color2);
+        else if(o.type==='portal') drawPortal(x,y,o.portal,o.color,o.color2);
+        else if(o.type==='pad') drawPad(x,y,o.kind,o.color,o.color2);
+        else if(o.type==='orb') drawOrb(x,y,o.kind,o.color,o.color2);
+        else if(o.type==='checkpoint') drawCheckpoint(x,y,o.color,o.color2,checkpointNumberFor(o));
+      }
+    }
+  }
+
+  // ligne d'arrivée
+  const finishX = level.length*CELL;
+  if(finishX > scrollX-20 && finishX < scrollX+visW+20){
+    for(let i=0;i<ROWS;i++){
+      ctx.fillStyle = i%2===0 ? '#fff' : '#111';
+      ctx.fillRect(finishX, i*CELL, 8, CELL);
+    }
+  }
+
+  // trajectoire du dernier essai : la hitbox EXACTE du personnage à chaque image, pas une
+  // simple ligne — on voit ainsi précisément où le corps est réellement passé
+  if(mode==='edit' && lastRunPath.length>0){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,25,25,0.5)';
+    ctx.lineWidth = Math.max(0.75, 1/zoom);
+    for(let i=0;i<lastRunPath.length;i+=2){
+      const f = lastRunPath[i];
+      const shape = hitboxShapeAt(f.mode, f.x+f.w/2, f.y+f.h/2, f.w, f.h);
+      ctx.beginPath();
+      if(shape.type==='circle'){
+        ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI*2);
+      } else if(shape.type==='ellipse'){
+        ctx.ellipse(shape.cx, shape.cy, shape.rx, shape.ry, 0, 0, Math.PI*2);
+      } else {
+        ctx.moveTo(shape.pts[0].x, shape.pts[0].y);
+        for(let j=1;j<shape.pts.length;j++) ctx.lineTo(shape.pts[j].x, shape.pts[j].y);
+        ctx.closePath();
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  if(mode==='edit' && analyzeMarkerX!=null){
+    ctx.save();
+    ctx.strokeStyle = '#ff8c00';
+    ctx.lineWidth = 3/zoom;
+    ctx.setLineDash([6/zoom,4/zoom]);
+    ctx.beginPath();
+    ctx.moveTo(analyzeMarkerX, 0); ctx.lineTo(analyzeMarkerX, PLAYH);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // marqueurs de la dernière analyse IA : à chaque passage exigeant, la durée (en millisecondes,
+  // en temps continu — indépendante des 60 FPS du jeu) pendant laquelle cliquer permet encore de
+  // continuer — plus ce nombre est petit, plus le timing doit être précis.
+  if(mode==='edit' && analysisMarks.length>0){
+    ctx.save();
+    ctx.font = (11/zoom)+'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for(const m of analysisMarks){
+      if(m.x < scrollX-60 || m.x > scrollX+visW+60) continue;
+      const label = (m.tolMs<10 ? m.tolMs.toFixed(1) : Math.round(m.tolMs))+' ms';
+      const y = Math.max(10/zoom, m.y-14/zoom);
+      const w = ctx.measureText(label).width + 8/zoom;
+      ctx.fillStyle = 'rgba(220,40,40,0.88)';
+      ctx.fillRect(m.x-w/2, y-8/zoom, w, 14/zoom);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(label, m.x, y-1/zoom);
+    }
+    ctx.restore();
+  }
+
+  if(mode==='edit' && selectedKey && selectedObj){
+    const [sc,sr] = selectedKey.split(',').map(Number);
+    const sox = selectedObj.ox||0, soy = selectedObj.oy||0;
+    ctx.save();
+    ctx.strokeStyle = '#ffd23f';
+    ctx.lineWidth = 2/zoom;
+    ctx.setLineDash([4/zoom,3/zoom]);
+    ctx.strokeRect(sc*CELL+sox, sr*CELL+soy, CELL, CELL);
+    ctx.restore();
+  }
+
+  if(mode==='edit' && multiSelection.length>0){
+    ctx.save();
+    ctx.strokeStyle = '#39ff6a';
+    ctx.lineWidth = 2/zoom;
+    ctx.setLineDash([4/zoom,3/zoom]);
+    for(const {key,obj} of multiSelection){
+      const [c,r] = key.split(',').map(Number);
+      ctx.strokeRect(c*CELL+(obj.ox||0), r*CELL+(obj.oy||0), CELL, CELL);
+    }
+    ctx.restore();
+  }
+
+  if(mode==='edit' && marqueeStart && marqueeCurrent){
+    const x0=Math.min(marqueeStart.x,marqueeCurrent.x), y0=Math.min(marqueeStart.y,marqueeCurrent.y);
+    const w0=Math.abs(marqueeCurrent.x-marqueeStart.x), h0=Math.abs(marqueeCurrent.y-marqueeStart.y);
+    ctx.save();
+    ctx.fillStyle = 'rgba(57,255,106,0.15)';
+    ctx.strokeStyle = '#39ff6a';
+    ctx.lineWidth = 1.5/zoom;
+    ctx.fillRect(x0,y0,w0,h0);
+    ctx.strokeRect(x0,y0,w0,h0);
+    ctx.restore();
+  }
+
+  if(mode==='play' || mode==='dead' || mode==='win') drawPlayer();
+
+  ctx.restore();
+
+  // HUD
+  if(mode==='play' || mode==='dead' || mode==='win'){
+    const pct = Math.min(100, Math.round(player.x/(level.length*CELL)*100));
+    hud.textContent = pct+'%  —  '+ (PORTAL_INFO['mode_'+player.mode]?PORTAL_INFO['mode_'+player.mode].label:player.mode);
+  } else {
+    hud.textContent = 'Édition — '+level.length+' cases';
+    const ld = document.getElementById('lenDisplay');
+    if(ld) ld.textContent = level.length+' cases';
+    const dd = document.getElementById('durationDisplay');
+    if(dd) dd.textContent = formatLevelDuration();
+  }
+}
+
+// ---------- Moteur de jeu ----------
+const hud = document.getElementById('hud');
+const msg = document.getElementById('msg');
+const msgText = document.getElementById('msgText');
+const msgBtn = document.getElementById('msgBtn');
+
+let mode = 'edit'; // edit | play | dead | win
+let player;
+let heldKeys = new Set();
+let mouseHeld = false;
+let pressedEdge = false;
+let rafId = null;
+
+function isHeld(){ return heldKeys.size>0 || mouseHeld; }
+
+// parcourt tous les portails du niveau situés avant targetX pour déduire l'état (forme,
+// gravité, vitesse, taille) qu'un joueur aurait "normalement" à cet endroit — les portails
+// se déclenchent toujours pareil quel que soit le joueur, donc c'est déterministe
+function computeStateAtX(targetX){
+  const portals = [];
+  for(const [k,arr] of level.objects.entries()){
+    const c = parseInt(k.split(',')[0],10);
+    for(const o of arr) if(o.type==='portal') portals.push({x:c*CELL+(o.ox||0), info:PORTAL_INFO[o.portal]});
+  }
+  portals.sort((a,b)=>a.x-b.x);
+  const state = { mode:'cube', gravDir:1, speedMult:1, sizeMult:1 };
+  for(const p of portals){
+    if(p.x >= targetX) break;
+    if(p.info.kind==='mode') state.mode = p.info.value;
+    else if(p.info.kind==='grav') state.gravDir = p.info.value;
+    else if(p.info.kind==='speed') state.speedMult = p.info.value;
+    else if(p.info.kind==='size') state.sizeMult = p.info.value;
+  }
+  return state;
+}
+function estimateLevelDurationFrames(){
+  const speedPortals = [];
+  for(const [k,arr] of level.objects.entries()){
+    const c = parseInt(k.split(',')[0],10);
+    for(const o of arr){
+      if(o.type==='portal' && PORTAL_INFO[o.portal].kind==='speed'){
+        speedPortals.push({x:c*CELL+(o.ox||0), value:PORTAL_INFO[o.portal].value});
+      }
+    }
+  }
+  speedPortals.sort((a,b)=>a.x-b.x);
+  const endX = level.length*CELL;
+  let frames = 0, cursor = 0, speedMult = 1;
+  for(const p of speedPortals){
+    if(p.x >= endX) break;
+    if(p.x > cursor) frames += (p.x-cursor) / (BASE_SPEED*speedMult);
+    cursor = p.x;
+    speedMult = p.value;
+  }
+  if(endX > cursor) frames += (endX-cursor) / (BASE_SPEED*speedMult);
+  return frames;
+}
+function formatLevelDuration(){
+  const seconds = estimateLevelDurationFrames() / 60;
+  return seconds.toFixed(1)+' s';
+}
+function resetPlayer(startX, startState){
+  const baseW=26, baseH=26;
+  const sizeMult = (startState && startState.sizeMult) || 1;
+  player = {
+    x: startX!=null ? startX : 2*CELL,
+    y: (GROUND_ROW)*CELL - baseH*sizeMult - 0.5,
+    vx: 0, vy: 0,
+    w: baseW*sizeMult, h: baseH*sizeMult,
+    mode: (startState && startState.mode) || 'cube',
+    gravDir: (startState && startState.gravDir) || 1,
+    speedMult: (startState && startState.speedMult) || 1,
+    sizeMult,
+    holdFrames: 0,
+    triggered: new Set(),
+    swingT: null,
+    wasGroundedPrev: false,
+  };
+  if(startX!=null){
+    // pose le joueur sur le sol le plus proche sous le point de sauvegarde
+    const c = Math.floor((player.x+player.w/2)/CELL);
+    for(let r=0;r<ROWS;r++){
+      if(isSolidCell(c,r)){ player.y = r*CELL - player.h - 0.5; break; }
+    }
+  }
+}
+
+// ---------- Plein écran (pendant le jeu) ----------
+function isFs(){
+  return document.fullscreenElement===fsWrap || document.webkitFullscreenElement===fsWrap;
+}
+function enterFullscreen(){
+  try{
+    const req = fsWrap.requestFullscreen ? fsWrap.requestFullscreen.bind(fsWrap)
+      : (fsWrap.webkitRequestFullscreen ? fsWrap.webkitRequestFullscreen.bind(fsWrap) : null);
+    if(req){ const p = req(); if(p && p.catch) p.catch(()=>{}); }
+  }catch(e){}
+}
+function exitFullscreen(){
+  try{
+    if(!isFs()) return;
+    const ex = document.exitFullscreen ? document.exitFullscreen.bind(document)
+      : (document.webkitExitFullscreen ? document.webkitExitFullscreen.bind(document) : null);
+    if(ex){ const p = ex(); if(p && p.catch) p.catch(()=>{}); }
+  }catch(e){}
+}
+function resizeStageForFullscreen(){
+  if(isFs()){
+    const vw = window.innerWidth, vh = window.innerHeight, ratio = 960/400;
+    let w = vw, h = w/ratio;
+    if(h > vh){ h = vh; w = h*ratio; }
+    stageEl.style.width = w+'px'; stageEl.style.height = h+'px';
+  } else {
+    stageEl.style.width = ''; stageEl.style.height = '';
+  }
+}
+window.addEventListener('resize', resizeStageForFullscreen);
+document.addEventListener('fullscreenchange', resizeStageForFullscreen);
+document.addEventListener('webkitfullscreenchange', resizeStageForFullscreen);
+
+// ---------- Musique Spotify : replace le lecteur éditeur <-> partie ----------
+function placeMusicPlayer(){
+  const box = document.getElementById('spotifyPreview');
+  const target = (mode==='play') ? document.getElementById('musicSlotPlay') : document.getElementById('musicEditSlot');
+  if(box.parentElement !== target) target.appendChild(box);
+}
+
+// ---------- Pause ----------
+let paused = false;
+function togglePause(){
+  if(mode!=='play') return;
+  paused = !paused;
+  document.getElementById('pauseMenu').style.display = paused ? 'flex' : 'none';
+  if(paused) pauseLevelMusic(); else resumeLevelMusic();
+  if(rafId) cancelAnimationFrame(rafId);
+  if(!paused) loop();
+}
+document.getElementById('pauseBtn').addEventListener('click', togglePause);
+document.getElementById('resumeBtn2').addEventListener('click', togglePause);
+document.getElementById('quitFromPause').addEventListener('click', ()=>{
+  paused = false;
+  document.getElementById('pauseMenu').style.display = 'none';
+  backToEdit();
+});
+
+function startPlay(){
+  mode = 'play';
+  paused = false;
+  document.getElementById('pauseMenu').style.display = 'none';
+  lastRunPath = [];
+  heldKeys.clear(); mouseHeld = false; pressedEdge = false;
+  const cpVal = parseInt(document.getElementById('startCheckpointSelect').value, 10) || 0;
+  if(cpVal>0){
+    const list = allCheckpoints();
+    const cp = list[cpVal-1];
+    if(cp) resetPlayer(cp.x, computeStateAtX(cp.x));
+    else resetPlayer();
+  } else {
+    resetPlayer();
+  }
+  scrollX = Math.max(0, player.x - 220);
+  msg.style.display = 'none';
+  document.getElementById('editTools').style.display = 'none';
+  document.getElementById('inspector').style.display = 'none';
+  document.getElementById('playControls').style.display = 'flex';
+  document.getElementById('playHint').style.display = 'block';
+  placeMusicPlayer();
+  playLevelMusic(); // la musique démarre (ou repart de zéro) avec le niveau, à chaque essai
+  enterFullscreen();
+  if(rafId) cancelAnimationFrame(rafId);
+  loop();
+}
+function backToEdit(){
+  mode = 'edit';
+  paused = false;
+  document.getElementById('pauseMenu').style.display = 'none';
+  if(rafId) cancelAnimationFrame(rafId);
+  msg.style.display='none';
+  document.getElementById('editTools').style.display = 'flex';
+  document.getElementById('playControls').style.display = 'none';
+  document.getElementById('playHint').style.display = 'none';
+  placeMusicPlayer();
+  pauseLevelMusic();
+  exitFullscreen();
+  render();
+}
+document.getElementById('playBtn').addEventListener('click', startPlay);
+document.getElementById('quitBtn').addEventListener('click', backToEdit);
+document.getElementById('restartBtn').addEventListener('click', startPlay);
+
+function triggerPress(){
+  if(mode==='play'){
+    if(!isHeld()) pressedEdge = true;
+  } else if(mode==='dead' || mode==='win'){
+    startPlay();
+  }
+}
+
+// ---------- Entrées : pendant une partie, N'IMPORTE QUELLE touche = clic/saut ----------
+const ARROW_DELTAS = { ArrowUp:{dx:0,dy:-1}, ArrowDown:{dx:0,dy:1}, ArrowLeft:{dx:-1,dy:0}, ArrowRight:{dx:1,dy:0} };
+window.addEventListener('keydown', e=>{
+  if(mode==='edit'){
+    if(ARROW_DELTAS[e.code] && (multiSelection.length>0 || (selectedKey && selectedObj))){
+      const tag = document.activeElement && document.activeElement.tagName;
+      if(tag!=='INPUT' && tag!=='SELECT' && tag!=='TEXTAREA'){
+        const d = ARROW_DELTAS[e.code];
+        e.preventDefault();
+        if(multiSelection.length>0){
+          moveMultiSelectionBy(d.dx*nudgeStep, d.dy*nudgeStep);
+        } else {
+          const [sc,sr] = selectedKey.split(',').map(Number);
+          moveSelectedTo(sc*CELL+(selectedObj.ox||0)+d.dx*nudgeStep, sr*CELL+(selectedObj.oy||0)+d.dy*nudgeStep);
+        }
+        return;
+      }
+    }
+    handleEditorShortcut(e); return;
+  }
+  if(document.getElementById('settingsModal').style.display==='flex') return;
+  if(e.code==='Escape' && mode==='play'){ e.preventDefault(); togglePause(); return; }
+  if(paused) return;
+  if(e.ctrlKey || e.altKey || e.metaKey) return;
+  // ne déclenche que sur un VRAI nouvel appui (touche pas déjà enfoncée) : sinon, mourir en
+  // laissant une touche enfoncée relançait tout seul la partie via la répétition automatique
+  // du clavier (le système renvoie des "keydown" en rafale tant qu'on ne relâche pas).
+  if(!heldKeys.has(e.code)){
+    triggerPress();
+    heldKeys.add(e.code);
+  }
+  if(mode==='play') e.preventDefault();
+});
+window.addEventListener('keyup', e=>{
+  if(mode==='edit') return;
+  heldKeys.delete(e.code);
+});
+cv.addEventListener('mousedown', e=>{
+  if(mode==='edit' || paused) return;
+  if(!mouseHeld){ triggerPress(); mouseHeld = true; }
+});
+window.addEventListener('mouseup', ()=>{ if(mode!=='edit') mouseHeld=false; });
+cv.addEventListener('touchstart', e=>{
+  if(mode==='edit' || paused) return;
+  e.preventDefault();
+  if(!mouseHeld){ triggerPress(); mouseHeld=true; }
+}, {passive:false});
+window.addEventListener('touchend', ()=>{ if(mode!=='edit') mouseHeld=false; });
+
+// solide (bloc placé, sol ou plafond, qui sont désormais de simples blocs comme les autres) ?
+function isSolidCell(c,r){
+  if(r<0 || r>=ROWS || c<0) return false;
+  const arr = level.objects.get(objKey(c,r));
+  return !!(arr && arr.some(o=>o.type==='block'));
+}
+function spikeAt(c,r){
+  return findObjectOfType(c,r,'spike');
+}
+
+// ---------- Géométrie : hitbox EXACTEMENT identiques aux formes dessinées ----------
+function polyBlock(c,r,ox,oy){
+  const x=c*CELL+(ox||0), y=r*CELL+(oy||0);
+  // PAS d'inset ici (contrairement au rendu visuel) : deux blocs voisins doivent se toucher
+  // exactement, sans le moindre interstice — sinon une forme pointue (araignée, vague) peut
+  // littéralement passer à travers la fente entre deux blocs et tomber sans jamais toucher
+  // ni l'un ni l'autre, ce qui causait une mort aléatoire en roulant sur un sol/mur de blocs.
+  return [{x:x,y:y},{x:x+CELL,y:y},{x:x+CELL,y:y+CELL},{x:x,y:y+CELL}];
+}
+function polySpike(c,r,rot,ox,oy){
+  const cx=c*CELL+CELL/2+(ox||0), cy=r*CELL+CELL/2+(oy||0);
+  const ang = rot*Math.PI/2, cosA=Math.cos(ang), sinA=Math.sin(ang);
+  return SPIKE_LOCAL.map(p=>({x:cx+p.x*cosA-p.y*sinA, y:cy+p.x*sinA+p.y*cosA}));
+}
+function polyPad(c,r,ox,oy){
+  const cx=c*CELL+CELL/2+(ox||0), cy=r*CELL+CELL/2+(oy||0);
+  return PAD_LOCAL.map(p=>({x:cx+p.x, y:cy+p.y}));
+}
+function orbCircle(c,r,ox,oy){
+  return { cx:c*CELL+CELL/2+(ox||0), cy:r*CELL+CELL/2+(oy||0), r:CELL/2-6 };
+}
+// forme de hitbox pour un mode/centre/taille donnés — réutilisée pour la collision réelle
+// (playerHitbox) ET pour redessiner la hitbox exacte de chaque image du dernier essai
+function hitboxShapeAt(pmode, cx, cy, w, h){
+  if(pmode==='ball' || pmode==='swing') return {type:'circle', cx, cy, r:w/2};
+  if(pmode==='ufo') return {type:'ellipse', cx, cy, rx:w/2, ry:h/3};
+  if(pmode==='ship') return {type:'poly', pts:[{x:cx-w/2,y:cy-h/3},{x:cx+w/2,y:cy},{x:cx-w/2,y:cy+h/3}]};
+  if(pmode==='wave'){
+    // la vague est 35% plus petite (apparence ET hitbox) que les autres formes
+    const sw=w*0.65, sh=h*0.65;
+    return {type:'poly', pts:[{x:cx,y:cy-sh/2},{x:cx+sw/2,y:cy},{x:cx,y:cy+sh/2},{x:cx-sw/2,y:cy}]};
+  }
+  if(pmode==='spider')
+    return {type:'poly', pts:[{x:cx,y:cy-h/2},{x:cx+w/2,y:cy},{x:cx,y:cy+h/2},{x:cx-w/2,y:cy}]};
+  return {type:'poly', pts:[{x:cx-w/2,y:cy-h/2},{x:cx+w/2,y:cy-h/2},{x:cx+w/2,y:cy+h/2},{x:cx-w/2,y:cy+h/2}]};
+}
+function playerHitbox(){
+  const cx=player.x+player.w/2, cy=player.y+player.h/2;
+  return hitboxShapeAt(player.mode, cx, cy, player.w, player.h);
+}
+function polyPolyIntersect(a,b){
+  for(const poly of [a,b]){
+    for(let i=0;i<poly.length;i++){
+      const p1=poly[i], p2=poly[(i+1)%poly.length];
+      const nx = -(p2.y-p1.y), ny = (p2.x-p1.x);
+      let minA=Infinity,maxA=-Infinity;
+      for(const p of a){ const proj=p.x*nx+p.y*ny; if(proj<minA)minA=proj; if(proj>maxA)maxA=proj; }
+      let minB=Infinity,maxB=-Infinity;
+      for(const p of b){ const proj=p.x*nx+p.y*ny; if(proj<minB)minB=proj; if(proj>maxB)maxB=proj; }
+      if(maxA<minB || maxB<minA) return false;
+    }
+  }
+  return true;
+}
+function closestPointOnSegment(p,a,b){
+  const abx=b.x-a.x, aby=b.y-a.y;
+  const t = ((p.x-a.x)*abx+(p.y-a.y)*aby)/((abx*abx+aby*aby)||1);
+  const tc = Math.max(0,Math.min(1,t));
+  return {x:a.x+abx*tc, y:a.y+aby*tc};
+}
+function circlePolyIntersect(cx,cy,r,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i].x, yi=poly[i].y, xj=poly[j].x, yj=poly[j].y;
+    const hit = ((yi>cy)!==(yj>cy)) && (cx < (xj-xi)*(cy-yi)/(yj-yi)+xi);
+    if(hit) inside=!inside;
+  }
+  if(inside) return true;
+  for(let i=0;i<poly.length;i++){
+    const cp = closestPointOnSegment({x:cx,y:cy}, poly[i], poly[(i+1)%poly.length]);
+    const dx=cp.x-cx, dy=cp.y-cy;
+    if(dx*dx+dy*dy <= r*r) return true;
+  }
+  return false;
+}
+function ellipsePolyIntersect(cx,cy,rx,ry,poly){
+  const scaled = poly.map(p=>({x:(p.x-cx)/rx, y:(p.y-cy)/ry}));
+  return circlePolyIntersect(0,0,1,scaled);
+}
+function hitboxOverlapsPoly(h, pts){
+  if(h.type==='poly') return polyPolyIntersect(h.pts, pts);
+  if(h.type==='circle') return circlePolyIntersect(h.cx,h.cy,h.r, pts);
+  if(h.type==='ellipse') return ellipsePolyIntersect(h.cx,h.cy,h.rx,h.ry, pts);
+  return false;
+}
+function hitboxOverlapsCircle(h, cx, cy, r){
+  if(h.type==='circle'){ const dx=h.cx-cx, dy=h.cy-cy; return dx*dx+dy*dy <= (h.r+r)*(h.r+r); }
+  if(h.type==='ellipse'){
+    const avg = (h.rx+h.ry)/2;
+    const rr = r/avg;
+    const dx = (cx-h.cx)/h.rx, dy = (cy-h.cy)/h.ry;
+    return Math.sqrt(dx*dx+dy*dy) <= 1+rr;
+  }
+  if(h.type==='poly') return circlePolyIntersect(cx,cy,r,h.pts);
+  return false;
+}
+
+function die(){
+  mode = 'dead';
+  msgText.textContent = 'Perdu ! ('+Math.min(100,Math.round(player.x/(level.length*CELL)*100))+'%)';
+  msgBtn.textContent = 'Réessayer';
+  msg.style.display = 'flex';
+}
+function win(){
+  mode = 'win';
+  msgText.textContent = '🎉 Niveau terminé !';
+  msgBtn.textContent = 'Rejouer';
+  msg.style.display = 'flex';
+}
+msgBtn.addEventListener('click', startPlay);
+
+const GRAVITY = 0.62;
+const JUMP_V = 10.6;
+const BASE_SPEED = 4.3;
+const SWING_ORB_DEFAULT_FRAMES = 12;
+
+function checkPortals(){
+  const c = Math.floor((player.x+player.w/2)/CELL);
+  const key = c; // une colonne = un portail (déclenché une fois)
+  if(player.triggered.has(key)) return;
+  // s'il existe (par erreur, ou dans un ancien niveau) plusieurs portails dans la même
+  // colonne à des lignes différentes, on applique celui affiché PAR-DESSUS les autres
+  // (le dernier dessiné, donc le dernier trouvé ici) : sinon l'effet réellement déclenché
+  // pouvait ne pas correspondre à l'icône que le joueur voit réellement à l'écran.
+  let chosen = null;
+  for(let r=0;r<ROWS;r++){
+    const arr = level.objects.get(objKey(c,r));
+    if(!arr) continue;
+    for(const o of arr) if(o.type==='portal') chosen = o;
+  }
+  if(!chosen) return;
+  player.triggered.add(key);
+  const info = PORTAL_INFO[chosen.portal];
+  if(info.kind==='mode'){ player.mode = info.value; player.vy = 0; }
+  else if(info.kind==='grav'){ player.swingT = null; player.gravDir = info.value; }
+  else if(info.kind==='speed'){ player.speedMult = info.value; }
+  else if(info.kind==='size'){
+    const old = player.sizeMult;
+    player.sizeMult = info.value;
+    const scale = player.sizeMult/old;
+    player.w *= scale; player.h *= scale;
+  }
+}
+
+function applyBoost(o){
+  const kind = o.kind;
+  if(kind==='jumpHigh' || kind==='jumpLow'){
+    const power = (typeof o.power==='number') ? o.power : (kind==='jumpHigh' ? 1.6 : 0.7);
+    player.vy = -JUMP_V*power*player.gravDir;
+  }
+  else if(kind==='gravity'){ player.swingT = null; player.gravDir = -gravSign(); player.vy = 0; }
+  else if(kind==='swing'){
+    const start = gravSign();
+    const frames = (typeof o.swingFrames==='number') ? o.swingFrames : SWING_ORB_DEFAULT_FRAMES;
+    player.swingT = { startDir:start, target:-start, framesLeft:frames, totalFrames:frames };
+  }
+}
+function checkPadsOrbs(pe){
+  const c0 = Math.floor(player.x/CELL)-1, c1 = Math.floor((player.x+player.w)/CELL)+1;
+  const r0 = Math.max(0,Math.floor(player.y/CELL)-1), r1 = Math.min(ROWS-1,Math.floor((player.y+player.h)/CELL)+1);
+  const ph = playerHitbox();
+  for(let c=c0;c<=c1;c++) for(let r=r0;r<=r1;r++){
+    const arr = level.objects.get(objKey(c,r));
+    if(!arr) continue;
+    for(const o of arr){
+      if(o.type==='pad'){
+        const key = 'pad:'+c+','+r;
+        if(!player.triggered.has(key) && hitboxOverlapsPoly(ph, polyPad(c,r,o.ox,o.oy))){
+          player.triggered.add(key);
+          applyBoost(o);
+        }
+      } else if(o.type==='orb'){
+        const key = 'orb:'+c+','+r;
+        if(!player.triggered.has(key) && pe){
+          const orb = orbCircle(c,r,o.ox,o.oy);
+          if(hitboxOverlapsCircle(ph, orb.cx, orb.cy, orb.r)){
+            player.triggered.add(key);
+            applyBoost(o);
+          }
+        }
+      }
+    }
+  }
+}
+
+function solveBlocksAxis(dx,dy){
+  let dead = false;
+  // X
+  player.x += dx;
+  {
+    const c0 = Math.floor(player.x/CELL)-1, c1 = Math.floor((player.x+player.w)/CELL)+1;
+    const r0 = Math.max(0,Math.floor(player.y/CELL)-1), r1 = Math.min(ROWS-1,Math.floor((player.y+player.h)/CELL)+1);
+    for(let c=c0;c<=c1;c++) for(let r=r0;r<=r1;r++){
+      const arr = level.objects.get(objKey(c,r));
+      if(!arr) continue;
+      for(const o of arr){
+        if(o.type==='block' && hitboxOverlapsPoly(playerHitbox(), polyBlock(c,r,o.ox,o.oy))){
+          dead = true;
+        }
+      }
+    }
+  }
+  // Y
+  const prevY = player.y;
+  player.y += dy;
+  {
+    const c0 = Math.floor(player.x/CELL)-1, c1 = Math.floor((player.x+player.w)/CELL)+1;
+    const r0 = Math.max(0,Math.floor(player.y/CELL)-1), r1 = Math.min(ROWS-1,Math.floor((player.y+player.h)/CELL)+1);
+    for(let c=c0;c<=c1;c++) for(let r=r0;r<=r1;r++){
+      const arr = level.objects.get(objKey(c,r));
+      if(!arr) continue;
+      for(const o of arr){
+        if(o.type!=='block') continue;
+        if(!hitboxOverlapsPoly(playerHitbox(), polyBlock(c,r,o.ox,o.oy))) continue;
+        const by=r*CELL+(o.oy||0);
+        const cameFromAbove = (prevY+player.h) <= by+1 && dy>=0;
+        const cameFromBelow = prevY >= by+CELL-1 && dy<=0;
+        // marge de 0.5px : évite un contact exact avec le polygone (qui serait ambigu pour
+        // le test de collision) sans pour autant fausser la détection de ligne/case dans
+        // isGroundedCheck (un décalage entier aurait décalé le test d'une case, comme le
+        // bug corrigé plus haut pour l'araignée)
+        if(gravSign()===1 && cameFromAbove){
+          player.y = by - player.h - 0.5; player.vy = 0; player.grounded = true;
+        } else if(gravSign()===-1 && cameFromBelow){
+          player.y = by + CELL + 0.5; player.vy = 0; player.grounded = true;
+        } else {
+          dead = true;
+        }
+      }
+    }
+  }
+  return dead;
+}
+
+function spikeHit(){
+  const c0 = Math.floor(player.x/CELL)-1, c1 = Math.floor((player.x+player.w)/CELL)+1;
+  const r0 = Math.max(0,Math.floor(player.y/CELL)-1), r1 = Math.min(ROWS-1,Math.floor((player.y+player.h)/CELL)+1);
+  const ph = playerHitbox();
+  for(let c=c0;c<=c1;c++) for(let r=r0;r<=r1;r++){
+    const sp = spikeAt(c,r);
+    if(sp && hitboxOverlapsPoly(ph, polySpike(c,r,sp.rot,sp.ox,sp.oy))) return true;
+  }
+  return false;
+}
+
+// Coeur physique pur (sans effets de bord DOM), réutilisé tel quel par le vrai jeu
+// ET par l'analyseur de faisabilité, pour garantir que l'IA "voit" exactement la même
+// physique que le joueur. held = touche maintenue, pe = appui déclenché ce tick (edge).
+function physicsStep(held, pe, dt){
+  // dt = durée de ce pas, en équivalents-image (1 = une image normale à 60 FPS). Par défaut 1
+  // pour le vrai jeu (comportement inchangé) ; l'analyse IA peut passer une valeur plus petite
+  // pour simuler à une résolution temporelle plus fine (voir segmentToleranceMs) et ainsi mesurer
+  // les fenêtres de timing en millisecondes continues plutôt qu'en nombre entier d'images.
+  if(dt===undefined) dt = 1;
+  // état "au sol" mesuré AVANT ce tick (donc identique à la fin du tick précédent) :
+  // sert à savoir si on VIENT juste d'atterrir, pour permettre l'enchaînement automatique
+  // des sauts quand la touche reste maintenue (comme dans le vrai Geometry Dash).
+  const groundedAtStart = isGroundedCheck();
+  const justLanded = groundedAtStart && !player.wasGroundedPrev;
+  player.wasGroundedPrev = groundedAtStart;
+  const act = pe || (held && justLanded); // déclenche l'action (saut/flip) ce tick
+  player.grounded = false;
+  if(player.swingT){
+    const st = player.swingT;
+    st.framesLeft -= dt;
+    const t = 1 - st.framesLeft/st.totalFrames;
+    const eased = t*t*(3-2*t); // transition lissée (inversion de gravité progressive)
+    player.gravDir = st.startDir + (st.target-st.startDir)*eased;
+    if(st.framesLeft<=0){ player.gravDir = st.target; player.swingT = null; }
+  }
+  const speed = BASE_SPEED * player.speedMult;
+  let dx = speed*dt, dy = 0;
+
+  if(player.mode==='cube'){
+    if(act && groundedAtStart) player.vy = -JUMP_V*player.gravDir;
+    player.vy += GRAVITY*dt*player.gravDir;
+    dy = player.vy*dt;
+  } else if(player.mode==='robot'){
+    // hauteur mini (simple tap) et hauteur maxi (touche maintenue) toutes les deux doublées
+    // (hauteur ∝ vitesse², donc x√2 en vitesse initiale = x2 en hauteur du petit saut)
+    if(act && groundedAtStart){ player.vy = -JUMP_V*0.8*player.gravDir; player.holdFrames=0; }
+    if(held && Math.sign(player.vy)===-Math.sign(player.gravDir) && player.holdFrames<8){
+      player.vy += GRAVITY*0.06*dt*player.gravDir; player.holdFrames += dt;
+    } else {
+      player.vy += GRAVITY*dt*player.gravDir;
+    }
+    dy = player.vy*dt;
+  } else if(player.mode==='ball'){
+    player.vy += GRAVITY*dt*player.gravDir;
+    if(act && groundedAtStart){
+      player.swingT = null;
+      player.gravDir = -gravSign();
+      player.vy = 2*player.gravDir;
+    }
+    dy = player.vy*dt; // calculé APRÈS le flip : sinon le déplacement de cette image utilisait
+    // encore l'ancienne gravité pendant que la collision utilisait déjà la nouvelle, ce qui
+    // provoquait une mort aléatoire en roulant sur un sol/mur de blocs (mauvais côté détecté)
+  } else if(player.mode==='swing'){
+    if(pe){
+      player.swingT = null;
+      player.gravDir = -gravSign();
+      player.vy = 0;
+    }
+    player.vy += GRAVITY*0.6*dt*player.gravDir;
+    player.vy = Math.max(-9, Math.min(9, player.vy));
+    dy = player.vy*dt;
+  } else if(player.mode==='ufo'){
+    player.vy += GRAVITY*dt*player.gravDir;
+    if(pe){ player.vy = -8*player.gravDir; }
+    dy = player.vy*dt;
+  } else if(player.mode==='wave'){
+    player.vy = (held ? -6 : 6) * player.gravDir;
+    dy = player.vy*dt;
+  } else if(player.mode==='ship'){
+    if(held) player.vy -= GRAVITY*0.9*dt*player.gravDir;
+    else player.vy += GRAVITY*0.55*dt*player.gravDir;
+    player.vy = Math.max(-7,Math.min(7,player.vy));
+    dy = player.vy*dt;
+  } else if(player.mode==='spider'){
+    player.vy += GRAVITY*dt*player.gravDir;
+    if(act && groundedAtStart){
+      player.swingT = null;
+      player.gravDir = -gravSign();
+      player.vy = 0;
+      // recherche la surface solide la plus proche EN PARTANT DE LA POSITION DU JOUEUR,
+      // dans la nouvelle direction de gravité (et non depuis le haut de la case, ce qui
+      // pouvait le téléporter/encastrer dans un plafond ou un sol lointain sans rapport)
+      const c = Math.floor((player.x+player.w/2)/CELL);
+      const startRow = Math.floor((player.y+player.h/2)/CELL);
+      if(player.gravDir===1){
+        for(let r=startRow; r<ROWS; r++){
+          if(isSolidCell(c,r)){ player.y = r*CELL - player.h - 0.5; break; }
+        }
+      } else {
+        for(let r=startRow; r>=0; r--){
+          // marge de 0.5px (pas 1px) : un décalage entier tombait dans la case SUIVANTE, ce
+          // qui faussait ensuite la détection "au sol" (isGroundedCheck testait la mauvaise
+          // case) et empêchait tout nouveau flip vers le bas — l'araignée restait bloquée
+          // "en haut" pour toujours après un clic
+          if(isSolidCell(c,r)){ player.y = r*CELL + CELL + 0.5; break; }
+        }
+      }
+    }
+    dy = player.vy*dt;
+  }
+
+  // sécurité anti-tunnel : un pas de déplacement ne peut jamais dépasser une case,
+  // pour ne jamais "sauter" par-dessus un sol/mur fin ni s'y encastrer par erreur
+  const maxStep = CELL-2;
+  dx = Math.max(-maxStep, Math.min(maxStep, dx));
+  dy = Math.max(-maxStep, Math.min(maxStep, dy));
+
+  const deadCollision = solveBlocksAxis(dx,dy);
+  // le joueur ne doit jamais sortir de la carte, ni par le bas ni par le haut (toujours visible)
+  if(player.y + player.h > PLAYH) return {dead:true, won:false};
+  if(player.y < 0) return {dead:true, won:false};
+  if(deadCollision) return {dead:true, won:false};
+  if(spikeHit()) return {dead:true, won:false};
+
+  checkPortals();
+  checkPadsOrbs(pe);
+
+  if(player.x >= level.length*CELL) return {dead:false, won:true};
+  return {dead:false, won:false};
+}
+
+function update(){
+  const r = physicsStep(isHeld(), pressedEdge);
+  pressedEdge = false;
+  lastRunPath.push({x:player.x, y:player.y, w:player.w, h:player.h, mode:player.mode});
+  if(r.dead){ die(); return; }
+  scrollX = Math.max(0, player.x - 220);
+  if(r.won){ win(); return; }
+}
+
+function gravSign(){ return player.gravDir>=0 ? 1 : -1; }
+
+function isGroundedCheck(){
+  const dir = gravSign();
+  const c0 = Math.floor(player.x/CELL), c1 = Math.floor((player.x+player.w)/CELL);
+  const testY = dir===1 ? player.y+player.h+1 : player.y-1;
+  const r = Math.floor(testY/CELL);
+  for(let c=c0;c<=c1;c++) if(isSolidCell(c,r)) return true;
+  return player.grounded;
+}
+
+// ---------- Analyse de faisabilité (recherche exhaustive, best-effort) ----------
+// Principe : plutôt que de faire "jouer" le niveau à quelques styles de réaction fixes (qui
+// peuvent rater une façon de passer un obstacle et déclarer "impossible" à tort), on explore À
+// CHAQUE frame les deux choix possibles (touche appuyée / relâchée), en réutilisant EXACTEMENT
+// la même physique que le vrai jeu (physicsStep). Les branches qui arrivent dans un état quasi
+// identique (position verticale/vitesse/mode/gravité arrondis) sont fusionnées pour que ça reste
+// rapide. Comme l'avancée horizontale ne dépend jamais de l'appui (seuls les portails la
+// changent, et ils ne dépendent que de la position), toutes les branches vivantes sont toujours
+// à la même position X à une frame donnée : pas besoin de dédupliquer dessus. Chaque état gardé
+// pointe vers son état parent, ce qui permet de reconstruire après coup le chemin exact suivi
+// (pour l'afficher en rouge, comme lors d'un vrai essai). L'analyse tourne par petits blocs
+// (setTimeout) pour ne jamais geler l'onglet, et n'a pas de limite de durée : un niveau très
+// long est intégralement analysé, seulement plus progressivement.
+function freshSimPlayer(){
+  return {
+    x: 2*CELL, y: (GROUND_ROW)*CELL-26.5,
+    vx:0, vy:0, w:26, h:26, mode:'cube', gravDir:1,
+    speedMult:1, sizeMult:1, holdFrames:0,
+    triggered:new Set(), swingT:null, grounded:false, wasGroundedPrev:false,
+  };
+}
+function cloneSimPlayer(p){
+  const c = Object.assign({}, p);
+  c.triggered = new Set(p.triggered);
+  c.swingT = p.swingT ? Object.assign({}, p.swingT) : null;
+  return c;
+}
+function searchStateKey(p, heldPrev){
+  const yB = Math.round(p.y/3);
+  const vyB = Math.round(p.vy/0.4);
+  const gB = Math.round(p.gravDir*8);
+  const swingB = p.swingT ? ('s'+Math.round(p.swingT.framesLeft/2)) : 'n';
+  return p.mode+'|'+yB+'|'+vyB+'|'+gB+'|'+p.sizeMult+'|'+p.speedMult+'|'+(heldPrev?1:0)+'|'+swingB+'|'+(p.holdFrames||0);
+}
+function reconstructPath(state){
+  const rev = [];
+  let cur = state;
+  while(cur){ rev.push({x:cur.p.x, y:cur.p.y, w:cur.p.w, h:cur.p.h, mode:cur.p.mode}); cur = cur.parent; }
+  return rev.reverse();
+}
+// un humain ne peut pas cliquer indéfiniment vite : on limite l'IA à 10 cps (clics par
+// seconde) maximum, comme un vrai joueur — un nouvel appui (front montant) n'est autorisé que
+// si au moins MIN_FRAMES_BETWEEN_PRESSES images se sont écoulées depuis le précédent. Ça évite
+// que la recherche ne "triche" avec un timing surhumain, et ça rend les passages qui
+// nécessiteraient plus de 10 cps correctement détectés comme infranchissables (ou, via l'analyse
+// de difficulté, comme fortement pénalisants quand on s'en approche).
+const MAX_CPS = 10;
+const MIN_FRAMES_BETWEEN_PRESSES = Math.round(60/MAX_CPS);
+function runAiAnalysis(onProgress){
+  return new Promise(resolve=>{
+    // pas de limite arbitraire indépendante de la taille du niveau : on borne seulement par le
+    // temps que prendrait le niveau à la vitesse la plus lente possible (portail x0.5, plus une
+    // petite marge) — ainsi un niveau très long est quand même intégralement analysé.
+    const maxFrames = Math.ceil((level.length*CELL) / (BASE_SPEED*0.5)) + 200;
+    const MAX_FRONTIER = 400;
+    const CHUNK_MS = 20;
+    const savedPlayer = player;
+    let frontier = [{ p: freshSimPlayer(), heldPrev:false, parent:null, framesSincePress:MIN_FRAMES_BETWEEN_PRESSES }];
+    let won = false, winState = null;
+    let bestFail = { x: frontier[0].p.x, state: frontier[0] };
+    let f = 0;
+    function tick(){
+      const t0 = performance.now();
+      while(f<maxFrames && frontier.length>0 && !won){
+        const seen = new Map();
+        for(const state of frontier){
+          for(const holdChoice of [false, true]){
+            const pe = holdChoice && !state.heldPrev;
+            if(pe && state.framesSincePress < MIN_FRAMES_BETWEEN_PRESSES) continue; // limite de cps
+            const clone = cloneSimPlayer(state.p);
+            player = clone;
+            const r = physicsStep(holdChoice, pe);
+            const framesSincePress = pe ? 0 : Math.min(MIN_FRAMES_BETWEEN_PRESSES, state.framesSincePress+1);
+            const entry = { p:clone, heldPrev:holdChoice, parent:state, framesSincePress };
+            if(clone.x > bestFail.x) bestFail = { x:clone.x, state:entry };
+            if(r.dead) continue;
+            if(r.won){ won = true; winState = entry; break; }
+            // la cadence exacte restante avant de pouvoir re-presser ne compte pas pour la suite,
+            // seulement le fait qu'on PUISSE ou non re-presser tout de suite : un booléen évite
+            // de multiplier inutilement le nombre d'états distincts gardés (jusqu'à 7x avant),
+            // ce qui mettait une pression excessive sur le plafond ci-dessous et pouvait faire
+            // perdre des branches pourtant valables lors de l'échantillonnage.
+            const eligible = framesSincePress>=MIN_FRAMES_BETWEEN_PRESSES ? 1 : 0;
+            const key = searchStateKey(clone, holdChoice)+'|'+eligible;
+            if(!seen.has(key)) seen.set(key, entry);
+          }
+          if(won) break;
+        }
+        frontier = won ? [] : Array.from(seen.values());
+        f++;
+        if(frontier.length>MAX_FRONTIER){
+          // échantillonnage qui préserve la diversité : on groupe d'abord par mode/gravité/appui
+          // en cours/éligibilité au cps, pour ne jamais perdre TOTALEMENT une catégorie entière
+          // (ex. "en mode balle" ou "peut re-presser maintenant") juste parce qu'un simple tri
+          // par hauteur l'aurait éliminée — c'est exactement ce genre de perte qui peut faire
+          // rater à l'IA une solution pourtant évidente pour un humain.
+          const groups = new Map();
+          for(const e of frontier){
+            const gk = e.p.mode+'|'+Math.sign(e.p.gravDir)+'|'+(e.heldPrev?1:0)+'|'+(e.framesSincePress>=MIN_FRAMES_BETWEEN_PRESSES?1:0);
+            let g = groups.get(gk);
+            if(!g){ g = []; groups.set(gk, g); }
+            g.push(e);
+          }
+          const groupList = Array.from(groups.values());
+          const perGroup = Math.max(1, Math.floor(MAX_FRONTIER/groupList.length));
+          const sampled = [];
+          for(const g of groupList){
+            g.sort((a,b)=>a.p.y-b.p.y);
+            const s = Math.max(1, g.length/perGroup);
+            for(let i=0; i<perGroup && Math.floor(i*s)<g.length; i++) sampled.push(g[Math.floor(i*s)]);
+          }
+          if(sampled.length<MAX_FRONTIER){
+            const chosen = new Set(sampled);
+            for(const e of frontier){
+              if(sampled.length>=MAX_FRONTIER) break;
+              if(!chosen.has(e)){ sampled.push(e); chosen.add(e); }
+            }
+          }
+          frontier = sampled.length>MAX_FRONTIER ? sampled.slice(0,MAX_FRONTIER) : sampled;
+        }
+        if(performance.now()-t0 > CHUNK_MS) break;
+      }
+      if(onProgress) onProgress(Math.min(1, f/maxFrames)*0.5); // cette recherche est la 1ère moitié de l'analyse
+      if(f<maxFrames && frontier.length>0 && !won){
+        setTimeout(tick, 0);
+      } else {
+        player = savedPlayer;
+        const path = won ? reconstructPath(winState) : reconstructPath(bestFail.state);
+        resolve({ possible:won, blockedX:bestFail.x, path, winState });
+      }
+    }
+    tick();
+  });
+}
+// ---------- Note de difficulté (équivalence avec les vraies difficultés Geometry Dash) ----------
+// Dans le vrai Geometry Dash, la difficulté n'est pas "combien d'obstacles" mais "quelle
+// proportion des essais d'un joueur normal échouent avant la fin" — un Auto/Easy se termine
+// presque à coup sûr, un Demon échoue presque toujours sauf timing quasi parfait. On mesure donc
+// ÇA directement : on fait "jouer" le niveau par ~60 profils différents (délai de réaction et
+// style variés, plus une légère imprécision de timing à chaque décision, pour imiter de vrais
+// joueurs plus ou moins habiles), avec la même physique exacte que le vrai jeu, et on compte
+// quelle proportion échoue. Les points de difficulté SONT ce pourcentage d'échec (0 = tout le
+// monde réussit, 100 = quasiment personne) — un seul chiffre cohérent, décomposable exactement
+// en additionnant où (à quel endroit) chaque échec a eu lieu, ce qui donne directement les
+// repères "+x point" affichés le long du niveau.
+const DIFFICULTY_TIERS = [
+  {max:9,   name:'Auto'},
+  {max:19,  name:'Facile (Easy)'},
+  {max:29,  name:'Normal'},
+  {max:44,  name:'Difficile (Hard)'},
+  {max:54,  name:'Très difficile (Harder)'},
+  {max:69,  name:'Insane'},
+  {max:77,  name:'Démon Facile (Easy Demon)'},
+  {max:85,  name:'Démon Moyen (Medium Demon)'},
+  {max:92,  name:'Démon Difficile (Hard Demon)'},
+  {max:97,  name:'Démon Insane (Insane Demon)'},
+  {max:100, name:'Démon Extrême (Extreme Demon)'},
+];
+function tierForPoints(pts){
+  for(const t of DIFFICULTY_TIERS) if(pts<=t.max) return t.name;
+  return DIFFICULTY_TIERS[DIFFICULTY_TIERS.length-1].name;
+}
+function renderDifficultyTable(){
+  const wrap = document.getElementById('difficultyTable');
+  let prevMax = -1;
+  wrap.innerHTML = DIFFICULTY_TIERS.map(t=>{
+    const row = '<div class="kb-row"><span>'+t.name+'</span><span>'+(prevMax+1)+' – '+t.max+' pts</span></div>';
+    prevMax = t.max;
+    return row;
+  }).join('');
+}
+// teste d'abord si "ne jamais rien presser" termine déjà le niveau : c'est la définition même
+// d'un niveau "Auto" dans le vrai Geometry Dash (aucune action du joueur requise), pas juste
+// "presque tout le monde réussit" — ça mérite un statut à part plutôt qu'un pourcentage.
+function checkAutoLevel(maxFrames){
+  const savedPlayer = player;
+  player = freshSimPlayer();
+  const path = [];
+  let won = false;
+  for(let i=0;i<maxFrames;i++){
+    const r = physicsStep(false, false);
+    path.push({x:player.x, y:player.y, w:player.w, h:player.h, mode:player.mode});
+    if(r.dead) break;
+    if(r.won){ won = true; break; }
+  }
+  player = savedPlayer;
+  return { won, path };
+}
+// Ce qui rend un passage difficile dans le VRAI Geometry Dash, ce n'est pas "combien d'obstacles"
+// mais LA LARGEUR DE LA FENÊTRE DE TIMING : un saut qu'on peut déclencher n'importe quand dans
+// une fenêtre de 20 images est trivial, le même saut dans une fenêtre de 1 image est un Demon.
+// On mesure donc ÇA, directement, sur le chemin réel trouvé par la recherche exhaustive : pour
+// CHAQUE appui (ou maintien) que ce chemin utilise, on rejoue le niveau en avançant/reculant
+// UNIQUEMENT cet appui de quelques images (les autres restant identiques) pour trouver jusqu'à
+// quel écart ça passe encore — c'est directement "la marge de timing en images" telle qu'un
+// joueur la ressentirait. Un niveau est difficile quand il enchaîne beaucoup de marges serrées
+// (chaque enchaînement réduit la probabilité de réussir toute la suite sans une seule erreur,
+// exactement ce qui rend les Demons difficiles : pas un seul geste impossible, mais très peu de
+// place à l'erreur répétée de nombreuses fois d'affilée).
+function reconstructHeldSeq(state){
+  const seq = [];
+  let cur = state;
+  while(cur && cur.parent){ seq.push(cur.heldPrev); cur = cur.parent; }
+  return seq.reverse();
+}
+function findPressSegments(heldSeq){
+  const segs = [];
+  let start = -1;
+  for(let i=0;i<heldSeq.length;i++){
+    if(heldSeq[i] && start<0) start = i;
+    if(start>=0 && !heldSeq[i+1]){ segs.push([start,i]); start = -1; }
+  }
+  return segs;
+}
+function fullLevelWins(heldSeq){
+  const savedPlayer = player;
+  player = freshSimPlayer();
+  let won = false;
+  const cap = heldSeq.length + 200;
+  for(let i=0;i<cap;i++){
+    const held = !!heldSeq[i];
+    const pe = held && !heldSeq[i-1];
+    const r = physicsStep(held, pe);
+    if(r.dead) break;
+    if(r.won){ won = true; break; }
+  }
+  player = savedPlayer;
+  return won;
+}
+// la recherche exhaustive trouve N'IMPORTE QUELLE séquence qui marche, pas forcément la plus
+// naturelle : elle peut retenir des appuis inutiles (des petits sauts sur du plat qui ne servent
+// à rien) simplement parce que cet état-là a été gardé arbitrairement lors de la fusion des
+// branches. On simplifie donc le chemin trouvé en retirant, un par un, chaque appui dont on
+// vérifie qu'il n'était pas nécessaire (le niveau se termine quand même sans lui) — ce qui donne
+// une référence beaucoup plus proche de "comment un joueur jouerait vraiment", et évite de
+// signaler des dizaines de faux "passages exigeants" qui ne sont que des sauts superflus.
+function simplifyHeldSeqAsync(heldSeq, onProgress){
+  return new Promise(resolve=>{
+    const segs = findPressSegments(heldSeq);
+    const seq = heldSeq.slice();
+    let idx = 0;
+    function tick(){
+      const t0 = performance.now();
+      while(idx<segs.length){
+        const [s,e] = segs[idx];
+        const trial = seq.slice();
+        for(let i=s;i<=e;i++) trial[i] = false;
+        if(fullLevelWins(trial)){ for(let i=s;i<=e;i++) seq[i] = false; }
+        idx++;
+        if(performance.now()-t0>20) break;
+      }
+      if(onProgress) onProgress(segs.length ? idx/segs.length : 1);
+      if(idx<segs.length) setTimeout(tick, 0);
+      else resolve(seq);
+    }
+    tick();
+  });
+}
+// ---------- Mesure des fenêtres de timing en temps CONTINU (pas en nombre d'images) ----------
+// L'utilisateur veut la largeur réelle en millisecondes, "comme si le jeu tournait à une
+// fréquence infinie" — pas juste un nombre d'images à 60 FPS, qui perdrait toute précision sous
+// 16,7 ms. Pour ça, physicsStep accepte maintenant un pas de temps `dt` (voir plus haut) : on
+// cherche d'abord les bornes entières (rapide, comme avant), PUIS on affine chaque frontière par
+// dichotomie fine, en ne simulant en haute résolution que les quelques images autour de la
+// frontière (le reste du niveau, avant, tourne à la résolution normale) — donc sans coût
+// supplémentaire notable même sur un niveau long.
+function heldAtTime(intervals, t){
+  for(const [a,b] of intervals) if(t>=a && t<b) return true;
+  return false;
+}
+function fineReplaySurvivesGeneric(heldAtFn, cutoffTime, fineFrom, subDt){
+  const savedPlayer = player;
+  player = freshSimPlayer();
+  let ok = true;
+  let t = 0, prevHeld = false;
+  while(t < cutoffTime){
+    const dt = t < fineFrom ? 1 : subDt;
+    const held = heldAtFn(t);
+    const pe = held && !prevHeld;
+    prevHeld = held;
+    const r = physicsStep(held, pe, dt);
+    if(r.dead){ ok = false; break; }
+    if(r.won) break;
+    t += dt;
+  }
+  player = savedPlayer;
+  return ok;
+}
+const FINE_SUB_DT = 1/32; // ~1920 "images/s" équivalentes, résolution ≈ 0,5 ms — largement assez
+// fin pour que l'utilisateur ne puisse pas distinguer le résultat d'une résolution encore plus
+// grande : c'est ce qu'on entend par "fréquence infinie" en pratique.
+const MS_PER_FRAME = 1000/60;
+// affine une frontière (lo réussit, hi échoue, |hi-lo|=1 image) par dichotomie fine ; renvoie la
+// position précise (en équivalents-image, valeur continue) où ça bascule. `basePos` est la
+// position absolue (en images depuis le début du niveau) du passage étudié, pour ne passer en
+// résolution fine que juste autour de lui (et pas depuis le début du niveau).
+function refineBoundary(buildHeldAtFn, cutoffAt, lo, hi, basePos){
+  const fineFrom = basePos + Math.min(lo,hi) - 3;
+  for(let i=0;i<9;i++){
+    const mid = (lo+hi)/2;
+    const ok = fineReplaySurvivesGeneric(buildHeldAtFn(mid), cutoffAt(mid), fineFrom, FINE_SUB_DT);
+    if(ok) lo = mid; else hi = mid;
+  }
+  return lo;
+}
+// largeur de la fenêtre de timing (en millisecondes) pour UN appui donné : de combien de temps
+// peut-on avancer/reculer CET appui précis (les autres restant fixes) avant que ça échoue.
+function segmentToleranceMs(heldSeq, seg){
+  const intervals = findPressSegments(heldSeq).map(([s,e])=>[s,e+1]);
+  const segIndex = intervals.findIndex(iv=>iv[0]===seg[0] && iv[1]===seg[1]+1);
+  const BUFFER = 50, MAX_DELTA = 24, COMFORTABLE_AT = 16;
+  function shiftedIntervals(shift){
+    return intervals.map((iv,i)=> i===segIndex ? [iv[0]+shift, iv[1]+shift] : iv);
+  }
+  function survivesCoarse(shift){
+    if(intervals[segIndex][0]+shift < 0) return false;
+    const cutoff = intervals[segIndex][1]+shift+BUFFER;
+    return fineReplaySurvivesGeneric(t=>heldAtTime(shiftedIntervals(shift), t), cutoff, Infinity, 1);
+  }
+  let fwd = 0, fwdBounded = false;
+  for(let d=1; d<=MAX_DELTA; d++){
+    if(survivesCoarse(d)) fwd = d; else { fwdBounded = true; break; }
+    if(fwd >= COMFORTABLE_AT) break;
+  }
+  let bwd = 0, bwdBounded = false;
+  for(let d=1; d<=MAX_DELTA; d++){
+    if(survivesCoarse(-d)) bwd = d; else { bwdBounded = true; break; }
+    if(fwd+bwd >= COMFORTABLE_AT) break;
+  }
+  const buildAt = shift => t=>heldAtTime(shiftedIntervals(shift), t);
+  const cutoffAt = shift => intervals[segIndex][1]+shift+BUFFER;
+  const basePos = intervals[segIndex][0];
+  const preciseFwd = fwdBounded ? refineBoundary(buildAt, cutoffAt, fwd, fwd+1, basePos) : fwd;
+  const preciseBwd = bwdBounded ? refineBoundary(buildAt, cutoffAt, -bwd, -(bwd+1), basePos) : bwd;
+  return (preciseFwd + Math.abs(preciseBwd)) * MS_PER_FRAME;
+}
+// Vaisseau/Vague se pilotent en continu (on ajuste sans arrêt) : décaler dans le temps un seul
+// de leurs innombrables petits appuis/relâchements isolément n'a pas de sens (essayé, et ça casse
+// presque toujours la trajectoire même dans un couloir large — ce n'est pas une mesure fiable).
+// Mesurer la marge autour du chemin EXACT trouvé par la recherche ne marche pas non plus : cette
+// recherche ne cherche pas spécialement un tracé bien centré, donc son chemin peut raser un mur
+// même dans un couloir large sans que ce soit représentatif. La vraie difficulté du mode, c'est
+// la largeur du COULOIR LUI-MÊME (propriété du niveau, indépendante du chemin trouvé) : on mesure
+// donc directement, colonne par colonne, l'espace vertical ouvert entre le premier obstacle du
+// haut et celui du bas, et on convertit la marge restante (une fois la taille du joueur retirée)
+// en équivalent-temps via sa vitesse verticale typique dans ce mode.
+function findModeStretches(path, modes){
+  const stretches = [];
+  let start = -1;
+  for(let i=0;i<path.length;i++){
+    const inMode = modes.includes(path[i].mode);
+    if(inMode && start<0) start = i;
+    if(start>=0 && (i===path.length-1 || !modes.includes(path[i+1].mode))){ stretches.push([start,i]); start = -1; }
+  }
+  return stretches;
+}
+// hauteur (en px) du passage ouvert qui CONTIENT la rangée `refRow` à la colonne `c` : on part de
+// cette rangée (forcément ouverte, puisque le joueur s'y trouve) et on s'écarte vers le haut et
+// vers le bas jusqu'à toucher un obstacle de chaque côté — ça donne le couloir réellement
+// emprunté, sans dépendre de où exactement le joueur se trouve dedans.
+function corridorHeightAt(c, refRow){
+  let top = refRow;
+  while(top>0 && !isSolidCell(c, top-1)) top--;
+  let bottom = refRow;
+  while(bottom<ROWS-1 && !isSolidCell(c, bottom+1)) bottom++;
+  return (bottom-top+1)*CELL;
+}
+function stretchToleranceMs(path, A, B){
+  const TYPICAL_SPEED = 6; // px/image, vitesse verticale typique en Vague comme en Vaisseau
+  let minMs = Infinity;
+  let lastCol = null;
+  for(let i=A; i<=B; i++){
+    const f = path[i];
+    const c = Math.floor((f.x+13)/CELL);
+    if(c===lastCol) continue;
+    lastCol = c;
+    const refRow = Math.max(0, Math.min(ROWS-1, Math.floor((f.y+f.h/2)/CELL)));
+    const corridorH = corridorHeightAt(c, refRow);
+    const sideMargin = Math.max(0, (corridorH - f.h)/2); // marge de chaque côté si bien centré
+    const ms = (sideMargin/TYPICAL_SPEED) * MS_PER_FRAME;
+    if(ms < minMs) minMs = ms;
+  }
+  return minMs===Infinity ? 999 : minMs;
+}
+// fenêtre confortable (≥~330 ms) → risque quasi nul ; fenêtre proche de 0 ms → quasi certain de
+// rater un jour ou l'autre. Courbe en exponentielle saturante, pas un pourcentage linéaire de la
+// fenêtre, pour rester fidèle à la façon dont ça se ressent réellement en jouant.
+function toleranceToRisk(tolMs){
+  return Math.min(0.98, Math.max(0.01, Math.exp(-tolMs/(4*MS_PER_FRAME))));
+}
+// enchaîner des appuis à un rythme proche de la limite de 10 cps est en soi difficile à
+// SOUTENIR pour un humain (même si chaque appui pris isolément a une fenêtre correcte) : sous
+// ~4 cps (rythme tranquille), aucun risque additionnel ; ça grimpe ensuite jusqu'à un risque
+// franc à l'approche de la limite maximale.
+function cpsRiskFor(gapFrames){
+  if(gapFrames==null) return 0;
+  const cps = 60/Math.max(1, gapFrames);
+  const t = Math.min(1, Math.max(0, (cps-4)/(MAX_CPS-4)));
+  return Math.pow(t, 1.5) * 0.6;
+}
+function estimateHumanDifficultyAsync(heldSeq, path, onProgress){
+  return new Promise(resolve=>{
+    // wave/ship sont des modes de suivi CONTINU (on ajuste sans arrêt, ça n'a rien de discret) :
+    // le chemin gagnant y bascule appui/relâche très souvent pour suivre le tracé, et décaler UN
+    // SEUL de ces basculements isolément (en gardant tous ses voisins fixes) casse presque
+    // toujours la trajectoire même quand la section est en réalité confortable à jouer. On ne les
+    // mesure donc PAS appui par appui, mais comme des sections entières (stretchToleranceMs plus
+    // haut) — sinon l'IA les déclarait à tort "sans aucune difficulté".
+    const allSegs = findPressSegments(heldSeq);
+    const segs = allSegs.filter(seg=>{
+      const m = path[seg[0]].mode;
+      return m!=='wave' && m!=='ship';
+    });
+    const stretches = findModeStretches(path, ['wave','ship']);
+    const items = segs.map(seg=>({type:'press', seg}))
+      .concat(stretches.map(st=>({type:'stretch', st})));
+    const marks = [];
+    const risks = [];
+    let idx = 0;
+    function tick(){
+      const t0 = performance.now();
+      while(idx<items.length){
+        const item = items[idx];
+        let tolMs, x, cpsRisk = 0;
+        if(item.type==='press'){
+          const seg = item.seg;
+          tolMs = segmentToleranceMs(heldSeq, seg);
+          const segPos = segs.indexOf(seg);
+          const gapFrames = segPos>0 ? seg[0]-segs[segPos-1][0] : null;
+          cpsRisk = cpsRiskFor(gapFrames);
+          x = path[seg[0]].x;
+        } else {
+          const [A,B] = item.st;
+          tolMs = stretchToleranceMs(path, A, B);
+          x = path[A].x;
+        }
+        const timingRisk = toleranceToRisk(tolMs);
+        const risk = 1 - (1-timingRisk)*(1-cpsRisk);
+        risks.push(risk);
+        if(risk>=0.1){
+          // on affiche directement la largeur de la fenêtre de timing en millisecondes (temps
+          // continu, indépendant des 60 FPS), plus parlant et plus précis qu'un simple compte
+          // d'images ou qu'un pourcentage de risque abstrait
+          marks.push({ x, y:6*CELL, tolMs, kind:'fail' });
+        }
+        idx++;
+        if(performance.now()-t0>20) break;
+      }
+      if(onProgress) onProgress(items.length ? idx/items.length : 1);
+      if(idx<items.length){
+        setTimeout(tick, 0);
+      } else {
+        // La difficulté d'un niveau se juge à SES PIRES PASSAGES, pas à la somme de tout ce qui
+        // n'est pas parfaitement confortable : un niveau qui répète 30 fois un même passage
+        // moyennement tendu n'est pas plus dur qu'un niveau qui ne le fait qu'une fois (la
+        // pratique et le rythme compensent la répétition), alors qu'un vrai Extreme Demon se
+        // reconnaît à SES quelques passages vraiment insupportables. On ne retient donc que les
+        // K pires passages pour le score final — le reste du niveau peut être aussi long qu'on
+        // veut sans faire gonfler artificiellement la difficulté.
+        const K = 6, P = 10;
+        risks.sort((a,b)=>b-a);
+        const worst = risks.slice(0, K);
+        const sumPow = worst.reduce((s,r)=>s+Math.pow(r,P), 0);
+        const combinedRisk = worst.length ? Math.min(1, Math.pow(sumPow, 1/P)) : 0;
+        const points = Math.max(0, Math.min(100, Math.round(combinedRisk*100*10)/10));
+        resolve({ points, marks, segCount:items.length });
+      }
+    }
+    tick();
+  });
+}
+function analyzeLevel(onProgress){
+  return runAiAnalysis(p=>{ if(onProgress) onProgress(p*0.55); }).then(search=>{
+    if(!search.possible){
+      return { possible:false, path:search.path, blockedX:search.blockedX, marks:[] };
+    }
+    const maxFrames = Math.ceil((level.length*CELL) / (BASE_SPEED*0.5)) + 200;
+    const auto = checkAutoLevel(maxFrames);
+    if(auto.won){
+      if(onProgress) onProgress(1);
+      return { possible:true, points:0, tier:'Auto', path:auto.path, marks:[], segCount:0, isAutoLevel:true };
+    }
+    const rawHeldSeq = reconstructHeldSeq(search.winState);
+    return simplifyHeldSeqAsync(rawHeldSeq, p=>{ if(onProgress) onProgress(0.55+p*0.15); })
+      .then(heldSeq => estimateHumanDifficultyAsync(heldSeq, search.path, p=>{ if(onProgress) onProgress(0.7+p*0.3); }))
+      .then(human=>{
+        const tier = tierForPoints(human.points);
+        return { possible:true, points:human.points, tier, path:search.path, marks:human.marks, segCount:human.segCount };
+      });
+  });
+}
+let analysisRunning = false;
+document.getElementById('analyzeBtn').addEventListener('click', async ()=>{
+  if(analysisRunning) return;
+  analysisRunning = true;
+  const btn = document.getElementById('analyzeBtn');
+  const banner = document.getElementById('analyzeResult');
+  const textEl = document.getElementById('analyzeResultText');
+  const closeBtn = document.getElementById('analyzeCloseBtn');
+  btn.disabled = true;
+  closeBtn.style.display = 'none';
+  banner.className = '';
+  banner.style.display = 'flex';
+  textEl.textContent = '🔄 Analyse en cours… 0%';
+  analyzeMarkerX = null;
+  const res = await analyzeLevel(p=>{ textEl.textContent = '🔄 Analyse en cours… '+Math.round(p*100)+'%'; });
+  btn.disabled = false;
+  analysisRunning = false;
+  closeBtn.style.display = 'inline-block';
+  lastRunPath = res.path;
+  analysisMarks = res.marks;
+  if(res.possible){
+    banner.className = 'ok';
+    let summary;
+    if(res.isAutoLevel) summary = ' — aucune action du joueur n\'est nécessaire';
+    else if(res.marks.length===0) summary = ' — les '+res.segCount+' action'+(res.segCount>1?'s':'')+' du niveau laissent toutes une marge de timing confortable';
+    else summary = ' — '+res.marks.length+' action'+(res.marks.length>1?'s':'')+' sur '+res.segCount+' nécessite'+(res.marks.length>1?'nt':'')+' un timing serré';
+    textEl.textContent = '✅ Niveau jouable'+summary+' — Difficulté estimée : '+res.points+' points ('+res.tier+
+      '). Le chemin trouvé par l\'IA est affiché en rouge, avec les passages les plus exigeants signalés le long du niveau.';
+    analyzeMarkerX = null;
+  } else {
+    const pct = Math.max(0, Math.min(100, Math.round(res.blockedX/(level.length*CELL)*100)));
+    banner.className = 'bad';
+    textEl.textContent = '⚠️ Blocage détecté vers '+pct+'% du niveau (case ~'+Math.floor(res.blockedX/CELL)+
+      ', ligne orange) — après avoir exploré toutes les façons plausibles d\'appuyer, aucune ne passe ce point : '+
+      'le niveau semble injouable tel quel (pas de difficulté estimée tant qu\'il n\'est pas franchissable). '+
+      'Le meilleur essai de l\'IA est affiché en rouge.';
+    analyzeMarkerX = res.blockedX;
+    scrollX = Math.max(0, Math.min(maxScrollX(), res.blockedX-200));
+  }
+});
+document.getElementById('analyzeCloseBtn').addEventListener('click', clearAnalysis);
+
+function loop(){
+  if(mode==='play'){
+    update();
+    render();
+    if(mode==='play') rafId = requestAnimationFrame(loop);
+    else render();
+  }
+}
+
+// ---------- Sauvegarde / chargement ----------
+function serializeLevel(){
+  const objects = [];
+  for(const [k,arr] of level.objects.entries()){
+    const [c,r] = k.split(',').map(Number);
+    for(const v of arr) objects.push(Object.assign({c,r}, v));
+  }
+  return {
+    name: level.name,
+    length: level.length,
+    musicUrl: level.musicUrl||'',
+    ceilingHeight: level.ceilingHeight||1,
+    bgTop: level.bgTop||'#1a1a2e',
+    bgBottom: level.bgBottom||'#0e0e16',
+    objects,
+  };
+}
+function deserializeLevel(data){
+  const lvl = { name: data.name||'', length: data.length||150, musicUrl: data.musicUrl||'',
+    ceilingHeight: data.ceilingHeight||1, bgTop: data.bgTop||'#1a1a2e', bgBottom: data.bgBottom||'#0e0e16',
+    objects: new Map() };
+  for(const o of data.objects){
+    const copy = Object.assign({}, o);
+    delete copy.c; delete copy.r;
+    const k = objKey(o.c,o.r);
+    let arr = lvl.objects.get(k);
+    if(!arr){ arr=[]; lvl.objects.set(k,arr); }
+    arr.push(copy);
+  }
+  return lvl;
+}
+function syncEditorUI(){
+  document.getElementById('spotifyUrl').value = level.musicUrl || '';
+  updateSpotifyPreview();
+  document.getElementById('ceilingHeightInput').value = level.ceilingHeight||1;
+  document.getElementById('bgTopInput').value = level.bgTop||'#1a1a2e';
+  document.getElementById('bgBottomInput').value = level.bgBottom||'#0e0e16';
+  clearAnalysis();
+  refreshCheckpointSelect();
+}
+document.getElementById('bgTopInput').addEventListener('input', e=>{ level.bgTop = e.target.value; });
+document.getElementById('bgBottomInput').addEventListener('input', e=>{ level.bgBottom = e.target.value; });
+document.getElementById('bgReset').addEventListener('click', ()=>{
+  level.bgTop = '#1a1a2e'; level.bgBottom = '#0e0e16';
+  document.getElementById('bgTopInput').value = level.bgTop;
+  document.getElementById('bgBottomInput').value = level.bgBottom;
+});
+
+// ---------- Musique Spotify : associer un lien à un niveau ----------
+function parseSpotifyUrl(url){
+  const m = url.match(/open\.spotify\.com\/(?:intl-[a-z]{2}\/)?(track|album|playlist|episode|show)\/([A-Za-z0-9]+)/);
+  return m ? { type:m[1], id:m[2] } : null;
+}
+// Contrôle réel de la lecture (pas juste un aperçu statique) via l'API iFrame officielle de
+// Spotify : ça permet de démarrer/relancer la musique automatiquement avec le niveau, plutôt que
+// d'obliger l'utilisateur à cliquer sur play dans l'encart Spotify à chaque essai.
+let spotifyIFrameAPI = null;
+let spotifyController = null;
+let spotifyControllerUri = null; // URI actuellement chargée dans le contrôleur (évite de le
+// recréer inutilement si le morceau associé n'a pas changé)
+function updateSpotifyPreview(){
+  const box = document.getElementById('spotifyPreview');
+  const parsed = level.musicUrl ? parseSpotifyUrl(level.musicUrl) : null;
+  if(!parsed){
+    box.style.display = 'none';
+    box.innerHTML = '';
+    spotifyController = null;
+    spotifyControllerUri = null;
+    return;
+  }
+  box.style.display = 'block';
+  const uri = 'spotify:'+parsed.type+':'+parsed.id;
+  if(spotifyControllerUri===uri && (spotifyController || !spotifyIFrameAPI)) return; // déjà en place
+  spotifyControllerUri = uri;
+  spotifyController = null;
+  if(!spotifyIFrameAPI){
+    // l'API n'est pas encore chargée (script async) : aperçu statique en attendant, sans
+    // contrôle possible — onSpotifyIframeApiReady rappellera updateSpotifyPreview() dès que
+    // l'API sera prête pour remplacer ça par un vrai contrôleur.
+    box.innerHTML = '<iframe src="https://open.spotify.com/embed/'+parsed.type+'/'+parsed.id+
+      '" allow="encrypted-media; autoplay" loading="lazy"></iframe>';
+    return;
+  }
+  box.innerHTML = '';
+  const el = document.createElement('div');
+  box.appendChild(el);
+  spotifyIFrameAPI.createController(el, { uri }, controller => { spotifyController = controller; });
+}
+window.onSpotifyIframeApiReady = (IFrameAPI) => {
+  spotifyIFrameAPI = IFrameAPI;
+  spotifyControllerUri = null; // force la (re)création d'un vrai contrôleur ci-dessous
+  updateSpotifyPreview();
+};
+function playLevelMusic(){
+  if(spotifyController){ spotifyController.seek(0); spotifyController.play(); }
+}
+function pauseLevelMusic(){
+  if(spotifyController) spotifyController.pause();
+}
+function resumeLevelMusic(){
+  if(spotifyController) spotifyController.resume();
+}
+document.getElementById('attachMusic').addEventListener('click', ()=>{
+  const url = document.getElementById('spotifyUrl').value.trim();
+  if(!url) return;
+  if(!parseSpotifyUrl(url)){
+    alert('Lien Spotify non reconnu. Copiez le lien "Partager" d\'un morceau, album ou playlist depuis Spotify (ouvre.spotify.com/...).');
+    return;
+  }
+  level.musicUrl = url;
+  updateSpotifyPreview();
+});
+document.getElementById('removeMusic').addEventListener('click', ()=>{
+  level.musicUrl = '';
+  document.getElementById('spotifyUrl').value = '';
+  updateSpotifyPreview();
+});
+
+function getSaved(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function setSaved(obj){ localStorage.setItem(STORE_KEY, JSON.stringify(obj)); }
+
+function refreshLevelsList(){
+  const listEl = document.getElementById('levelsList');
+  const saved = getSaved();
+  const names = Object.keys(saved);
+  listEl.innerHTML = '';
+  if(names.length===0){
+    listEl.innerHTML = '<div class="row"><span>(aucun niveau enregistré)</span></div>';
+    return;
+  }
+  names.forEach(name=>{
+    const row = document.createElement('div');
+    row.className = 'row';
+    const span = document.createElement('span'); span.textContent = name;
+    const btns = document.createElement('div'); btns.className='btns';
+    const loadB = document.createElement('button'); loadB.textContent='Charger';
+    loadB.addEventListener('click', ()=>{
+      level = deserializeLevel(saved[name]);
+      level.name = name;
+      document.getElementById('levelName').value = name;
+      scrollX = 0;
+      syncEditorUI();
+      backToEdit();
+    });
+    const delB = document.createElement('button'); delB.textContent='🗑';
+    delB.addEventListener('click', ()=>{
+      if(confirm('Supprimer "'+name+'" ?')){
+        const s = getSaved(); delete s[name]; setSaved(s); refreshLevelsList();
+      }
+    });
+    btns.appendChild(loadB); btns.appendChild(delB);
+    row.appendChild(span); row.appendChild(btns);
+    listEl.appendChild(row);
+  });
+}
+
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('levelName').value.trim();
+  if(!name){ alert('Donne un nom au niveau.'); return; }
+  level.name = name;
+  const s = getSaved();
+  s[name] = serializeLevel();
+  setSaved(s);
+  refreshLevelsList();
+});
+document.getElementById('newBtn').addEventListener('click', ()=>{
+  if(confirm('Créer un nouveau niveau vierge ? (le niveau courant non enregistré sera perdu)')){
+    level = newLevel();
+    document.getElementById('levelName').value = '';
+    scrollX = 0;
+    syncEditorUI();
+    backToEdit();
+  }
+});
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const data = JSON.stringify(serializeLevel(), null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = (level.name||'niveau')+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  document.getElementById('fileImport').click();
+});
+document.getElementById('fileImport').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      level = deserializeLevel(data);
+      document.getElementById('levelName').value = level.name||'';
+      scrollX = 0;
+      syncEditorUI();
+      backToEdit();
+    }catch(err){ alert('Fichier JSON invalide.'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ---------- Paramètres : raccourcis clavier (édition uniquement) ----------
+const DEFAULT_KEYBINDS = {
+  block: 'KeyB', spike: 'KeyS', rotate: 'KeyR', erase: 'KeyE', select: 'KeyV',
+  portal: 'KeyP', pad: 'KeyD', orb: 'KeyO', checkpoint: 'KeyC', play: 'Enter', fillGround: 'KeyG',
+};
+const ACTION_LABELS = {
+  block:'Outil Bloc', spike:'Outil Pique', rotate:'Outil Rotation', erase:'Outil Effacer',
+  select:'Outil Sélection', portal:'Placer le portail sélectionné', pad:'Placer le pad sélectionné',
+  orb:'Placer l\'orbe sélectionné', checkpoint:'Outil Point de sauvegarde',
+  play:'Tester le niveau', fillGround:'Remplir le sol',
+};
+function loadKeybinds(){
+  try{ return Object.assign({}, DEFAULT_KEYBINDS, JSON.parse(localStorage.getItem(KEYBIND_STORE_KEY))||{}); }
+  catch(e){ return Object.assign({}, DEFAULT_KEYBINDS); }
+}
+function saveKeybinds(){ localStorage.setItem(KEYBIND_STORE_KEY, JSON.stringify(keybinds)); }
+let keybinds = loadKeybinds();
+
+function keyLabel(code){
+  if(!code) return '(aucune)';
+  return code.replace('Key','').replace('Digit','').replace('Arrow','Flèche ');
+}
+function applyEditorAction(action){
+  const map = { block:'toolBlock', spike:'toolSpike', rotate:'toolRotate', erase:'toolErase',
+    select:'toolSelect', portal:'toolPortal', pad:'toolPad', orb:'toolOrb', checkpoint:'toolCheckpoint',
+    play:'playBtn', fillGround:'fillGround' };
+  const id = map[action];
+  if(id) document.getElementById(id).click();
+}
+function handleEditorShortcut(e){
+  if(document.getElementById('settingsModal').style.display==='flex') return;
+  if(e.ctrlKey || e.altKey || e.metaKey) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if(tag==='INPUT' || tag==='SELECT' || tag==='TEXTAREA') return;
+  for(const action in keybinds){
+    if(keybinds[action]===e.code){
+      e.preventDefault();
+      applyEditorAction(action);
+      return;
+    }
+  }
+}
+function renderKeybindRows(){
+  const wrap = document.getElementById('keybindRows');
+  wrap.innerHTML = '';
+  Object.keys(ACTION_LABELS).forEach(action=>{
+    const row = document.createElement('div');
+    row.className = 'kb-row';
+    const label = document.createElement('span'); label.textContent = ACTION_LABELS[action];
+    const btn = document.createElement('button');
+    btn.textContent = keyLabel(keybinds[action]);
+    btn.addEventListener('click', ()=>{
+      btn.textContent = 'Appuyez sur une touche…';
+      const capture = ev=>{
+        ev.preventDefault(); ev.stopPropagation();
+        keybinds[action] = ev.code;
+        saveKeybinds();
+        btn.textContent = keyLabel(ev.code);
+        window.removeEventListener('keydown', capture, true);
+      };
+      window.addEventListener('keydown', capture, true);
+    });
+    row.appendChild(label); row.appendChild(btn);
+    wrap.appendChild(row);
+  });
+}
+document.getElementById('openSettings').addEventListener('click', ()=>{
+  renderKeybindRows();
+  renderDifficultyTable();
+  document.getElementById('settingsModal').style.display = 'flex';
+});
+document.getElementById('closeSettings').addEventListener('click', ()=>{
+  document.getElementById('settingsModal').style.display = 'none';
+});
+document.getElementById('resetKeybinds').addEventListener('click', ()=>{
+  keybinds = Object.assign({}, DEFAULT_KEYBINDS);
+  saveKeybinds();
+  renderKeybindRows();
+});
+
+// ---------- Boucle de rendu éditeur ----------
+function editRenderLoop(){
+  if(mode==='edit') render();
+  requestAnimationFrame(editRenderLoop);
+}
+
+resetPlayer();
+setZoom(1);
+syncEditorUI();
+refreshLevelsList();
+editRenderLoop();
+
+})();
+</script>
+</body>
+</html>

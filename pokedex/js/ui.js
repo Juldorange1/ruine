@@ -1,9 +1,9 @@
 // Interface : navigation entre écrans, rendu, entraînement "Apprendre"
-// (révélation à la demande, par lignée évolutive complète), moteur de
-// session "Jeu" (quiz), raccourcis clavier.
+// (révélation à la demande, par lignée évolutive complète), session
+// "Réviser" (formulaire complet par pokémon), raccourcis clavier.
 const UI = (() => {
   let currentScreen = 'home';
-  let session = null; // session de "Jeu" en cours (voir startPlaySession)
+  let session = null; // session de révision en cours (voir startPlaySession)
   let learnTraining = null; // entraînement "Apprendre" en cours (voir startLearnLine)
 
   // ---------- Utilitaires ----------
@@ -56,7 +56,6 @@ const UI = (() => {
       home: renderHome,
       learn: renderLearn,
       review: renderReview,
-      'quiz-config': renderQuizConfig,
       pokedex: renderPokedexScreen,
       stats: renderStats,
       settings: renderSettings,
@@ -150,69 +149,38 @@ const UI = (() => {
     const progress = Storage.getAllProgress();
     const dueIds = SRS.buildDueQueue(progress, all.map((p) => p.id));
     const weakIds = SRS.buildWeaknessList(progress, all.map((p) => p.id), 20);
-    const allModes = Object.keys(QuizEngine.MODE_LABELS);
+
+    const facetWrap = $('#review-facet-picker');
+    facetWrap.innerHTML = '';
+    QuizEngine.REVIEW_FIELDS.forEach((f) => {
+      facetWrap.appendChild(el('label', {}, [
+        el('input', { type: 'checkbox', name: 'review-facet', value: f.key }),
+        f.label,
+      ]));
+    });
 
     $('#review-due-count').textContent = dueIds.length;
     $('#review-start-due').disabled = dueIds.length === 0;
-    $('#review-start-due').onclick = () => startPlaySession({ modes: allModes, queue: dueIds.map((id) => PokedexData.getById(id)), format: 'normal', count: dueIds.length, sourceScreen: 'review' });
+    $('#review-start-due').onclick = () => {
+      startPlaySession({ queue: dueIds.map((id) => PokedexData.getById(id)), format: 'normal', sourceScreen: 'review', reviewForm: true });
+    };
     $('#review-start-weak').disabled = weakIds.length === 0;
-    $('#review-start-weak').onclick = () => startPlaySession({ modes: allModes, queue: weakIds.map((id) => PokedexData.getById(id)), format: 'normal', count: weakIds.length, sourceScreen: 'review' });
+    $('#review-start-weak').onclick = () => {
+      startPlaySession({ queue: weakIds.map((id) => PokedexData.getById(id)), format: 'normal', sourceScreen: 'review', reviewForm: true });
+    };
+    $('#review-start-facet').onclick = () => {
+      const facets = checkedValues('#review-facet-picker');
+      if (!facets.length) { toast('Sélectionne au moins un sujet sur lequel tu es faible.'); return; }
+      const ids = SRS.buildFacetWeaknessQueue(progress, all.map((p) => p.id), facets, 30);
+      if (!ids.length) { toast('Aucun Pokémon déjà rencontré ne correspond — apprends-en d\'abord dans « Apprendre ».'); return; }
+      startPlaySession({ queue: ids.map((id) => PokedexData.getById(id)), format: 'normal', sourceScreen: 'review', reviewForm: true });
+    };
 
     const grid = $('#review-weak-grid');
     grid.innerHTML = '';
     weakIds.forEach((id) => grid.appendChild(pokeCard(PokedexData.getById(id), progress[id])));
   }
 
-  // ================= JEU (quiz) =================
-  function renderQuizConfig() {
-    const modeWrap = $('#quiz-mode-picker');
-    modeWrap.innerHTML = '';
-    Object.entries(QuizEngine.MODE_LABELS).forEach(([key, label]) => {
-      modeWrap.appendChild(el('label', {}, [
-        el('input', { type: 'checkbox', name: 'quiz-mode', value: key, checked: 'checked' }),
-        label,
-      ]));
-    });
-
-    $all('input[name="format"]').forEach((r) => {
-      r.onchange = () => $('#quiz-timeattack-durations').classList.toggle('hidden', r.value !== 'timeattack' || !r.checked);
-    });
-
-    fillCheckboxGroup('#quiz-filter-gen', PokedexData.getGenerations().map((g) => ({ value: g, label: `Gén. ${g}` })));
-    fillCheckboxGroup('#quiz-filter-type', PokedexData.getTypes().map((t) => ({ value: t, label: t })));
-    fillCheckboxGroup('#quiz-filter-region', PokedexData.getRegions().map((r) => ({ value: r, label: r })));
-
-    $('#quiz-start-btn').onclick = () => {
-      const modes = checkedValues('#quiz-mode-picker');
-      if (!modes.length) { toast('Sélectionne au moins un sujet à réviser.'); return; }
-      const format = $('input[name="format"]:checked')?.value || 'normal';
-      const gens = checkedValues('#quiz-filter-gen').map(Number);
-      const types = checkedValues('#quiz-filter-type');
-      const regions = checkedValues('#quiz-filter-region');
-      let pool = PokedexData.filter({ generations: gens, types, regions });
-      pool = pool.filter((p) => Storage.getProgress(p.id).timesSeen > 0);
-      if (pool.length < 4) { toast("Pas assez de Pokémon déjà vus avec ces filtres — apprends-en d'abord dans « Apprendre »."); return; }
-
-      let timeLimitMs = null;
-      if (format === 'timeattack') {
-        const custom = parseInt($('#quiz-duration-custom').value, 10);
-        const duration = custom > 0 ? custom : parseInt($('input[name="duration"]:checked')?.value || '60', 10);
-        timeLimitMs = duration * 1000;
-      }
-      startPlaySession({ modes, pool, format, timeLimitMs, count: format === 'normal' ? Math.min(20, pool.length) : Infinity });
-    };
-  }
-
-  function fillCheckboxGroup(sel, items) {
-    const wrap = $(sel);
-    wrap.innerHTML = '';
-    items.forEach((it) => {
-      wrap.appendChild(el('label', {}, [
-        el('input', { type: 'checkbox', value: it.value }),
-        String(it.label),
-      ]));
-    });
-  }
   function checkedValues(sel) {
     return $all(`${sel} input:checked`).map((i) => i.value);
   }
@@ -257,7 +225,7 @@ const UI = (() => {
         infoRow('Taille', fmtHeight(p.height_dm)),
         infoRow('Poids', fmtWeight(p.weight_hg)),
       ]),
-      buildEvolutionStrip(p, { clickable: true }),
+      el('div', { class: 'evo-strip-discreet' }, buildEvolutionStrip(p, { clickable: true })),
     ]);
     card.appendChild(panel);
     card.appendChild(el('button', {
@@ -282,22 +250,11 @@ const UI = (() => {
     }
   }
 
+  // Pas d'écran de fin : une fois la lignée vue, retour direct au menu
+  // principal d'Apprendre pour enchaîner sur la suivante.
   function finishLearnTraining() {
-    const t = learnTraining;
     learnTraining = null;
-    currentScreen = t.sourceScreen;
-    $('#play-progress').textContent = '';
-    $('#play-score').textContent = '';
-    $('#play-feedback').innerHTML = '';
-    const stage = $('#play-stage');
-    stage.innerHTML = '';
-    stage.appendChild(el('div', { class: 'card', style: 'max-width:420px;margin:0 auto;text-align:center;' }, [
-      el('h2', {}, 'Lignée terminée !'),
-      el('p', {}, `${t.members.length} Pokémon vus.`),
-      el('div', { class: 'btn-row', style: 'justify-content:center;margin-top:14px;' }, [
-        el('button', { class: 'btn primary', onclick: () => navigate(t.sourceScreen) }, 'Retour'),
-      ]),
-    ]));
+    navigate('learn');
   }
 
   function quitLearnTraining() {
@@ -353,56 +310,27 @@ const UI = (() => {
     ]);
   }
 
-  // ================= SESSION DE JEU =================
+  // ================= SESSION DE REVISION =================
   function startPlaySession(opts) {
-    const pool = opts.pool || opts.queue || PokedexData.getAll();
-    let queue;
-    if (opts.queue) {
-      queue = PokedexData.shuffle(opts.queue.slice());
-    } else {
-      queue = PokedexData.shuffle(pool.slice());
-    }
+    const pool = opts.queue || PokedexData.getAll();
+    const queue = PokedexData.shuffle(pool.slice());
     session = {
-      modes: opts.modes,
       pool,
       queue,
       queueIdx: 0,
-      format: opts.format,
-      count: opts.count === undefined ? 20 : opts.count,
-      timeLimitMs: opts.timeLimitMs || null,
-      endAt: opts.timeLimitMs ? Date.now() + opts.timeLimitMs : null,
       asked: 0,
       correct: 0,
-      streak: 0,
       sourceScreen: opts.sourceScreen || currentScreen,
       awaitingContinue: false,
-      timerHandle: null,
       current: null,
+      totalPokemon: pool.length,
+      pokemonIndex: 0,
     };
     currentScreen = 'play';
     $all('.screen').forEach((s) => s.classList.remove('active'));
     $('#screen-play').classList.add('active');
     $all('#main-nav button[data-nav]').forEach((b) => b.setAttribute('aria-current', 'false'));
     nextQuestion();
-    if (session.endAt) startTimer();
-  }
-
-  function startTimer() {
-    updateTimerDisplay();
-    session.timerHandle = setInterval(() => {
-      if (!session) return;
-      if (Date.now() >= session.endAt) {
-        clearInterval(session.timerHandle);
-        finishSession();
-      } else {
-        updateTimerDisplay();
-      }
-    }, 250);
-  }
-  function updateTimerDisplay() {
-    if (!session || !session.endAt) return;
-    const remaining = Math.max(0, Math.ceil((session.endAt - Date.now()) / 1000));
-    $('#play-progress').textContent = `⏱️ ${remaining}s`;
   }
 
   function nextPokemonFromQueue() {
@@ -415,213 +343,260 @@ const UI = (() => {
 
   function nextQuestion() {
     if (!session) return;
-    if (session.format !== 'marathon' && session.format !== 'timeattack' && session.asked >= session.count) {
+    if (session.pokemonIndex >= session.totalPokemon) {
       finishSession();
       return;
     }
     const pokemon = nextPokemonFromQueue();
-    const modeToUse = session.modes[Math.floor(Math.random() * session.modes.length)];
-    const question = QuizEngine.generateQuestion(modeToUse, pokemon, session.pool.length >= 4 ? session.pool : PokedexData.getAll());
-    session.current = question;
+    session.pokemonIndex += 1;
+    session.current = QuizEngine.genReviewForm(pokemon);
     session.awaitingContinue = false;
     renderPlayHeader();
-    renderPlayStage(question);
+    renderPlayStage(session.current);
   }
 
   function renderPlayHeader() {
-    if (!session.endAt) {
-      const totalLabel = session.format === 'marathon' ? '∞' : session.count;
-      $('#play-progress').textContent = `Question ${session.asked + 1} / ${totalLabel}`;
-    }
-    $('#play-score').textContent = `✅ ${session.correct} · 🔥 série ${session.streak}`;
+    $('#play-progress').textContent = `Pokémon ${session.pokemonIndex} / ${session.totalPokemon}`;
+    $('#play-score').textContent = `✅ ${session.correct}`;
   }
 
-  const SHOW_SUBJECT = {
-    image2nom: 'image', flash: 'image', type: 'image', numero: 'image',
-    evolution: 'image', generation: 'image', region: 'image', qcm: 'image', vraifaux: 'image',
-    nom2image: 'name',
-  };
-
+  // Mise en page compacte pensée pour tenir sans défilement : l'image à
+  // gauche, tous les champs à droite (largeur de l'écran utilisée plutôt
+  // qu'un long empilement vertical).
   function renderPlayStage(q) {
     const stage = $('#play-stage');
     $('#play-feedback').innerHTML = '';
     stage.innerHTML = '';
     const p = q.pokemon;
-    const showMode = SHOW_SUBJECT[q.mode] || 'image';
 
-    if (showMode === 'image') {
-      const wrap = el('div', { class: 'quiz-image-wrap clickable', id: 'stage-image-wrap', title: 'Voir la fiche détaillée', html: imgOrPlaceholder(p.image, p.name, 'stage-img') });
-      wrap.addEventListener('click', () => openPokemonDetail(p.id));
-      stage.appendChild(wrap);
-      if (q.mode === 'flash') {
-        setTimeout(() => {
-          if (session && session.current === q) wrap.innerHTML = imgOrPlaceholder(null, '???', 'stage-img');
-        }, q.flashMs || 1200);
-      }
-    } else if (showMode === 'name') {
-      stage.appendChild(el('div', { class: 'quiz-image-wrap', style: 'font-size:1.6rem;font-weight:800;' }, p.name));
-    }
+    const imgWrap = el('div', { class: 'review-image-wrap clickable', title: 'Voir la fiche détaillée', html: imgOrPlaceholder(p.image, p.name, 'stage-img') });
+    imgWrap.addEventListener('click', () => openPokemonDetail(p.id));
 
-    stage.appendChild(el('div', { class: 'quiz-prompt' }, q.prompt));
-
-    if (q.answerType === 'text') {
-      const input = el('input', { type: 'text', class: 'quiz-text-input', id: 'answer-input', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
-      const row = el('div', { style: 'display:flex;flex-direction:column;align-items:center;gap:12px;' }, [
-        input,
-        el('button', { class: 'btn primary', onclick: () => submitTextAnswer() }, 'Valider (Entrée)'),
-      ]);
-      stage.appendChild(row);
-      setTimeout(() => input.focus(), 30);
-    } else if (q.answerType === 'choice') {
-      const grid = el('div', { class: 'choice-grid' });
-      q.choices.forEach((c, i) => {
-        const hasRealPokemon = c.image && typeof c.id === 'number';
-        const imgBlock = c.image !== undefined
-          ? el('div', { class: 'choice-img-wrap', html: imgOrPlaceholder(c.image, c.label, '') })
-          : null;
-        if (imgBlock && hasRealPokemon) {
-          const infoBtn = el('button', {
-            type: 'button', class: 'choice-info-btn', title: 'Voir la fiche détaillée', 'aria-label': 'Voir la fiche détaillée',
-            onclick: (e) => { e.stopPropagation(); openPokemonDetail(c.id); },
-          }, 'ℹ️');
-          imgBlock.appendChild(infoBtn);
-        }
-        const card = el('div', { class: 'choice-card', tabindex: '0', 'data-choice-id': String(c.id), 'aria-label': c.label }, [
-          imgBlock,
-          q.hideChoiceLabels && c.image ? null : el('div', {}, c.label),
-          el('div', { class: 'kbd-hint' }, `Touche ${i + 1}`),
-        ].filter(Boolean));
-        card.addEventListener('click', () => submitChoiceAnswer(c.id));
-        grid.appendChild(card);
-      });
-      stage.appendChild(grid);
-    } else if (q.answerType === 'multichoice') {
-      const grid = el('div', { class: 'choice-grid' });
-      const selected = new Set();
-      q.choices.forEach((c) => {
-        const card = el('div', { class: 'choice-card', 'data-choice-id': c.id }, c.label);
-        card.addEventListener('click', () => {
-          if (selected.has(c.id)) { selected.delete(c.id); card.classList.remove('selected'); }
-          else { selected.add(c.id); card.classList.add('selected'); }
-        });
-        grid.appendChild(card);
-      });
-      stage.appendChild(grid);
-      stage.appendChild(el('button', { class: 'btn primary', style: 'margin-top:14px', onclick: () => submitMultiAnswer([...selected]) }, 'Valider (Entrée)'));
-      stage._selectedSet = selected;
-    } else if (q.answerType === 'boolean') {
-      stage.appendChild(el('div', { class: 'bool-row' }, [
-        el('button', { class: 'btn primary', onclick: () => submitBooleanAnswer(true) }, '✅ Vrai'),
-        el('button', { class: 'btn danger', onclick: () => submitBooleanAnswer(false) }, '❌ Faux'),
+    const fieldsCol = el('div', { class: 'review-fields-col' });
+    fieldsCol.appendChild(el('div', { class: 'quiz-prompt' }, q.prompt));
+    const form = el('div', { class: 'review-form' });
+    q.fields.forEach((f) => {
+      let control;
+      let rowClass = 'review-field-row';
+      if (f.kind === 'picker') control = buildPickerField(f);
+      else if (f.kind === 'lineage') { control = buildLineageField(p); rowClass += ' review-field-row-full'; }
+      else control = buildReviewInput(f);
+      form.appendChild(el('label', { class: rowClass }, [
+        el('span', { class: 'review-field-label' }, f.label),
+        control,
       ]));
+    });
+    fieldsCol.appendChild(form);
+    fieldsCol.appendChild(el('button', { class: 'btn primary review-submit-btn', onclick: () => submitReviewForm(q) }, `Valider (${keyDisplay(getKeybindings().submit)})`));
+
+    stage.appendChild(el('div', { class: 'review-layout' }, [imgWrap, fieldsCol]));
+    setTimeout(() => stage.querySelector('.review-field-input')?.focus(), 30);
+  }
+
+  // La lignée complète du pokémon revu, une case par membre : la case du
+  // pokémon affiché montre son image (on voit où il se situe), les autres
+  // sont des cases à remplir avec leur nom — pré-évolutions à gauche,
+  // évolutions à droite, dans l'ordre de la lignée.
+  function buildLineageField(p) {
+    const stages = PokedexData.fullEvolutionLine(p);
+    const flat = stages.flatMap((stage) => stage.slice().sort((a, b) => a.number - b.number));
+    const wrap = el('div', { class: 'lineage-boxes' });
+    if (flat.length <= 1) {
+      wrap.appendChild(el('div', { class: 'lineage-box lineage-subject' }, [el('div', { html: imgOrPlaceholder(p.image, p.name, '') })]));
+      return wrap;
     }
-  }
-
-  async function submitTextAnswer() {
-    const input = $('#answer-input');
-    if (!input || session.awaitingContinue) return;
-    const val = input.value;
-    const correct = QuizEngine.checkAnswer(session.current, val);
-    input.disabled = true;
-    await resolveAnswer(correct);
-  }
-
-  async function submitChoiceAnswer(choiceId) {
-    if (session.awaitingContinue) return;
-    const correct = QuizEngine.checkAnswer(session.current, choiceId);
-    $all('.choice-card').forEach((c) => {
-      c.style.pointerEvents = 'none';
-      const cid = c.dataset.choiceId;
-      const isCorrectCard = session.current.multiCorrectOk
-        ? session.current.correct.map(String).includes(cid)
-        : String(session.current.correct) === cid;
-      if (isCorrectCard) c.classList.add('correct');
-      if (cid === String(choiceId) && !isCorrectCard) c.classList.add('incorrect');
+    flat.forEach((mon, i) => {
+      if (i > 0) wrap.appendChild(el('div', { class: 'evo-arrow' }, '→'));
+      if (mon.id === p.id) {
+        wrap.appendChild(el('div', { class: 'lineage-box lineage-subject' }, [el('div', { html: imgOrPlaceholder(mon.image, mon.name, '') })]));
+      } else {
+        const input = el('input', { type: 'text', class: 'lineage-input', 'data-lineage-id': String(mon.id), autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' });
+        const know = el('label', { class: 'lineage-know', title: 'Je connais ce Pokémon' }, [
+          el('input', { type: 'checkbox', class: 'lineage-know-checkbox', 'data-lineage-id': String(mon.id), onchange: (e) => { input.disabled = e.target.checked; } }),
+          'connu',
+        ]);
+        wrap.appendChild(el('div', { class: 'lineage-box' }, [input, know]));
+      }
     });
-    await resolveAnswer(correct);
+    return wrap;
   }
 
-  async function submitMultiAnswer(selected) {
-    if (session.awaitingContinue) return;
-    const correct = QuizEngine.checkAnswer(session.current, selected);
-    $all('.choice-card').forEach((c) => {
-      const cid = c.dataset.choiceId;
-      if (session.current.correct.includes(cid)) c.classList.add('correct');
-      else if (selected.includes(cid)) c.classList.add('incorrect');
+  // Un membre correct si le nom tapé correspond (ou si la case "connu" est
+  // cochée) ; les cases vides et non cochées ne sont ni comptées justes ni
+  // fausses. Correct global = TOUTES les cases remplies sont justes (pas de
+  // majorité pour la lignée : soit tu la connais entièrement, soit non).
+  function computeLineageResult() {
+    const inputs = $all('.lineage-input');
+    if (!inputs.length) return { attempted: false, correct: false };
+    let filled = 0;
+    let correctCount = 0;
+    inputs.forEach((inp) => {
+      const knowBox = $(`.lineage-know-checkbox[data-lineage-id="${inp.dataset.lineageId}"]`);
+      inp.disabled = true;
+      if (knowBox) knowBox.disabled = true;
+      if (knowBox && knowBox.checked) {
+        filled += 1;
+        correctCount += 1;
+        return;
+      }
+      const val = inp.value.trim();
+      if (!val) return;
+      filled += 1;
+      const target = PokedexData.getById(Number(inp.dataset.lineageId));
+      if (target && PokedexData.normalize(val) === PokedexData.normalize(target.name)) correctCount += 1;
     });
-    await resolveAnswer(correct);
+    if (!filled) return { attempted: false, correct: false };
+    return { attempted: true, correct: correctCount === filled };
   }
 
-  async function submitBooleanAnswer(val) {
+  // Numéro/Taille/Poids : saisie libre mais restreinte aux chiffres et à
+  // la virgule (les lettres n'ont aucun effet). Nom : texte libre.
+  // Une case "Je sais" à côté permet de compter la réponse comme juste
+  // sans avoir à l'écrire.
+  function buildReviewInput(f) {
+    const attrs = { type: 'text', class: 'quiz-text-input review-field-input', 'data-field': f.key, autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false' };
+    if (f.kind === 'numeric') {
+      attrs.inputmode = 'decimal';
+      attrs.oninput = (e) => { e.target.value = e.target.value.replace(/[^0-9,]/g, ''); };
+    }
+    const input = el('input', attrs);
+    const know = el('label', { class: 'review-know-toggle' }, [
+      el('input', { type: 'checkbox', class: 'review-know-checkbox', 'data-field': f.key, onchange: (e) => { input.disabled = e.target.checked; } }),
+      'Je sais (sans écrire)',
+    ]);
+    return el('div', { class: 'review-input-with-know' }, [input, know]);
+  }
+
+  function pickerOptionsFor(key) {
+    if (key === 'generation') return PokedexData.getGenerations().map(String);
+    if (key === 'region') return PokedexData.getRegions();
+    if (key === 'type') return PokedexData.getTypes();
+    return [];
+  }
+
+  // Région/Génération/Type : pas de saisie libre — on clique sur le champ
+  // pour dérouler les possibilités, puis sur une ou plusieurs valeurs
+  // (Type accepte plusieurs sélections) pour les écrire dans le champ.
+  function buildPickerField(f) {
+    const options = pickerOptionsFor(f.key);
+    const selected = new Set();
+    const wrap = el('div', { class: 'review-picker', 'data-field': f.key, 'data-value': '' });
+    const display = el('button', { type: 'button', class: 'review-picker-display' }, 'Cliquer pour choisir');
+    const panel = el('div', { class: 'review-picker-options hidden' });
+
+    function updateDisplay() {
+      display.textContent = selected.size ? [...selected].join(', ') : 'Cliquer pour choisir';
+      wrap.setAttribute('data-value', [...selected].join(', '));
+    }
+
+    options.forEach((opt) => {
+      const chip = el('button', { type: 'button', class: 'chip review-picker-chip', 'aria-pressed': 'false' }, opt);
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (f.multi) {
+          if (selected.has(opt)) { selected.delete(opt); chip.setAttribute('aria-pressed', 'false'); }
+          else { selected.add(opt); chip.setAttribute('aria-pressed', 'true'); }
+        } else {
+          selected.clear();
+          selected.add(opt);
+          panel.querySelectorAll('.review-picker-chip').forEach((c) => c.setAttribute('aria-pressed', 'false'));
+          chip.setAttribute('aria-pressed', 'true');
+          panel.classList.add('hidden');
+        }
+        updateDisplay();
+      });
+      panel.appendChild(chip);
+    });
+
+    display.addEventListener('click', () => panel.classList.toggle('hidden'));
+    wrap.appendChild(display);
+    wrap.appendChild(panel);
+    return wrap;
+  }
+
+  // Réviser : lit les 8 champs du formulaire, note chacun indépendamment,
+  // et met à jour la maîtrise globale du pokémon sur la base de la
+  // majorité des champs réellement tentés (ceux laissés vides ne comptent
+  // ni pour ni contre).
+  async function submitReviewForm(q) {
     if (session.awaitingContinue) return;
-    const correct = QuizEngine.checkAnswer(session.current, val);
-    await resolveAnswer(correct);
+    const p = q.pokemon;
+    const results = q.fields.map((f) => {
+      if (f.kind === 'lineage') {
+        return { ...f, raw: '', ...computeLineageResult() };
+      }
+      let raw;
+      if (f.kind === 'picker') {
+        const wrap = $(`.review-picker[data-field="${f.key}"]`);
+        raw = wrap ? wrap.getAttribute('data-value') : '';
+        if (wrap) {
+          wrap.querySelector('.review-picker-options')?.classList.add('hidden');
+          wrap.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+        }
+      } else {
+        const knowBox = $(`.review-know-checkbox[data-field="${f.key}"]`);
+        const input = $(`.review-field-input[data-field="${f.key}"]`);
+        if (input) input.disabled = true;
+        if (knowBox && knowBox.checked) {
+          knowBox.disabled = true;
+          return { ...f, raw: '', attempted: true, correct: true };
+        }
+        if (knowBox) knowBox.disabled = true;
+        raw = input ? input.value : '';
+      }
+      return { ...f, raw, ...QuizEngine.checkReviewField(f.key, p, raw) };
+    });
+    await resolveReviewForm(q, results);
   }
 
-  async function resolveAnswer(isCorrect) {
+  async function resolveReviewForm(q, results) {
     session.awaitingContinue = true;
+    const p = q.pokemon;
+    const attempted = results.filter((r) => r.attempted);
+    const correctCount = attempted.filter((r) => r.correct).length;
+    const roundCorrect = attempted.length > 0 && correctCount >= Math.ceil(attempted.length / 2);
+
     session.asked += 1;
-    if (isCorrect) session.correct += 1;
-    session.streak = isCorrect ? session.streak + 1 : 0;
+    if (roundCorrect) session.correct += 1;
 
-    const p = session.current.pokemon;
-    const entryBefore = Storage.getProgress(p.id);
-    const entryAfter = SRS.applyAnswer(entryBefore, isCorrect);
-    await Storage.setProgress(p.id, entryAfter);
+    let entry = Storage.getProgress(p.id);
+    for (const r of attempted) entry = SRS.recordFacet(entry, r.key, r.correct);
+    if (attempted.length) entry = SRS.applyAnswer(entry, roundCorrect);
+    await Storage.setProgress(p.id, entry);
 
-    const sstats = Storage.getSessionStats();
-    const totals = { ...sstats.totals };
-    totals.questionsAnswered = (totals.questionsAnswered || 0) + 1;
-    totals[isCorrect ? 'correct' : 'incorrect'] = (totals[isCorrect ? 'correct' : 'incorrect'] || 0) + 1;
-    totals.currentStreak = isCorrect ? (totals.currentStreak || 0) + 1 : 0;
-    totals.bestStreak = Math.max(totals.bestStreak || 0, totals.currentStreak);
-    await Storage.setSessionStats({ totals });
+    if (attempted.length) {
+      const sstats = Storage.getSessionStats();
+      const totals = { ...sstats.totals };
+      totals.questionsAnswered = (totals.questionsAnswered || 0) + 1;
+      totals[roundCorrect ? 'correct' : 'incorrect'] = (totals[roundCorrect ? 'correct' : 'incorrect'] || 0) + 1;
+      totals.currentStreak = roundCorrect ? (totals.currentStreak || 0) + 1 : 0;
+      totals.bestStreak = Math.max(totals.bestStreak || 0, totals.currentStreak);
+      await Storage.setSessionStats({ totals });
+    }
 
     const feedback = $('#play-feedback');
-    const msg = isCorrect ? '✅ Bonne réponse !' : `❌ Raté — la bonne réponse était : ${correctAnswerLabel(session.current)}`;
-    feedback.innerHTML = `<div class="feedback-banner ${isCorrect ? 'ok' : 'ko'}">${escapeHtml(msg)}</div>`;
+    feedback.innerHTML = '';
+    // Chaque sujet affiche la bonne réponse, y compris ceux laissés vides —
+    // mais "non répondu" reste visuellement distinct d'une vraie erreur.
+    feedback.appendChild(el('div', { class: 'review-results' }, results.map((r) => {
+      if (!r.attempted) {
+        return el('div', { class: 'review-result-row skipped' }, [
+          el('span', {}, r.label),
+          el('span', {}, [el('span', { class: 'pill' }, 'non répondu'), ` — ${QuizEngine.reviewFieldDisplay(r.key, p)}`]),
+        ]);
+      }
+      return el('div', { class: `review-result-row ${r.correct ? 'ok' : 'ko'}` }, [
+        el('span', {}, r.label),
+        el('span', {}, r.correct ? '✅' : `❌ ${QuizEngine.reviewFieldDisplay(r.key, p)}`),
+      ]);
+    })));
     renderPlayHeader();
-
-    const autoAdvance = session.format === 'timeattack';
-    if (autoAdvance) {
-      setTimeout(() => { if (session) nextQuestion(); }, isCorrect ? 500 : 1000);
-    } else {
-      const cont = el('button', { class: 'btn primary', style: 'display:block;margin:12px auto 0;', onclick: () => nextQuestion() }, 'Suivant (Espace)');
-      feedback.appendChild(cont);
-    }
-  }
-
-  function correctAnswerLabel(q) {
-    if (q.answerType === 'text') return q.correct;
-    if (q.answerType === 'boolean') return q.trueStatement || (q.correct ? 'Vrai' : 'Faux');
-    if (q.answerType === 'multichoice') return q.correct.join(', ');
-    if (q.answerType === 'choice') {
-      const ids = q.multiCorrectOk ? q.correct : [q.correct];
-      const labels = q.choices.filter((c) => ids.includes(c.id)).map((c) => c.label);
-      return labels.join(' ou ');
-    }
-    return '';
+    const cont = el('button', { class: 'btn primary', style: 'display:block;margin:12px auto 0;', onclick: () => nextQuestion() }, `Suivant (${keyDisplay(getKeybindings().submit)})`);
+    feedback.appendChild(cont);
   }
 
   async function finishSession() {
-    if (session.timerHandle) clearInterval(session.timerHandle);
     const s = session;
-
-    if (s.format === 'marathon') {
-      const sstats = Storage.getSessionStats();
-      const marathon = { ...sstats.marathon };
-      marathon.bestScore = Math.max(marathon.bestScore, s.correct);
-      marathon.bestStreak = Math.max(marathon.bestStreak, s.streak);
-      await Storage.setSessionStats({ marathon });
-    } else if (s.format === 'timeattack') {
-      const sstats = Storage.getSessionStats();
-      const key = String(Math.round(s.timeLimitMs / 1000));
-      const timeAttack = { ...sstats.timeAttack };
-      const prevBest = timeAttack[key]?.bestScore || 0;
-      timeAttack[key] = { bestScore: Math.max(prevBest, s.correct) };
-      await Storage.setSessionStats({ timeAttack });
-    }
-
     session = null;
     currentScreen = s.sourceScreen;
     $all('.screen').forEach((sc) => sc.classList.remove('active'));
@@ -633,7 +608,6 @@ const UI = (() => {
     const summary = el('div', { class: 'card', style: 'max-width:420px;margin:0 auto;text-align:center;' }, [
       el('h2', {}, 'Session terminée !'),
       el('p', {}, `Score : ${s.correct} / ${s.asked} (${accuracy}%)`),
-      el('p', {}, `Meilleure série : ${s.streak >= 0 ? s.streak : 0}`),
       el('div', { class: 'btn-row', style: 'justify-content:center;margin-top:14px;' }, [
         el('button', { class: 'btn primary', onclick: () => navigate(s.sourceScreen === 'play' ? 'home' : s.sourceScreen) }, 'Retour'),
       ]),
@@ -644,7 +618,6 @@ const UI = (() => {
 
   function endSession(showSummary = true) {
     if (!session) return;
-    if (session.timerHandle) clearInterval(session.timerHandle);
     if (showSummary) { finishSession(); return; }
     session = null;
   }
@@ -655,14 +628,18 @@ const UI = (() => {
   }
 
   // ================= POKEDEX =================
-  let pokedexFilters = { generations: [], types: [] };
+  // `types` = combinaison en cours de sélection (chips cochées). Plusieurs
+  // types cochés ensemble = ET (le pokémon doit avoir tous ces types).
+  // `typeCombos` = combinaisons déjà "ajoutées", combinées entre elles en OU.
+  let pokedexFilters = { generations: [], types: [], typeCombos: [] };
 
-  function pokeCard(p, progressEntry) {
+  function pokeCard(p, progressEntry, opts = {}) {
     const level = progressEntry ? progressEntry.masteryLevel : 0;
     const stepColor = `var(--chart-step-${level})`;
-    const card = el('div', { class: `poke-card ${level === 0 ? 'unseen' : ''}`, tabindex: '0' }, [
+    const hideImage = !!opts.hideUnknown && level === 0;
+    const card = el('div', { class: `poke-card ${hideImage ? 'unseen' : ''}`, tabindex: '0' }, [
       el('div', { class: 'mastery-dot', style: `background:${stepColor}`, title: SRS.levelLabel(level) }),
-      el('div', { html: imgOrPlaceholder(p.image, p.name, '') }),
+      el('div', { html: imgOrPlaceholder(hideImage ? null : p.image, p.name, '') }),
       el('div', { class: 'num' }, `#${String(p.number).padStart(4, '0')}`),
       el('div', { class: 'name' }, p.name),
     ]);
@@ -672,10 +649,57 @@ const UI = (() => {
   }
 
   function renderPokedexScreen() {
+    const settings = Storage.getSettings();
+    const imageModeWrap = $('#pokedex-image-mode');
+    imageModeWrap.innerHTML = '';
+    [
+      { value: 'all', label: 'Toutes les images' },
+      { value: 'known', label: 'Seulement les Pokémon connus' },
+    ].forEach((opt) => {
+      const checked = (opt.value === 'all') === settings.pokedexShowAllImages;
+      imageModeWrap.appendChild(el('label', {}, [
+        el('input', {
+          type: 'radio', name: 'pokedex-image-mode', value: opt.value,
+          ...(checked ? { checked: 'checked' } : {}),
+          onchange: async () => { await Storage.setSettings({ pokedexShowAllImages: opt.value === 'all' }); renderPokedexGrid(); },
+        }),
+        opt.label,
+      ]));
+    });
+
     fillFilterChips('#pokedex-filter-gen', PokedexData.getGenerations().map((g) => ({ value: g, label: `Gén. ${g}` })), 'generations');
     fillFilterChips('#pokedex-filter-type', PokedexData.getTypes().map((t) => ({ value: t, label: t })), 'types');
+
+    $('#pokedex-add-combo').disabled = pokedexFilters.types.length === 0;
+    $('#pokedex-add-combo').onclick = () => {
+      if (!pokedexFilters.types.length) return;
+      pokedexFilters.typeCombos.push([...pokedexFilters.types]);
+      pokedexFilters.types = [];
+      renderPokedexScreen();
+    };
+    const comboWrap = $('#pokedex-type-combos');
+    comboWrap.innerHTML = '';
+    pokedexFilters.typeCombos.forEach((combo, i) => {
+      const pill = el('button', { type: 'button', class: 'chip', 'aria-pressed': 'true', title: 'Cliquer pour retirer' }, `${combo.join(' + ')} ✕`);
+      pill.addEventListener('click', () => {
+        pokedexFilters.typeCombos.splice(i, 1);
+        renderPokedexScreen();
+      });
+      comboWrap.appendChild(pill);
+    });
+
     $('#pokedex-search').oninput = () => renderPokedexGrid();
     renderPokedexGrid();
+  }
+
+  // Un pokémon correspond si ses types contiennent TOUS les types d'au
+  // moins une combinaison (sélection en cours incluse) — ET dans chaque
+  // combinaison, OU entre les combinaisons.
+  function pokemonMatchesTypeCombos(p) {
+    const groups = pokedexFilters.typeCombos.slice();
+    if (pokedexFilters.types.length) groups.push(pokedexFilters.types);
+    if (!groups.length) return true;
+    return groups.some((group) => group.every((t) => p.types.includes(t)));
   }
 
   function fillFilterChips(sel, items, filterKey) {
@@ -698,14 +722,15 @@ const UI = (() => {
   function renderPokedexGrid() {
     const query = $('#pokedex-search').value;
     let list = query ? PokedexData.search(query) : PokedexData.getAll();
-    list = PokedexData.filter({ generations: pokedexFilters.generations.map(Number), types: pokedexFilters.types, ids: list.map((p) => p.id) });
-    list = list.slice().sort((a, b) => a.number - b.number);
+    list = PokedexData.filter({ generations: pokedexFilters.generations.map(Number), ids: list.map((p) => p.id) });
+    list = list.filter(pokemonMatchesTypeCombos).sort((a, b) => a.number - b.number);
     $('#pokedex-count').textContent = `${list.length} Pokémon`;
     const progress = Storage.getAllProgress();
     const grid = $('#pokedex-grid');
     grid.innerHTML = '';
+    const hideUnknown = !Storage.getSettings().pokedexShowAllImages;
     const frag = document.createDocumentFragment();
-    list.forEach((p) => frag.appendChild(pokeCard(p, progress[p.id])));
+    list.forEach((p) => frag.appendChild(pokeCard(p, progress[p.id], { hideUnknown })));
     grid.appendChild(frag);
   }
 
@@ -722,6 +747,26 @@ const UI = (() => {
 
   function abilitiesList(abilities) {
     return abilities.map((a) => a.name + (a.hidden ? ' (cachée)' : '')).join(', ');
+  }
+
+  // "Mémoire par sujet" : ce dont tu te souviens précisément sur ce
+  // pokémon (nom, type, numéro...), sujet par sujet — pas juste un score
+  // global. Alimenté par SRS.recordFacet à chaque réponse.
+  function facetBreakdownBlock(entry) {
+    const fieldLabels = Object.fromEntries(QuizEngine.REVIEW_FIELDS.map((f) => [f.key, f.label]));
+    const rows = Object.entries(entry.facets || {})
+      .map(([key, v]) => ({ key, label: fieldLabels[key] || key, total: v.correct + v.incorrect, pct: Math.round((v.correct / (v.correct + v.incorrect)) * 100) }))
+      .filter((r) => r.total > 0)
+      .sort((a, b) => a.pct - b.pct);
+    if (!rows.length) return null;
+    return el('div', { style: 'margin-top:16px;' }, [
+      el('div', { class: 'section-title' }, 'Mémoire par sujet'),
+      el('div', { class: 'stat-bars' }, rows.map((r) => el('div', { class: 'row' }, [
+        el('span', {}, r.label),
+        el('div', { class: 'progress-bar' }, el('span', { style: `width:${r.pct}%` })),
+        el('b', {}, `${r.pct}% (${r.total})`),
+      ]))),
+    ]);
   }
 
   function openPokemonDetail(id) {
@@ -777,6 +822,7 @@ const UI = (() => {
           detailItem('Erreurs', String(entry.incorrect)),
           detailItem('Meilleure série', String(entry.bestStreak)),
         ]),
+        facetBreakdownBlock(entry),
       ].filter(Boolean)),
     ]);
     root.innerHTML = '';
@@ -862,12 +908,110 @@ const UI = (() => {
     $('#stats-worst-list').innerHTML = '';
     best.forEach((p) => $('#stats-best-list').appendChild(miniRow(p, progress[p.id])));
     worst.forEach((p) => $('#stats-worst-list').appendChild(miniRow(p, progress[p.id])));
+
+    renderDatasetStats(all);
   }
   function miniRow(p, entry) {
     return el('div', { style: 'display:flex;justify-content:space-between;padding:4px 0;font-size:.82rem;border-bottom:1px dashed var(--gridline);cursor:pointer;', onclick: () => openPokemonDetail(p.id) }, [
       el('span', {}, `${p.name} (#${p.number})`),
       el('span', { class: 'pill' }, SRS.levelLabel(entry.masteryLevel)),
     ]);
+  }
+
+  // ---- Statistiques du Pokédex (comparaisons entre pokémon, indépendant
+  // de la progression personnelle) ----
+  const LEADERBOARD_CONFIGS = [
+    { title: 'PV les plus élevés', valueFn: (p) => p.base_stats.hp, fmt: String },
+    { title: 'Attaque la plus élevée', valueFn: (p) => p.base_stats.attack, fmt: String },
+    { title: 'Défense la plus élevée', valueFn: (p) => p.base_stats.defense, fmt: String },
+    { title: 'Att. Spéciale la plus élevée', valueFn: (p) => p.base_stats['special-attack'], fmt: String },
+    { title: 'Déf. Spéciale la plus élevée', valueFn: (p) => p.base_stats['special-defense'], fmt: String },
+    { title: 'Les plus rapides', valueFn: (p) => p.base_stats.speed, fmt: String },
+    { title: 'Total de stats le plus élevé', valueFn: (p) => Stats.statTotal(p.base_stats), fmt: String },
+    { title: 'Les plus grands', valueFn: (p) => p.height_dm, fmt: fmtHeight },
+    { title: 'Les plus petits', valueFn: (p) => p.height_dm, order: 'asc', fmt: fmtHeight },
+    { title: 'Les plus lourds', valueFn: (p) => p.weight_hg, fmt: fmtWeight },
+    { title: 'Les plus légers', valueFn: (p) => p.weight_hg, order: 'asc', fmt: fmtWeight },
+  ];
+
+  // Tableau des stats de combat moyennes par type, triable en cliquant sur
+  // une colonne (du plus haut au plus bas, un second clic inverse le sens).
+  let avgStatsSort = { key: 'avgTotal', dir: 'desc' };
+  function renderAvgStatsTable(all) {
+    const data = Stats.avgStatsByType(all);
+    const columns = [
+      { key: 'key', label: 'Type', getValue: (g) => g.key, numeric: false },
+      ...Stats.BATTLE_STAT_KEYS.map((k) => ({ key: k, label: Stats.BATTLE_STAT_LABELS[k], getValue: (g) => g.avg[k], numeric: true })),
+      { key: 'avgTotal', label: 'Total', getValue: (g) => g.avgTotal, numeric: true },
+    ];
+    const col = columns.find((c) => c.key === avgStatsSort.key);
+    const sorted = data.slice().sort((a, b) => {
+      const av = col.getValue(a);
+      const bv = col.getValue(b);
+      const cmp = col.numeric ? av - bv : String(av).localeCompare(String(bv), 'fr');
+      return avgStatsSort.dir === 'asc' ? cmp : -cmp;
+    });
+
+    const table = el('table', { class: 'stats-table' });
+    table.appendChild(el('tr', {}, columns.map((c) => {
+      const active = avgStatsSort.key === c.key;
+      const arrow = active ? (avgStatsSort.dir === 'desc' ? ' ▼' : ' ▲') : '';
+      return el('th', {
+        class: `sortable-th${active ? ' active' : ''}`, tabindex: '0', role: 'button',
+        onclick: () => {
+          if (avgStatsSort.key === c.key) avgStatsSort.dir = avgStatsSort.dir === 'desc' ? 'asc' : 'desc';
+          else avgStatsSort = { key: c.key, dir: c.numeric ? 'desc' : 'asc' };
+          renderAvgStatsTable(all);
+        },
+      }, c.label + arrow);
+    })));
+    sorted.forEach((g) => {
+      table.appendChild(el('tr', {}, columns.map((c) => el('td', { class: c.numeric ? '' : 'ta-left' }, String(c.getValue(g))))));
+    });
+    const container = $('#dex-avg-stats-table');
+    container.innerHTML = '';
+    container.appendChild(table);
+  }
+
+  function renderDatasetStats(all) {
+    const overview = Stats.datasetOverview(all);
+    const ov = $('#dex-overview');
+    ov.innerHTML = '';
+    const tile = (label, value) => el('div', { class: 'stat-tile card' }, [el('div', { class: 'value' }, String(value)), el('div', { class: 'label' }, label)]);
+    ov.appendChild(tile('Pokémon au total', overview.total));
+    ov.appendChild(tile('Mono-type', overview.monoType));
+    ov.appendChild(tile('Bi-type', overview.biType));
+    ov.appendChild(tile('Légendaires', overview.legendary));
+    ov.appendChild(tile('Mythiques', overview.mythical));
+    ov.appendChild(tile('Formes alternatives', overview.totalForms));
+
+    const typeCounts = Stats.countBy(all, (p) => p.types, { multi: true }).sort((a, b) => b.count - a.count);
+    $('#dex-chart-type-count').innerHTML = Stats.countBarChart(typeCounts);
+
+    const genCounts = Stats.countBy(all, (p) => p.generation)
+      .sort((a, b) => a.key - b.key)
+      .map((g) => ({ key: `Gén. ${g.key}`, count: g.count }));
+    $('#dex-chart-gen-count').innerHTML = Stats.countBarChart(genCounts);
+
+    const regionCounts = Stats.countBy(all, (p) => p.region).sort((a, b) => b.count - a.count);
+    $('#dex-chart-region-count').innerHTML = Stats.countBarChart(regionCounts);
+
+    renderAvgStatsTable(all);
+
+    const wrap = $('#dex-leaderboards');
+    wrap.innerHTML = '';
+    LEADERBOARD_CONFIGS.forEach((cfg) => {
+      const entries = Stats.topByStat(all, cfg.valueFn, 5, cfg.order || 'desc');
+      wrap.appendChild(el('div', { class: 'card leaderboard-card' }, [
+        el('h4', {}, cfg.title),
+        ...entries.map((e, i) => el('div', { class: 'leaderboard-row', onclick: () => openPokemonDetail(e.p.id) }, [
+          el('span', { class: 'leaderboard-rank' }, `#${i + 1}`),
+          el('div', { class: 'leaderboard-thumb', html: imgOrPlaceholder(e.p.image, e.p.name, '') }),
+          el('span', { class: 'leaderboard-name' }, e.p.name),
+          el('span', { class: 'leaderboard-value' }, cfg.fmt(e.value)),
+        ])),
+      ]));
+    });
   }
 
   // ================= PARAMETRES =================
@@ -904,44 +1048,88 @@ const UI = (() => {
       toast('Progression réinitialisée.');
       navigate('home');
     };
+    renderKeybindSettings();
+    $('#keybind-reset').onclick = async () => {
+      listeningFor = null;
+      await Storage.setSettings({ keybindings: { ...DEFAULT_KEYBINDINGS } });
+      renderKeybindSettings();
+      toast('Raccourcis réinitialisés.');
+    };
   }
 
-  // ================= RACCOURCIS CLAVIER =================
+  // ================= RACCOURCIS CLAVIER (personnalisables) =================
+  const DEFAULT_KEYBINDINGS = { quit: 'Escape', submit: 'Enter', reveal: ' ' };
+  const KEYBIND_LABELS = { quit: 'Quitter la session', submit: 'Valider / Continuer', reveal: 'Maintenir pour révéler (Apprendre)' };
+  const KEY_DISPLAY_NAMES = { ' ': 'Espace', Escape: 'Échap', Enter: 'Entrée' };
+  let listeningFor = null;
+
+  function getKeybindings() {
+    return { ...DEFAULT_KEYBINDINGS, ...(Storage.getSettings().keybindings || {}) };
+  }
+  function keyDisplay(k) {
+    return KEY_DISPLAY_NAMES[k] || (k.length === 1 ? k.toUpperCase() : k);
+  }
+
+  function renderKeybindSettings() {
+    const wrap = $('#keybind-list');
+    if (!wrap) return;
+    const kb = getKeybindings();
+    wrap.innerHTML = '';
+    Object.keys(DEFAULT_KEYBINDINGS).forEach((action) => {
+      wrap.appendChild(el('div', { class: 'keybind-row' }, [
+        el('span', {}, KEYBIND_LABELS[action]),
+        el('button', {
+          type: 'button', class: `btn ghost keybind-btn${listeningFor === action ? ' listening' : ''}`,
+          onclick: () => { listeningFor = action; renderKeybindSettings(); },
+        }, listeningFor === action ? 'Appuie sur une touche…' : keyDisplay(kb[action])),
+      ]));
+    });
+  }
+
+  // Si une case de raccourci écoute, la prochaine touche pressée devient
+  // la nouvelle valeur (avec vérification de conflit) au lieu de déclencher
+  // son action habituelle.
+  function captureKeybind(e) {
+    if (!listeningFor) return false;
+    e.preventDefault();
+    const action = listeningFor;
+    listeningFor = null;
+    if (e.key === 'Tab') { renderKeybindSettings(); return true; }
+    const kb = getKeybindings();
+    const conflict = Object.keys(kb).find((a) => a !== action && kb[a] === e.key);
+    if (conflict) {
+      toast(`Déjà utilisé pour « ${KEYBIND_LABELS[conflict]} ».`);
+    } else {
+      Storage.setSettings({ keybindings: { ...kb, [action]: e.key } });
+    }
+    renderKeybindSettings();
+    return true;
+  }
+
   function initKeyboard() {
     document.addEventListener('keydown', (e) => {
+      if (captureKeybind(e)) return;
+      const kb = getKeybindings();
       if (learnTraining) {
-        if (e.key === 'Escape') { e.preventDefault(); quitLearnTraining(); return; }
-        if (e.key === ' ') { e.preventDefault(); if (!e.repeat) showReveal(); return; }
-        if (e.key === 'Enter') { e.preventDefault(); learnTrainingAdvance(); return; }
+        if (e.key === kb.quit) { e.preventDefault(); quitLearnTraining(); return; }
+        if (e.key === kb.reveal) { e.preventDefault(); if (!e.repeat) showReveal(); return; }
+        if (e.key === kb.submit) { e.preventDefault(); learnTrainingAdvance(); return; }
         return;
       }
       if (!session) return;
-      if (e.key === 'Escape') { e.preventDefault(); quitPlay(); return; }
-      if (e.target.tagName === 'INPUT' && session.current?.answerType === 'text') {
-        if (e.key === 'Enter') submitTextAnswer();
+      if (e.key === kb.quit) { e.preventDefault(); quitPlay(); return; }
+      if (e.target.tagName === 'INPUT' && session.current?.answerType === 'form') {
+        if (e.key === kb.submit) { e.preventDefault(); if (!session.awaitingContinue) submitReviewForm(session.current); }
         return;
       }
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.key === kb.submit && session.awaitingContinue) {
         e.preventDefault();
-        if (session.awaitingContinue) { nextQuestion(); return; }
-        if (session.current?.answerType === 'multichoice') {
-          const stage = $('#play-stage');
-          if (stage._selectedSet) submitMultiAnswer([...stage._selectedSet]);
-          return;
-        }
-      }
-      if (['1', '2', '3', '4'].includes(e.key) && session.current?.answerType === 'choice' && !session.awaitingContinue) {
-        const idx = Number(e.key) - 1;
-        const cards = $all('.choice-card');
-        if (cards[idx]) cards[idx].click();
-      }
-      if (session.current?.answerType === 'boolean' && !session.awaitingContinue) {
-        if (e.key.toLowerCase() === 'v') submitBooleanAnswer(true);
-        if (e.key.toLowerCase() === 'f') submitBooleanAnswer(false);
+        nextQuestion();
       }
     });
     document.addEventListener('keyup', (e) => {
-      if (learnTraining && e.key === ' ') { e.preventDefault(); hideReveal(); }
+      const kb = getKeybindings();
+      if (learnTraining && e.key === kb.reveal) { e.preventDefault(); hideReveal(); }
     });
   }
 

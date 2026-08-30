@@ -85,6 +85,95 @@ const Stats = (() => {
     return { best, worst };
   }
 
+  // --- Statistiques du Pokédex (dataset complet, indépendant de la
+  // progression personnelle) : comparaisons par type/génération/région et
+  // stats de combat. ---
+
+  const BATTLE_STAT_KEYS = ['hp', 'attack', 'defense', 'special-attack', 'special-defense', 'speed'];
+  const BATTLE_STAT_LABELS = { hp: 'PV', attack: 'Att.', defense: 'Déf.', 'special-attack': 'Att.Sp', 'special-defense': 'Déf.Sp', speed: 'Vit.' };
+
+  // Compte les pokémon par clé ; `multi:true` pour une fonction qui retourne
+  // plusieurs clés par pokémon (ex: les deux types).
+  function countBy(allPokemon, keyFn, { multi = false } = {}) {
+    const counts = new Map();
+    for (const p of allPokemon) {
+      const keys = multi ? keyFn(p) : [keyFn(p)];
+      for (const key of keys) counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    return [...counts.entries()].map(([key, count]) => ({ key, count }));
+  }
+
+  function statTotal(baseStats) {
+    return BATTLE_STAT_KEYS.reduce((sum, k) => sum + baseStats[k], 0);
+  }
+
+  // Moyenne des stats de combat par type (un pokémon bi-type compte dans
+  // ses deux types).
+  function avgStatsByType(allPokemon) {
+    const groups = new Map();
+    for (const p of allPokemon) {
+      for (const t of p.types) {
+        if (!groups.has(t)) {
+          groups.set(t, { key: t, count: 0, sums: Object.fromEntries(BATTLE_STAT_KEYS.map((k) => [k, 0])), totalSum: 0 });
+        }
+        const g = groups.get(t);
+        g.count += 1;
+        for (const k of BATTLE_STAT_KEYS) g.sums[k] += p.base_stats[k];
+        g.totalSum += statTotal(p.base_stats);
+      }
+    }
+    return [...groups.values()]
+      .map((g) => ({
+        key: g.key,
+        count: g.count,
+        avg: Object.fromEntries(BATTLE_STAT_KEYS.map((k) => [k, Math.round(g.sums[k] / g.count)])),
+        avgTotal: Math.round(g.totalSum / g.count),
+      }))
+      .sort((a, b) => b.avgTotal - a.avgTotal);
+  }
+
+  // Classement des `limit` pokémon avec la plus haute (ou plus basse)
+  // valeur de `valueFn`.
+  function topByStat(allPokemon, valueFn, limit = 5, order = 'desc') {
+    const sorted = allPokemon
+      .filter((p) => valueFn(p) !== null && valueFn(p) !== undefined)
+      .slice()
+      .sort((a, b) => (order === 'desc' ? valueFn(b) - valueFn(a) : valueFn(a) - valueFn(b)));
+    return sorted.slice(0, limit).map((p) => ({ p, value: valueFn(p) }));
+  }
+
+  function datasetOverview(allPokemon) {
+    const monoType = allPokemon.filter((p) => p.types.length === 1).length;
+    const biType = allPokemon.filter((p) => p.types.length === 2).length;
+    const legendary = allPokemon.filter((p) => p.is_legendary).length;
+    const mythical = allPokemon.filter((p) => p.is_mythical).length;
+    const totalForms = allPokemon.reduce((sum, p) => sum + p.forms.length, 0);
+    return { total: allPokemon.length, monoType, biType, legendary, mythical, totalForms };
+  }
+
+  // Graphique en barres horizontales pour un simple dénombrement (pas un
+  // pourcentage de maîtrise) : une seule teinte, la longueur porte la valeur.
+  function countBarChart(data, { width = 560, barHeight = 14, gap = 5 } = {}) {
+    const maxVal = Math.max(1, ...data.map((d) => d.count));
+    const labelWidth = 110;
+    const plotWidth = width - labelWidth - 50;
+    const height = data.length * (barHeight + gap) + gap;
+    const rows = data
+      .map((d, i) => {
+        const y = gap + i * (barHeight + gap);
+        const w = Math.max(2, (d.count / maxVal) * plotWidth);
+        return `
+        <text x="${labelWidth - 8}" y="${y + barHeight / 2}" text-anchor="end" dominant-baseline="middle" class="chart-label">${escapeXml(d.key)}</text>
+        <rect x="${labelWidth}" y="${y}" width="${plotWidth}" height="${barHeight}" rx="4" class="chart-track"></rect>
+        <rect x="${labelWidth}" y="${y}" width="${w}" height="${barHeight}" rx="4" class="chart-bar">
+          <title>${escapeXml(d.key)}: ${d.count}</title>
+        </rect>
+        <text x="${labelWidth + w + 6}" y="${y + barHeight / 2}" dominant-baseline="middle" class="chart-value">${d.count}</text>`;
+      })
+      .join('');
+    return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="Graphique en barres">${rows}</svg>`;
+  }
+
   // --- Rendu SVG ---
 
   function escapeXml(s) {
@@ -153,5 +242,13 @@ const Stats = (() => {
     barChart,
     masteryStackedBar,
     masteryLegend,
+    BATTLE_STAT_KEYS,
+    BATTLE_STAT_LABELS,
+    countBy,
+    statTotal,
+    avgStatsByType,
+    topByStat,
+    datasetOverview,
+    countBarChart,
   };
 })();
