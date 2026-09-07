@@ -127,11 +127,7 @@
             <option value="grav_reverse">Gravité inversée</option>
           </optgroup>
           <optgroup label="Vitesse">
-            <option value="speed_0.5">Vitesse x0.5</option>
-            <option value="speed_1">Vitesse x1</option>
-            <option value="speed_2">Vitesse x2</option>
-            <option value="speed_3">Vitesse x3</option>
-            <option value="speed_4">Vitesse x4</option>
+            <option value="speed">Vitesse (réglable)</option>
           </optgroup>
           <optgroup label="Taille">
             <option value="size_mini">Taille mini</option>
@@ -225,6 +221,11 @@
         <label title="Multiplicateur précis de la force de saut appliquée par ce pad/orbe">Puissance</label>
         <input type="range" class="insp-range" id="inspPower" min="0.3" max="3" step="0.1" value="1">
         <span id="inspPowerVal">1.0x</span>
+      </div>
+      <div class="grp" id="inspSpeedGrp" style="display:none;">
+        <label title="Vitesse précise donnée par ce portail (librement réglable, pas juste des paliers x1/x2/x3)">Vitesse du portail</label>
+        <input type="range" class="insp-range" id="inspSpeed" min="0.1" max="6" step="0.1" value="1">
+        <span id="inspSpeedVal">1.0x</span>
       </div>
       <div class="grp" id="inspSwingGrp" style="display:none;">
         <label title="Vitesse à laquelle cette orbe inverse progressivement la gravité (plus court = plus rapide)">Vitesse d'inversion</label>
@@ -331,8 +332,15 @@
         <button id="resetKeybinds">Réinitialiser</button>
       </div>
 
+      <h2 style="margin-top:20px;">🔊 Volume de la musique</h2>
+      <p class="desc">Volume de la musique Spotify associée au niveau, pendant que vous jouez.</p>
+      <div class="kb-row">
+        <input type="range" id="volumeSlider" min="0" max="100" step="1" value="25" style="flex:1;">
+        <span id="volumeVal" style="min-width:40px;text-align:right;">25%</span>
+      </div>
+
       <h2 style="margin-top:20px;">🏆 Difficultés Geometry Dash — équivalence en points</h2>
-      <p class="desc">Quand vous cliquez sur "🔍 Analyser", l'IA donne une note de difficulté en points (0 à 100). Voici à quoi ça correspond dans l'échelle officielle de Geometry Dash.</p>
+      <p class="desc">Quand vous cliquez sur "🔍 Analyser", l'IA donne une note de difficulté en points (0 et au-delà, sans limite supérieure — plus c'est haut, plus c'est dur). Voici à quoi ça correspond dans l'échelle officielle de Geometry Dash.</p>
       <div id="difficultyTable"></div>
 
       <div class="modal-actions">
@@ -353,6 +361,7 @@ const stageEl = document.getElementById('stage');
 const fsWrap = document.getElementById('fsWrap');
 const STORE_KEY = 'geodash_levels_v1';
 const KEYBIND_STORE_KEY = 'geodash_keybinds_v1';
+const VOLUME_STORE_KEY = 'geodash_music_volume_v1';
 
 const PORTAL_INFO = {
   mode_cube:   {label:'CUBE',  color:'#7bd4ff', kind:'mode', value:'cube'},
@@ -365,11 +374,7 @@ const PORTAL_INFO = {
   mode_swing:  {label:'SWING', color:'#38e8d1', kind:'mode', value:'swing'},
   grav_normal: {label:'G ↓',   color:'#4da6ff', kind:'grav', value:1},
   grav_reverse:{label:'G ↑',   color:'#ff5c8a', kind:'grav', value:-1},
-  'speed_0.5': {label:'x0.5',  color:'#66ff66', kind:'speed', value:0.5},
-  speed_1:     {label:'x1',    color:'#ffee66', kind:'speed', value:1},
-  speed_2:     {label:'x2',    color:'#ff9d66', kind:'speed', value:2},
-  speed_3:     {label:'x3',    color:'#ff6666', kind:'speed', value:3},
-  speed_4:     {label:'x4',    color:'#ff66d9', kind:'speed', value:4},
+  speed:       {label:'VITESSE', color:'#ffee66', kind:'speed', value:1},
   size_mini:   {label:'mini',  color:'#9d9dff', kind:'size', value:0.6},
   size_normal: {label:'normal',color:'#c9c9ff', kind:'size', value:1},
 };
@@ -604,6 +609,13 @@ function updatePowerVisibility(o){
     document.getElementById('inspSwingSpeed').value = f;
     document.getElementById('inspSwingSpeedVal').textContent = f;
   }
+  const showSpeed = (o.type==='portal') && PORTAL_INFO[o.portal] && PORTAL_INFO[o.portal].kind==='speed';
+  document.getElementById('inspSpeedGrp').style.display = showSpeed ? 'flex' : 'none';
+  if(showSpeed){
+    const v = (typeof o.speedValue==='number') ? o.speedValue : PORTAL_INFO[o.portal].value;
+    document.getElementById('inspSpeed').value = v;
+    document.getElementById('inspSpeedVal').textContent = v.toFixed(1)+'x';
+  }
 }
 function showInspector(o){
   document.getElementById('inspector').style.display = 'flex';
@@ -662,6 +674,11 @@ document.getElementById('inspSwingSpeed').addEventListener('input', e=>{
   if(!selectedObj) return;
   selectedObj.swingFrames = parseInt(e.target.value, 10);
   document.getElementById('inspSwingSpeedVal').textContent = selectedObj.swingFrames;
+});
+document.getElementById('inspSpeed').addEventListener('input', e=>{
+  if(!selectedObj) return;
+  selectedObj.speedValue = parseFloat(e.target.value);
+  document.getElementById('inspSpeedVal').textContent = selectedObj.speedValue.toFixed(1)+'x';
 });
 document.getElementById('inspKind').addEventListener('change', e=>{
   if(!selectedObj) return;
@@ -784,15 +801,19 @@ function cellFromEvent(e){
 // limite de distance : la case "propriétaire" (utilisée pour l'indexation/collision) est
 // recalculée à la volée dès qu'on franchit une frontière de case, mais le décalage visuel
 // reste toujours minime (< 1 case) — l'objet peut donc voyager aussi loin qu'on veut.
-// un portail s'applique sur TOUTE la hauteur de sa colonne (peu importe la ligne où on
-// l'a posé) : en garder plusieurs dans la même colonne à des lignes différentes ne sert à
-// rien et créait l'ambiguïté "icône affichée ≠ effet déclenché". On retire donc tout autre
-// portail déjà présent ailleurs dans la colonne avant d'en (re)poser un.
-function clearOtherPortalsInColumn(c, exceptR){
+// un portail ne fait plus que 2 blocs de haut (hitbox EXACTEMENT identique à son apparence,
+// voir polyPortal) : plusieurs peuvent donc coexister dans la même colonne, à des hauteurs
+// différentes, pour brancher des chemins — la seule règle est qu'ils ne se CHEVAUCHENT pas
+// visuellement entre eux. On ne retire donc que ceux dont la zone de 2 blocs entrerait en
+// collision avec celle du nouveau, pas tous les autres portails de la colonne.
+function clearOtherPortalsInColumn(c, newR){
+  const newTop = newR-0.5, newBottom = newR+1.5; // en cases, centré sur newR (2 cases de haut)
   for(let rr=0; rr<ROWS; rr++){
-    if(rr===exceptR) continue;
+    if(rr===newR) continue;
     const existing = findObjectOfType(c,rr,'portal');
-    if(existing) removeObjectAt(c,rr,existing);
+    if(!existing) continue;
+    const exTop = rr-0.5, exBottom = rr+1.5;
+    if(newTop < exBottom && exTop < newBottom) removeObjectAt(c,rr,existing);
   }
 }
 function moveSelectedTo(worldX, worldY){
@@ -1064,21 +1085,28 @@ function drawOrb(x,y,kind,color,color2){
   ctx.textAlign = 'center';
   ctx.fillText(info.label, cx, cy+3);
 }
-function drawPortal(x,y,portalKey,color,color2){
+function drawPortal(x,y,portalKey,color,color2,speedValue){
   const info = PORTAL_INFO[portalKey];
-  ctx.fillStyle = color2 ? fillStyleFor(x+6,0,CELL-12,PLAYH,color,color2,info.color)
+  // 2 blocs de haut, centré sur la case où il est posé (pas toute la hauteur du niveau) : un
+  // portail est un objet qu'on traverse physiquement, pas une barre qui couvre tout l'écran.
+  const portalH = CELL*2;
+  const portalY = y + CELL/2 - portalH/2;
+  ctx.fillStyle = color2 ? fillStyleFor(x+6,portalY,CELL-12,portalH,color,color2,info.color)
     : ((color||info.color) + 'cc');
-  ctx.fillRect(x+6, 0, CELL-12, PLAYH);
+  ctx.fillRect(x+6, portalY, CELL-12, portalH);
   ctx.strokeStyle = info.color;
   ctx.lineWidth = 2;
-  ctx.strokeRect(x+6, 0, CELL-12, PLAYH);
+  ctx.strokeRect(x+6, portalY, CELL-12, portalH);
   ctx.save();
   ctx.translate(x+CELL/2, y+CELL/2);
   ctx.rotate(-Math.PI/2);
   ctx.fillStyle = '#111';
   ctx.font = 'bold 10px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(info.label, 0, 3);
+  // le portail de vitesse affiche sa valeur RÉELLEMENT réglée (ex. "x2.3"), pas une étiquette
+  // générique — c'est le seul portail dont l'effet exact varie d'un exemplaire à l'autre.
+  const label = info.kind==='speed' ? 'x'+((typeof speedValue==='number')?speedValue:info.value).toFixed(1) : info.label;
+  ctx.fillText(label, 0, 3);
   ctx.restore();
 }
 
@@ -1201,7 +1229,7 @@ function render(){
           else drawBlock(x,y,o.color,o.color2);
         }
         else if(o.type==='spike') drawSpike(x,y,o.rot,o.color,o.color2);
-        else if(o.type==='portal') drawPortal(x,y,o.portal,o.color,o.color2);
+        else if(o.type==='portal') drawPortal(x,y,o.portal,o.color,o.color2,o.speedValue);
         else if(o.type==='pad') drawPad(x,y,o.kind,o.color,o.color2);
         else if(o.type==='orb') drawOrb(x,y,o.kind,o.color,o.color2);
         else if(o.type==='checkpoint') drawCheckpoint(x,y,o.color,o.color2,checkpointNumberFor(o));
@@ -1348,7 +1376,7 @@ function computeStateAtX(targetX){
   const portals = [];
   for(const [k,arr] of level.objects.entries()){
     const c = parseInt(k.split(',')[0],10);
-    for(const o of arr) if(o.type==='portal') portals.push({x:c*CELL+(o.ox||0), info:PORTAL_INFO[o.portal]});
+    for(const o of arr) if(o.type==='portal') portals.push({x:c*CELL+(o.ox||0), info:PORTAL_INFO[o.portal], o});
   }
   portals.sort((a,b)=>a.x-b.x);
   const state = { mode:'cube', gravDir:1, speedMult:1, sizeMult:1 };
@@ -1356,7 +1384,7 @@ function computeStateAtX(targetX){
     if(p.x >= targetX) break;
     if(p.info.kind==='mode') state.mode = p.info.value;
     else if(p.info.kind==='grav') state.gravDir = p.info.value;
-    else if(p.info.kind==='speed') state.speedMult = p.info.value;
+    else if(p.info.kind==='speed') state.speedMult = (typeof p.o.speedValue==='number') ? p.o.speedValue : p.info.value;
     else if(p.info.kind==='size') state.sizeMult = p.info.value;
   }
   return state;
@@ -1367,7 +1395,8 @@ function estimateLevelDurationFrames(){
     const c = parseInt(k.split(',')[0],10);
     for(const o of arr){
       if(o.type==='portal' && PORTAL_INFO[o.portal].kind==='speed'){
-        speedPortals.push({x:c*CELL+(o.ox||0), value:PORTAL_INFO[o.portal].value});
+        const v = (typeof o.speedValue==='number') ? o.speedValue : PORTAL_INFO[o.portal].value;
+        speedPortals.push({x:c*CELL+(o.ox||0), value:v});
       }
     }
   }
@@ -1604,6 +1633,15 @@ function polyPad(c,r,ox,oy){
 function orbCircle(c,r,ox,oy){
   return { cx:c*CELL+CELL/2+(ox||0), cy:r*CELL+CELL/2+(oy||0), r:CELL/2-6 };
 }
+// rectangle EXACTEMENT identique à ce que dessine drawPortal (2 blocs de haut, centré sur la
+// case, inset de 6px de chaque côté) : le portail ne se déclenche que si on le touche vraiment.
+function polyPortal(c,r,ox,oy){
+  const x=c*CELL+(ox||0), y=r*CELL+(oy||0);
+  const portalH = CELL*2;
+  const left = x+6, right = x+CELL-6;
+  const top = y+CELL/2-portalH/2, bottom = top+portalH;
+  return [{x:left,y:top},{x:right,y:top},{x:right,y:bottom},{x:left,y:bottom}];
+}
 // forme de hitbox pour un mode/centre/taille donnés — réutilisée pour la collision réelle
 // (playerHitbox) ET pour redessiner la hitbox exacte de chaque image du dernier essai
 function hitboxShapeAt(pmode, cx, cy, w, h){
@@ -1699,31 +1737,33 @@ const JUMP_V = 10.6;
 const BASE_SPEED = 4.3;
 const SWING_ORB_DEFAULT_FRAMES = 12;
 
+// hitbox EXACTEMENT identique à l'apparence (comme piques/pads/orbes) : plusieurs portails
+// peuvent coexister dans la même colonne (à des hauteurs différentes, non chevauchées, voir
+// clearOtherPortalsInColumn) — c'est le contact géométrique réel qui décide, pas la colonne.
 function checkPortals(){
-  const c = Math.floor((player.x+player.w/2)/CELL);
-  const key = c; // une colonne = un portail (déclenché une fois)
-  if(player.triggered.has(key)) return;
-  // s'il existe (par erreur, ou dans un ancien niveau) plusieurs portails dans la même
-  // colonne à des lignes différentes, on applique celui affiché PAR-DESSUS les autres
-  // (le dernier dessiné, donc le dernier trouvé ici) : sinon l'effet réellement déclenché
-  // pouvait ne pas correspondre à l'icône que le joueur voit réellement à l'écran.
-  let chosen = null;
-  for(let r=0;r<ROWS;r++){
+  const c0 = Math.floor(player.x/CELL)-1, c1 = Math.floor((player.x+player.w)/CELL)+1;
+  const r0 = Math.max(0,Math.floor(player.y/CELL)-2), r1 = Math.min(ROWS-1,Math.floor((player.y+player.h)/CELL)+2);
+  const ph = playerHitbox();
+  for(let c=c0;c<=c1;c++) for(let r=r0;r<=r1;r++){
     const arr = level.objects.get(objKey(c,r));
     if(!arr) continue;
-    for(const o of arr) if(o.type==='portal') chosen = o;
-  }
-  if(!chosen) return;
-  player.triggered.add(key);
-  const info = PORTAL_INFO[chosen.portal];
-  if(info.kind==='mode'){ player.mode = info.value; player.vy = 0; }
-  else if(info.kind==='grav'){ player.swingT = null; player.gravDir = info.value; }
-  else if(info.kind==='speed'){ player.speedMult = info.value; }
-  else if(info.kind==='size'){
-    const old = player.sizeMult;
-    player.sizeMult = info.value;
-    const scale = player.sizeMult/old;
-    player.w *= scale; player.h *= scale;
+    for(const o of arr){
+      if(o.type!=='portal') continue;
+      const key = 'portal:'+c+','+r;
+      if(player.triggered.has(key)) continue;
+      if(!hitboxOverlapsPoly(ph, polyPortal(c,r,o.ox,o.oy))) continue;
+      player.triggered.add(key);
+      const info = PORTAL_INFO[o.portal];
+      if(info.kind==='mode'){ player.mode = info.value; player.vy = 0; }
+      else if(info.kind==='grav'){ player.swingT = null; player.gravDir = info.value; }
+      else if(info.kind==='speed'){ player.speedMult = (typeof o.speedValue==='number') ? o.speedValue : info.value; }
+      else if(info.kind==='size'){
+        const old = player.sizeMult;
+        player.sizeMult = info.value;
+        const scale = player.sizeMult/old;
+        player.w *= scale; player.h *= scale;
+      }
+    }
   }
 }
 
@@ -2104,16 +2144,14 @@ function runAiAnalysis(onProgress){
   });
 }
 // ---------- Note de difficulté (équivalence avec les vraies difficultés Geometry Dash) ----------
-// Dans le vrai Geometry Dash, la difficulté n'est pas "combien d'obstacles" mais "quelle
-// proportion des essais d'un joueur normal échouent avant la fin" — un Auto/Easy se termine
-// presque à coup sûr, un Demon échoue presque toujours sauf timing quasi parfait. On mesure donc
-// ÇA directement : on fait "jouer" le niveau par ~60 profils différents (délai de réaction et
-// style variés, plus une légère imprécision de timing à chaque décision, pour imiter de vrais
-// joueurs plus ou moins habiles), avec la même physique exacte que le vrai jeu, et on compte
-// quelle proportion échoue. Les points de difficulté SONT ce pourcentage d'échec (0 = tout le
-// monde réussit, 100 = quasiment personne) — un seul chiffre cohérent, décomposable exactement
-// en additionnant où (à quel endroit) chaque échec a eu lieu, ce qui donne directement les
-// repères "+x point" affichés le long du niveau.
+// Chaque passage exigeant du chemin trouvé (voir plus haut) reçoit un COÛT en points qui grandit
+// sans limite à mesure que sa fenêtre de timing rétrécit vers zéro (coût = K / durée) — un
+// passage confortable coûte presque rien, un passage quasi impossible pour un humain peut coûter
+// des centaines de points. Seuls les quelques passages les PIRES du niveau comptent pour le score
+// final (voir plus bas) : la difficulté d'un niveau se juge à ses pires moments, pas à combien de
+// fois un même passage se répète. Le total n'est jamais plafonné à 100 : un niveau réellement
+// extrême doit pouvoir afficher un score bien plus élevé qu'un niveau seulement très difficile,
+// plutôt que de les confondre au même plafond artificiel.
 const DIFFICULTY_TIERS = [
   {max:9,   name:'Auto'},
   {max:19,  name:'Facile (Easy)'},
@@ -2125,7 +2163,7 @@ const DIFFICULTY_TIERS = [
   {max:85,  name:'Démon Moyen (Medium Demon)'},
   {max:92,  name:'Démon Difficile (Hard Demon)'},
   {max:97,  name:'Démon Insane (Insane Demon)'},
-  {max:100, name:'Démon Extrême (Extreme Demon)'},
+  {max:Infinity, name:'Démon Extrême (Extreme Demon)'},
 ];
 function tierForPoints(pts){
   for(const t of DIFFICULTY_TIERS) if(pts<=t.max) return t.name;
@@ -2135,7 +2173,8 @@ function renderDifficultyTable(){
   const wrap = document.getElementById('difficultyTable');
   let prevMax = -1;
   wrap.innerHTML = DIFFICULTY_TIERS.map(t=>{
-    const row = '<div class="kb-row"><span>'+t.name+'</span><span>'+(prevMax+1)+' – '+t.max+' pts</span></div>';
+    const range = t.max===Infinity ? (prevMax+1)+'+ pts' : (prevMax+1)+' – '+t.max+' pts';
+    const row = '<div class="kb-row"><span>'+t.name+'</span><span>'+range+'</span></div>';
     prevMax = t.max;
     return row;
   }).join('');
@@ -2274,19 +2313,28 @@ function refineBoundary(buildHeldAtFn, cutoffAt, lo, hi, basePos){
   }
   return lo;
 }
-// largeur de la fenêtre de timing (en millisecondes) pour UN appui donné : de combien de temps
-// peut-on avancer/reculer CET appui précis (les autres restant fixes) avant que ça échoue.
-function segmentToleranceMs(heldSeq, seg){
-  const intervals = findPressSegments(heldSeq).map(([s,e])=>[s,e+1]);
-  const segIndex = intervals.findIndex(iv=>iv[0]===seg[0] && iv[1]===seg[1]+1);
+// largeur de la fenêtre de timing (en millisecondes) pour UN BORD d'un appui donné (soit le
+// moment où on APPUIE, soit celui où on RELÂCHE) : de combien de temps peut-on avancer/reculer
+// CE bord précis (l'autre bord et tous les autres appuis restant fixes) avant que ça échoue.
+// Les deux bords comptent : pour un tap d'une image (cube sur un pique) ils sont quasi
+// équivalents, mais pour un maintien (robot qui monte plus ou moins haut selon la durée du
+// maintien, par ex.) le moment où on RELÂCHE est tout aussi critique que celui où on appuie —
+// l'ignorer faisait passer ces passages pour "sans risque" à tort.
+function edgeToleranceMs(intervals, segIndex, whichEdge){
   const BUFFER = 50, MAX_DELTA = 24, COMFORTABLE_AT = 16;
   function shiftedIntervals(shift){
-    return intervals.map((iv,i)=> i===segIndex ? [iv[0]+shift, iv[1]+shift] : iv);
+    return intervals.map((iv,i)=>{
+      if(i!==segIndex) return iv;
+      return whichEdge==='start' ? [iv[0]+shift, iv[1]+shift] : [iv[0], iv[1]+shift];
+    });
   }
   function survivesCoarse(shift){
-    if(intervals[segIndex][0]+shift < 0) return false;
-    const cutoff = intervals[segIndex][1]+shift+BUFFER;
-    return fineReplaySurvivesGeneric(t=>heldAtTime(shiftedIntervals(shift), t), cutoff, Infinity, 1);
+    const seg = intervals[segIndex];
+    if(whichEdge==='start'){ if(seg[0]+shift < 0) return false; }
+    else { if(seg[1]+shift <= seg[0]) return false; } // on ne peut pas relâcher avant d'avoir appuyé
+    const shifted = shiftedIntervals(shift);
+    const cutoff = shifted[segIndex][1] + BUFFER;
+    return fineReplaySurvivesGeneric(t=>heldAtTime(shifted, t), cutoff, Infinity, 1);
   }
   let fwd = 0, fwdBounded = false;
   for(let d=1; d<=MAX_DELTA; d++){
@@ -2299,11 +2347,22 @@ function segmentToleranceMs(heldSeq, seg){
     if(fwd+bwd >= COMFORTABLE_AT) break;
   }
   const buildAt = shift => t=>heldAtTime(shiftedIntervals(shift), t);
-  const cutoffAt = shift => intervals[segIndex][1]+shift+BUFFER;
-  const basePos = intervals[segIndex][0];
+  const cutoffAt = shift => shiftedIntervals(shift)[segIndex][1] + BUFFER;
+  const basePos = whichEdge==='start' ? intervals[segIndex][0] : intervals[segIndex][1];
   const preciseFwd = fwdBounded ? refineBoundary(buildAt, cutoffAt, fwd, fwd+1, basePos) : fwd;
   const preciseBwd = bwdBounded ? refineBoundary(buildAt, cutoffAt, -bwd, -(bwd+1), basePos) : bwd;
   return (preciseFwd + Math.abs(preciseBwd)) * MS_PER_FRAME;
+}
+function segIndexFor(intervals, seg){
+  return intervals.findIndex(iv=>iv[0]===seg[0] && iv[1]===seg[1]+1);
+}
+function segmentToleranceMs(heldSeq, seg){
+  const intervals = findPressSegments(heldSeq).map(([s,e])=>[s,e+1]);
+  return edgeToleranceMs(intervals, segIndexFor(intervals, seg), 'start');
+}
+function releaseToleranceMs(heldSeq, seg){
+  const intervals = findPressSegments(heldSeq).map(([s,e])=>[s,e+1]);
+  return edgeToleranceMs(intervals, segIndexFor(intervals, seg), 'end');
 }
 // Vaisseau/Vague se pilotent en continu (on ajuste sans arrêt) : décaler dans le temps un seul
 // de leurs innombrables petits appuis/relâchements isolément n'a pas de sens (essayé, et ça casse
@@ -2329,11 +2388,18 @@ function findModeStretches(path, modes){
 // cette rangée (forcément ouverte, puisque le joueur s'y trouve) et on s'écarte vers le haut et
 // vers le bas jusqu'à toucher un obstacle de chaque côté — ça donne le couloir réellement
 // emprunté, sans dépendre de où exactement le joueur se trouve dedans.
+// une pique rétrécit le couloir tout autant qu'un bloc pour le pilotage en Vague/Vaisseau (il
+// faut l'éviter, pas juste éviter les blocs) : la corridorHeightAt d'origine ne regardait QUE
+// isSolidCell et ignorait donc complètement les piques, ce qui faisait juger "Auto" des niveaux
+// de vague qui étaient en réalité un mur de piques de chaque côté — le bug rapporté.
+function blocksCorridorAt(c,r){
+  return isSolidCell(c,r) || !!spikeAt(c,r);
+}
 function corridorHeightAt(c, refRow){
   let top = refRow;
-  while(top>0 && !isSolidCell(c, top-1)) top--;
+  while(top>0 && !blocksCorridorAt(c, top-1)) top--;
   let bottom = refRow;
-  while(bottom<ROWS-1 && !isSolidCell(c, bottom+1)) bottom++;
+  while(bottom<ROWS-1 && !blocksCorridorAt(c, bottom+1)) bottom++;
   return (bottom-top+1)*CELL;
 }
 function stretchToleranceMs(path, A, B){
@@ -2356,18 +2422,24 @@ function stretchToleranceMs(path, A, B){
 // fenêtre confortable (≥~330 ms) → risque quasi nul ; fenêtre proche de 0 ms → quasi certain de
 // rater un jour ou l'autre. Courbe en exponentielle saturante, pas un pourcentage linéaire de la
 // fenêtre, pour rester fidèle à la façon dont ça se ressent réellement en jouant.
-function toleranceToRisk(tolMs){
-  return Math.min(0.98, Math.max(0.01, Math.exp(-tolMs/(4*MS_PER_FRAME))));
+// Coût en points d'UN passage, selon la largeur de sa fenêtre de timing : ça grandit SANS
+// LIMITE à mesure que la fenêtre rétrécit vers zéro (coût = K / durée), plutôt que de saturer à
+// un pourcentage de risque plafonné à 100 % — un passage à la limite du possible pour un humain
+// (fenêtre proche de 0 ms) doit pouvoir peser des centaines de points à lui seul, pas être
+// confondu avec un passage seulement "assez tendu". K est calibré pour qu'une fenêtre d'une
+// image (~16,7 ms, à peu près le plus petit délai qu'un humain perçoit) coûte environ 18 points.
+const TIMING_COST_K = 300;
+function timingCost(tolMs){
+  return TIMING_COST_K / Math.max(1, tolMs);
 }
-// enchaîner des appuis à un rythme proche de la limite de 10 cps est en soi difficile à
-// SOUTENIR pour un humain (même si chaque appui pris isolément a une fenêtre correcte) : sous
-// ~4 cps (rythme tranquille), aucun risque additionnel ; ça grimpe ensuite jusqu'à un risque
-// franc à l'approche de la limite maximale.
-function cpsRiskFor(gapFrames){
+// tenir un rythme proche de la limite de 10 cps ajoute un coût, même si chaque appui pris
+// isolément a une fenêtre correcte : sous ~4 cps (rythme tranquille), aucun coût additionnel.
+// Contrairement au timing, ça reste borné (la cps elle-même est plafonnée à 10 par construction).
+function cpsCost(gapFrames){
   if(gapFrames==null) return 0;
   const cps = 60/Math.max(1, gapFrames);
-  const t = Math.min(1, Math.max(0, (cps-4)/(MAX_CPS-4)));
-  return Math.pow(t, 1.5) * 0.6;
+  const over = Math.max(0, cps-4);
+  return over*over*0.5;
 }
 function estimateHumanDifficultyAsync(heldSeq, path, onProgress){
   return new Promise(resolve=>{
@@ -2386,32 +2458,36 @@ function estimateHumanDifficultyAsync(heldSeq, path, onProgress){
     const items = segs.map(seg=>({type:'press', seg}))
       .concat(stretches.map(st=>({type:'stretch', st})));
     const marks = [];
-    const risks = [];
+    const costs = [];
     let idx = 0;
     function tick(){
       const t0 = performance.now();
       while(idx<items.length){
         const item = items[idx];
-        let tolMs, x, cpsRisk = 0;
+        let tolMs, x, extraCost = 0;
         if(item.type==='press'){
           const seg = item.seg;
-          tolMs = segmentToleranceMs(heldSeq, seg);
+          // le moment où on APPUIE et celui où on RELÂCHE sont deux fenêtres de timing
+          // indépendantes (essentiel pour le robot, où la durée du maintien détermine la
+          // hauteur du saut) : la fenêtre effective du passage est la plus étroite des deux.
+          const pressTol = segmentToleranceMs(heldSeq, seg);
+          const releaseTol = releaseToleranceMs(heldSeq, seg);
+          tolMs = Math.min(pressTol, releaseTol);
           const segPos = segs.indexOf(seg);
           const gapFrames = segPos>0 ? seg[0]-segs[segPos-1][0] : null;
-          cpsRisk = cpsRiskFor(gapFrames);
+          extraCost = cpsCost(gapFrames);
           x = path[seg[0]].x;
         } else {
           const [A,B] = item.st;
           tolMs = stretchToleranceMs(path, A, B);
           x = path[A].x;
         }
-        const timingRisk = toleranceToRisk(tolMs);
-        const risk = 1 - (1-timingRisk)*(1-cpsRisk);
-        risks.push(risk);
-        if(risk>=0.1){
+        const cost = timingCost(tolMs) + extraCost;
+        costs.push(cost);
+        if(cost>=1){
           // on affiche directement la largeur de la fenêtre de timing en millisecondes (temps
-          // continu, indépendant des 60 FPS), plus parlant et plus précis qu'un simple compte
-          // d'images ou qu'un pourcentage de risque abstrait
+          // continu, indépendant des 60 FPS), plus parlant et plus précis qu'un pourcentage
+          // de risque abstrait ou plafonné
           marks.push({ x, y:6*CELL, tolMs, kind:'fail' });
         }
         idx++;
@@ -2426,14 +2502,12 @@ function estimateHumanDifficultyAsync(heldSeq, path, onProgress){
         // moyennement tendu n'est pas plus dur qu'un niveau qui ne le fait qu'une fois (la
         // pratique et le rythme compensent la répétition), alors qu'un vrai Extreme Demon se
         // reconnaît à SES quelques passages vraiment insupportables. On ne retient donc que les
-        // K pires passages pour le score final — le reste du niveau peut être aussi long qu'on
-        // veut sans faire gonfler artificiellement la difficulté.
-        const K = 6, P = 10;
-        risks.sort((a,b)=>b-a);
-        const worst = risks.slice(0, K);
-        const sumPow = worst.reduce((s,r)=>s+Math.pow(r,P), 0);
-        const combinedRisk = worst.length ? Math.min(1, Math.pow(sumPow, 1/P)) : 0;
-        const points = Math.max(0, Math.min(100, Math.round(combinedRisk*100*10)/10));
+        // K pires passages pour le score final (leurs coûts s'additionnent directement, sans
+        // plafond) — le reste du niveau peut être aussi long qu'on veut sans gonfler le score.
+        const K = 6;
+        costs.sort((a,b)=>b-a);
+        const worst = costs.slice(0, K);
+        const points = Math.max(0, Math.round(worst.reduce((s,c)=>s+c,0)*10)/10);
         resolve({ points, marks, segCount:items.length });
       }
     }
@@ -2535,6 +2609,13 @@ function deserializeLevel(data){
   for(const o of data.objects){
     const copy = Object.assign({}, o);
     delete copy.c; delete copy.r;
+    // anciens niveaux : les portails "speed_0.5"/"speed_2"/... (paliers fixes) sont remplacés
+    // par un seul portail "speed" réglable — on convertit la valeur du palier en speedValue
+    // pour que ces niveaux gardent exactement le même comportement une fois rechargés.
+    if(copy.type==='portal' && typeof copy.portal==='string' && copy.portal.startsWith('speed_')){
+      copy.speedValue = parseFloat(copy.portal.slice(6));
+      copy.portal = 'speed';
+    }
     const k = objKey(o.c,o.r);
     let arr = lvl.objects.get(k);
     if(!arr){ arr=[]; lvl.objects.set(k,arr); }
@@ -2597,21 +2678,32 @@ function updateSpotifyPreview(){
   box.innerHTML = '';
   const el = document.createElement('div');
   box.appendChild(el);
-  spotifyIFrameAPI.createController(el, { uri }, controller => { spotifyController = controller; });
+  spotifyIFrameAPI.createController(el, { uri }, controller => {
+    spotifyController = controller;
+    spotifyController.setVolume(musicVolume);
+  });
 }
 window.onSpotifyIframeApiReady = (IFrameAPI) => {
   spotifyIFrameAPI = IFrameAPI;
   spotifyControllerUri = null; // force la (re)création d'un vrai contrôleur ci-dessous
   updateSpotifyPreview();
 };
+// volume de la musique associée aux niveaux : bien plus discret par défaut qu'un lecteur
+// Spotify classique (25% plutôt que 100%), réglable dans les Paramètres et mémorisé
+function loadVolume(){
+  const v = parseFloat(localStorage.getItem(VOLUME_STORE_KEY));
+  return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.25;
+}
+let musicVolume = loadVolume();
+function saveVolume(){ localStorage.setItem(VOLUME_STORE_KEY, String(musicVolume)); }
 function playLevelMusic(){
-  if(spotifyController){ spotifyController.seek(0); spotifyController.play(); }
+  if(spotifyController){ spotifyController.setVolume(musicVolume); spotifyController.seek(0); spotifyController.play(); }
 }
 function pauseLevelMusic(){
   if(spotifyController) spotifyController.pause();
 }
 function resumeLevelMusic(){
-  if(spotifyController) spotifyController.resume();
+  if(spotifyController){ spotifyController.setVolume(musicVolume); spotifyController.resume(); }
 }
 document.getElementById('attachMusic').addEventListener('click', ()=>{
   const url = document.getElementById('spotifyUrl').value.trim();
@@ -2787,7 +2879,16 @@ function renderKeybindRows(){
 document.getElementById('openSettings').addEventListener('click', ()=>{
   renderKeybindRows();
   renderDifficultyTable();
+  const vSlider = document.getElementById('volumeSlider');
+  vSlider.value = Math.round(musicVolume*100);
+  document.getElementById('volumeVal').textContent = vSlider.value+'%';
   document.getElementById('settingsModal').style.display = 'flex';
+});
+document.getElementById('volumeSlider').addEventListener('input', e=>{
+  musicVolume = parseInt(e.target.value, 10)/100;
+  document.getElementById('volumeVal').textContent = e.target.value+'%';
+  saveVolume();
+  if(spotifyController) spotifyController.setVolume(musicVolume);
 });
 document.getElementById('closeSettings').addEventListener('click', ()=>{
   document.getElementById('settingsModal').style.display = 'none';

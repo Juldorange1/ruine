@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ascension</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- ================= ÉCRAN TITRE ================= -->
+<div class="screen" id="titleScreen">
+  <div class="title-bg" aria-hidden="true"></div>
+  <div class="title-wrap">
+    <h1 class="game-title"><span>ASCENSION</span></h1>
+    <p class="game-subtitle">Grimpe. Apprends. Va plus vite.</p>
+
+    <div class="diff-groups">
+      <div class="diff-section">
+        <div class="diff-section-label">Court</div>
+        <div class="diff-picker">
+          <button class="diff-btn selected" data-diff="court-1" style="--diff-color:#6ee7a0">
+            <span class="diff-num">1</span>
+            <span class="diff-desc" data-diff-level="court-1">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="court-1">—</span>
+          </button>
+          <button class="diff-btn" data-diff="court-2" style="--diff-color:#a9e78a">
+            <span class="diff-num">2</span>
+            <span class="diff-desc" data-diff-level="court-2">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="court-2">—</span>
+          </button>
+          <button class="diff-btn" data-diff="court-3" style="--diff-color:#ffd166">
+            <span class="diff-num">3</span>
+            <span class="diff-desc" data-diff-level="court-3">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="court-3">—</span>
+          </button>
+          <button class="diff-btn" data-diff="court-4" style="--diff-color:#ff8f66">
+            <span class="diff-num">4</span>
+            <span class="diff-desc" data-diff-level="court-4">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="court-4">—</span>
+          </button>
+          <button class="diff-btn" data-diff="court-5" style="--diff-color:#b968ff">
+            <span class="diff-num">5</span>
+            <span class="diff-desc" data-diff-level="court-5">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="court-5">—</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="diff-section">
+        <div class="diff-section-label">Normal</div>
+        <div class="diff-picker">
+          <button class="diff-btn" data-diff="normal-1" style="--diff-color:#6ee7a0">
+            <span class="diff-num">1</span>
+            <span class="diff-desc" data-diff-level="normal-1">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="normal-1">—</span>
+          </button>
+          <button class="diff-btn" data-diff="normal-2" style="--diff-color:#a9e78a">
+            <span class="diff-num">2</span>
+            <span class="diff-desc" data-diff-level="normal-2">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="normal-2">—</span>
+          </button>
+          <button class="diff-btn" data-diff="normal-3" style="--diff-color:#ffd166">
+            <span class="diff-num">3</span>
+            <span class="diff-desc" data-diff-level="normal-3">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="normal-3">—</span>
+          </button>
+          <button class="diff-btn" data-diff="normal-4" style="--diff-color:#ff8f66">
+            <span class="diff-num">4</span>
+            <span class="diff-desc" data-diff-level="normal-4">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="normal-4">—</span>
+          </button>
+          <button class="diff-btn" data-diff="normal-5" style="--diff-color:#b968ff">
+            <span class="diff-num">5</span>
+            <span class="diff-desc" data-diff-level="normal-5">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="normal-5">—</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="diff-section">
+        <div class="diff-section-label">Long</div>
+        <div class="diff-picker">
+          <button class="diff-btn" data-diff="long-1" style="--diff-color:#6ee7a0">
+            <span class="diff-num">1</span>
+            <span class="diff-desc" data-diff-level="long-1">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="long-1">—</span>
+          </button>
+          <button class="diff-btn" data-diff="long-2" style="--diff-color:#a9e78a">
+            <span class="diff-num">2</span>
+            <span class="diff-desc" data-diff-level="long-2">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="long-2">—</span>
+          </button>
+          <button class="diff-btn" data-diff="long-3" style="--diff-color:#ffd166">
+            <span class="diff-num">3</span>
+            <span class="diff-desc" data-diff-level="long-3">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="long-3">—</span>
+          </button>
+          <button class="diff-btn" data-diff="long-4" style="--diff-color:#ff8f66">
+            <span class="diff-num">4</span>
+            <span class="diff-desc" data-diff-level="long-4">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="long-4">—</span>
+          </button>
+          <button class="diff-btn" data-diff="long-5" style="--diff-color:#b968ff">
+            <span class="diff-num">5</span>
+            <span class="diff-desc" data-diff-level="long-5">Aucun niveau</span>
+            <span class="diff-best" data-diff-best="long-5">—</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-play" id="playBtn">JOUER</button>
+
+    <div class="title-row">
+      <button class="btn-ghost" id="editorBtn">Éditeur de niveaux</button>
+      <button class="btn-ghost" id="controlsBtn">Paramètres</button>
+    </div>
+    <div class="title-levels" id="titleLevels" hidden>
+      <div class="title-levels-label">Mes niveaux créés</div>
+      <div class="title-levels-list" id="titleLevelsList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ÉCRAN CONTRÔLES ================= -->
+<div class="screen" id="controlsScreen" hidden>
+  <div class="panel">
+    <h2>Paramètres</h2>
+    <p class="controls-note">Clique sur une touche pour la réassigner, puis appuie sur la nouvelle touche
+      (Échap pendant l'écoute pour annuler). La caméra a un axe fixe : elle suit toujours le
+      personnage sans rotation à la souris.<br>
+      <b>Rebond parfait</b> : saute pile à l'impact sur une surface turquoise.
+      <b>Glisse orbitale</b> : arrive vite près d'une structure violette pour l'épouser.</p>
+    <div class="keybind-list" id="keybindList"></div>
+    <div class="skin-picker" id="skinPicker"></div>
+    <div class="volume-row">
+      <label for="sfxVolumeRange">Volume des sons</label>
+      <input type="range" id="sfxVolumeRange" min="0" max="100" step="1">
+      <span id="sfxVolumeValue">80%</span>
+    </div>
+    <div class="controls-actions">
+      <button class="btn-ghost" id="resetKeybindsBtn">Touches par défaut</button>
+      <button class="btn-play" id="closeControlsBtn">Retour</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= HUD EN JEU ================= -->
+<div class="hud" id="hud" hidden>
+  <div class="hud-top-left">
+    <div class="altitude">
+      <div class="altitude-label">ALTITUDE</div>
+      <div class="altitude-value"><span id="altNow">0</span><span class="altitude-unit">m</span> <span class="altitude-total">/ <span id="altMax">140</span>m</span></div>
+      <div class="altitude-bar"><div class="altitude-bar-fill" id="altBarFill"></div></div>
+    </div>
+    <div class="objective" id="objective" hidden></div>
+  </div>
+
+  <div class="hud-top-right">
+    <div class="abilities" id="abilitiesRow">
+      <div class="ability-icon" data-ability="jump" title="Saut">⬆</div>
+      <div class="ability-icon" data-ability="doubleJump" title="Double saut">⬆⬆</div>
+      <div class="ability-icon" data-ability="wallJump" title="Wall jump">◤</div>
+      <div class="ability-icon" data-ability="dash" title="Dash">➤</div>
+    </div>
+    <div class="zone-timer">
+      <div class="zone-timer-label">TEMPS</div>
+      <div class="zone-timer-value" id="zoneTimeValue">0.00</div>
+    </div>
+  </div>
+
+  <div class="hud-bottom-left">
+    <div class="speedbar" id="speedbarWrap">
+      <div class="speedbar-fill" id="speedFill"></div>
+    </div>
+  </div>
+
+  <div class="hud-center-top" id="toastWrap"></div>
+</div>
+
+<!-- ================= ÉDITEUR DE NIVEAUX ================= -->
+<div class="editor-ui" id="editorScreen" hidden>
+  <div class="editor-panel">
+    <h2>Éditeur</h2>
+    <p class="editor-hint">Clic gauche : poser · Clic droit : retirer · Glisser : orbiter la caméra ·
+      molette : zoom · ZQSD/WASD + Q/E : déplacer la vue · R : orienter le type sélectionné<br>
+      Les marqueurs (translucides) ne bloquent pas le joueur. Porte de phase et plateforme mobile
+      se posent par paire : les deux premiers marqueurs du même type se lient, les deux suivants
+      forment une autre paire, etc.</p>
+
+    <div class="editor-section">
+      <label>Type de bloc</label>
+      <div class="editor-palette" id="editorPalette"></div>
+      <button class="btn-ghost" id="editorRotBtn" hidden>Orientation (R) : ↑ Nord</button>
+      <button class="btn-ghost" id="editorPowerBtn" hidden>Puissance (P) : Moyen</button>
+    </div>
+
+    <div class="editor-section">
+      <span id="editorCount">0 bloc(s)</span>
+    </div>
+
+    <div class="editor-section">
+      <label for="editorBackgroundSelect">Image de décor</label>
+      <select id="editorBackgroundSelect"></select>
+    </div>
+
+    <div class="editor-section">
+      <label for="editorThemeSelect">Thème de texture</label>
+      <select id="editorThemeSelect">
+        <option value="rock">Type 1 — Roche</option>
+        <option value="snow">Type 2 — Neige</option>
+      </select>
+    </div>
+
+    <div class="editor-section">
+      <label for="editorNameInput">Nom du niveau</label>
+      <input type="text" id="editorNameInput" placeholder="Mon niveau" maxlength="30">
+      <button class="btn-play" id="editorSaveBtn">Sauvegarder</button>
+    </div>
+
+    <div class="editor-section">
+      <label for="editorMainSlotSelect">Niveau principal (écran titre)</label>
+      <select id="editorMainSlotSelect">
+        <option value="">Aucun</option>
+        <optgroup label="Court">
+          <option value="court-1">Court 1</option>
+          <option value="court-2">Court 2</option>
+          <option value="court-3">Court 3</option>
+          <option value="court-4">Court 4</option>
+          <option value="court-5">Court 5</option>
+        </optgroup>
+        <optgroup label="Normal">
+          <option value="normal-1">Normal 1</option>
+          <option value="normal-2">Normal 2</option>
+          <option value="normal-3">Normal 3</option>
+          <option value="normal-4">Normal 4</option>
+          <option value="normal-5">Normal 5</option>
+        </optgroup>
+        <optgroup label="Long">
+          <option value="long-1">Long 1</option>
+          <option value="long-2">Long 2</option>
+          <option value="long-3">Long 3</option>
+          <option value="long-4">Long 4</option>
+          <option value="long-5">Long 5</option>
+        </optgroup>
+      </select>
+      <p class="editor-hint">Sauvegarde ce niveau avant de l'assigner (ou glisse-le depuis l'écran titre).
+        Un seul niveau par emplacement : en choisir un ici retire l'ancien niveau de ce poste.</p>
+    </div>
+
+    <div class="editor-section">
+      <label for="editorLevelSelect">Niveaux sauvegardés</label>
+      <select id="editorLevelSelect"></select>
+      <div class="editor-row">
+        <button class="btn-ghost" id="editorLoadBtn">Charger</button>
+        <button class="btn-ghost" id="editorDeleteBtn">Supprimer</button>
+      </div>
+    </div>
+
+    <div class="editor-section editor-actions">
+      <button class="btn-ghost" id="editorNewBtn">Nouveau</button>
+      <button class="btn-play" id="editorTestBtn">Tester le niveau</button>
+      <button class="btn-ghost" id="editorAnalyzeBtn">Analyser</button>
+      <button class="btn-ghost" id="editorQuitBtn">Quitter vers le menu</button>
+    </div>
+
+    <div class="editor-section editor-analysis" id="editorAnalysis" hidden>
+      <label>Analyse</label>
+      <div id="editorAnalysisBody"></div>
+      <button class="btn-ghost" id="editorAnalysisClearBtn">Effacer la trajectoire</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MENU PAUSE ================= -->
+<div class="screen overlay" id="pauseScreen" hidden>
+  <div class="panel center">
+    <h2>Pause</h2>
+    <button class="btn-play" id="resumeBtn">Reprendre</button>
+    <button class="btn-ghost" id="respawnBtn">Retour au dernier checkpoint</button>
+    <button class="btn-ghost" id="quitBtn">Quitter vers le menu</button>
+  </div>
+</div>
+
+<!-- ================= FIN DE ZONE / NIVEAU ================= -->
+<div class="screen overlay" id="finishScreen" hidden>
+  <div class="panel center">
+    <h2 id="finishTitle">Zone 1 — Falaises terminée</h2>
+    <div class="result-time" id="finishTime">—</div>
+    <p class="finish-teaser" id="finishTeaser">Au loin, la Forêt verticale, les Ruines, la Montagne et le Sommet
+      attendent encore d'être gravis...</p>
+    <button class="btn-play" id="finishReplayBtn">Rejouer pour améliorer son temps</button>
+    <button class="btn-ghost" id="finishEditorBtn" hidden>Retour à l'éditeur</button>
+    <button class="btn-ghost" id="finishMenuBtn">Retour au menu</button>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/keybinds.js"></script>
+<script src="js/world.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/player.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/analyzer.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -14,6 +14,12 @@ entre les jeux, sauf mention contraire).
 | [`pokedex/`](pokedex/) | **Pokédex — Apprentissage** | Appli perso d'apprentissage du Pokédex (quiz, révision espacée, 100 % hors-ligne) |
 | [`geodash/`](geodash/) | **GeoDash** | Éditeur de niveaux façon Geometry Dash (piques, blocs, portails) + mode test/jeu |
 
+## Outils (pas des jeux)
+
+| Dossier | Outil | Description |
+|---|---|---|
+| [`revision-anglais/`](revision-anglais/) | **Révision Anglais** | Import de leçon (analyse auto), 8 types d'exercices, révision espacée intelligente, 100 % local |
+
 > **Avidité** a été déplacé dans son propre dépôt indépendant
 > (`C:\Users\juldorange\avidite`, hors de ce monorepo) le 2026-08-29, pour
 > pouvoir sortir de la contrainte "scripts classiques / compatible file://"

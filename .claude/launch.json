@@ -2,6 +2,18 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "revision-anglais",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5590", "--bind", "127.0.0.1", "--directory", "revision-anglais"],
+      "port": 5590
+    },
+    {
+      "name": "plateforme3d",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5580", "--bind", "127.0.0.1", "--directory", "plateforme3d"],
+      "port": 5580
+    },
+    {
       "name": "geodash",
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5572", "--bind", "127.0.0.1", "--directory", "geodash"],
@@ -366,6 +378,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5566", "--bind", "127.0.0.1", "--directory", "C:\\Users\\JULDOR~1\\AppData\\Local\\Temp\\claude\\C--Users-juldorange-ruine\\5cc64912-32f7-45cc-a32f-e3f4afc7dad6\\scratchpad"],
       "port": 5566
+    },
+    {
+      "name": "ascensionbundle",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5581", "--bind", "127.0.0.1", "--directory", "C:\\Users\\JULDOR~1\\AppData\\Local\\Temp\\claude\\C--Users-juldorange-ruine\\ddc21fdc-ec4b-4f80-8a24-9606fdf63006\\scratchpad\\artifact_test"],
+      "port": 5581
     }
   ]
 }

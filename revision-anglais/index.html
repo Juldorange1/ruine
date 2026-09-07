@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Révision Anglais</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app-shell">
+
+  <header class="topbar">
+    <h1 onclick="UI.go('home')">📘 Révision Anglais</h1>
+    <nav id="main-nav">
+      <button data-nav="home">🏠 Accueil</button>
+      <button data-nav="new-lesson">➕ Nouvelle leçon</button>
+      <button data-nav="lessons">📚 Leçons</button>
+      <button data-nav="stats">📊 Stats</button>
+      <button data-nav="settings" title="Réglages / sauvegarde">⚙️</button>
+    </nav>
+  </header>
+
+  <main id="view">
+
+    <!-- ===================== ACCUEIL ===================== -->
+    <section class="screen" id="screen-home">
+      <div class="hello-row">
+        <div>
+          <div class="hello">👋 Bonjour</div>
+          <div class="sub" id="home-date"></div>
+        </div>
+        <div class="streak-badge" id="home-streak">🔥 0 jour</div>
+      </div>
+
+      <div class="card today-card">
+        <div class="today-title">À faire aujourd'hui</div>
+        <div class="today-num"><span id="home-due-count">0</span> élément(s) à réviser</div>
+        <button class="btn primary big" id="btn-smart-review">🧠 RÉVISION INTELLIGENTE</button>
+      </div>
+
+      <div class="card quick-card">
+        <div class="quick-title">🔥 Révision rapide</div>
+        <div class="quick-durations" id="quick-durations"></div>
+      </div>
+
+      <div class="card exam-card">
+        <div class="exam-title">🚨 J'ai un contrôle demain</div>
+        <button class="btn danger" id="btn-exam-mode">Configurer une session de révision optimisée</button>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="section-title">📚 Mes leçons</div>
+          <div id="home-lessons-list"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">⚠️ À retravailler</div>
+          <div id="home-difficult-list"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">📈 Progression (14 derniers jours)</div>
+        <div id="home-progress-chart"></div>
+      </div>
+    </section>
+
+    <!-- ===================== NOUVELLE LEÇON ===================== -->
+    <section class="screen" id="screen-new-lesson">
+      <h2>➕ Nouvelle leçon</h2>
+      <div id="new-lesson-step-paste" class="card">
+        <p class="hint">Colle ici toute ta leçon d'anglais, même longue et mal organisée. L'appli va l'analyser automatiquement.</p>
+        <input type="text" id="new-lesson-title" placeholder="Titre de la leçon (ex : Environment)" class="text-input">
+        <textarea id="new-lesson-text" rows="14" placeholder="Colle ta leçon ici...&#10;&#10;Exemple :&#10;to achieve = atteindre / accomplir&#10;environment = environnement&#10;to give up = abandonner"></textarea>
+        <button class="btn primary" id="btn-analyze">🔍 Analyser la leçon</button>
+      </div>
+      <div id="new-lesson-step-review" class="card" hidden>
+        <div class="review-header">
+          <h3>Éléments détectés (<span id="review-count">0</span>)</h3>
+          <button class="btn small" id="btn-add-manual">+ Ajouter un élément</button>
+        </div>
+        <div id="review-groups"></div>
+        <div class="review-footer">
+          <button class="btn ghost" id="btn-cancel-review">Annuler</button>
+          <button class="btn primary" id="btn-save-lesson">✅ Enregistrer la leçon</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== LEÇONS ===================== -->
+    <section class="screen" id="screen-lessons">
+      <h2>📚 Mes leçons</h2>
+      <div id="lessons-grid"></div>
+    </section>
+
+    <!-- ===================== DÉTAIL LEÇON ===================== -->
+    <section class="screen" id="screen-lesson-detail">
+      <div class="detail-header">
+        <button class="btn ghost small" onclick="UI.go('lessons')">← Retour</button>
+        <h2 id="detail-title"></h2>
+        <button class="btn small danger" id="btn-delete-lesson">🗑️ Supprimer</button>
+      </div>
+      <div class="detail-actions">
+        <button class="btn primary" id="btn-review-lesson">🔁 Réviser cette leçon</button>
+        <button class="btn" id="btn-learn-lesson">🎓 Apprendre depuis zéro</button>
+        <button class="btn" id="btn-test-blanc">📝 Test blanc</button>
+        <button class="btn small" id="btn-add-item-detail">+ Ajouter un élément</button>
+        <label class="essential-only-toggle"><input type="checkbox" id="chk-essential-only"> 🔴 Uniquement l'essentiel</label>
+      </div>
+      <div id="detail-items"></div>
+    </section>
+
+    <!-- ===================== MODE CONTRÔLE DEMAIN ===================== -->
+    <section class="screen" id="screen-exam-setup">
+      <h2>🚨 Mode contrôle demain</h2>
+      <div class="card">
+        <div class="section-title">Quelle leçon ?</div>
+        <select id="exam-lesson-select" class="text-input"></select>
+        <div class="section-title">Durée disponible</div>
+        <div class="quick-durations" id="exam-durations"></div>
+      </div>
+    </section>
+
+    <!-- ===================== SESSION DE RÉVISION ===================== -->
+    <section class="screen" id="screen-session">
+      <div class="session-header">
+        <div class="session-progress-bar"><span id="session-progress-fill"></span></div>
+        <div class="session-count"><span id="session-index">0</span> / <span id="session-total">0</span></div>
+        <button class="btn ghost small" id="btn-quit-session">✕ Quitter</button>
+      </div>
+      <div id="session-body"></div>
+    </section>
+
+    <!-- ===================== FIN DE SESSION ===================== -->
+    <section class="screen" id="screen-session-end">
+      <div class="card end-card">
+        <div id="session-end-content"></div>
+        <button class="btn primary" onclick="UI.go('home')">Retour à l'accueil</button>
+      </div>
+    </section>
+
+    <!-- ===================== STATISTIQUES ===================== -->
+    <section class="screen" id="screen-stats">
+      <h2>📊 Statistiques</h2>
+      <div class="stat-tiles" id="stats-tiles"></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="section-title">Compétences</div>
+          <table class="comp-table" id="stats-competency-table"></table>
+        </div>
+        <div class="card">
+          <div class="section-title">⚠️ Mes difficultés</div>
+          <div id="stats-difficult-list"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title">Progression</div>
+        <div id="stats-chart"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Progression par leçon</div>
+        <div id="stats-lessons"></div>
+      </div>
+    </section>
+
+    <!-- ===================== RÉGLAGES ===================== -->
+    <section class="screen" id="screen-settings">
+      <h2>⚙️ Réglages</h2>
+      <div class="card">
+        <div class="section-title">Sauvegarde</div>
+        <p class="hint">Toutes tes données sont stockées localement dans ce navigateur.</p>
+        <button class="btn" id="btn-export">⬇️ Exporter mes données</button>
+        <button class="btn danger" id="btn-reset">🗑️ Tout réinitialiser</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="js/storage.js"></script>
+<script src="js/srs.js"></script>
+<script src="js/visuals.js"></script>
+<script src="js/word-families.js"></script>
+<script src="js/dictionary.js"></script>
+<script src="js/analyzer.js"></script>
+<script src="js/exercises.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
